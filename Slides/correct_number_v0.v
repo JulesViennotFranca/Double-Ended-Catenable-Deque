@@ -131,8 +131,8 @@ ensure_green (Red (Two (One ones)) cnbr) := Green (Zero Hole) (Red (Two ones) cn
 
 Equations succ (n : nbr) : nbr :=
 succ (T Null) := T (Yellow (One Hole) Null);
-succ (T (Green (Zero ones) t)) := T (Yellow (One ones) t);
-succ (T (Yellow (One ones) t)) := T (ensure_green (Red (Two ones) (ensure_green t))).
+succ (T (Green (Zero ones) cnbr)) := T (Yellow (One ones) cnbr);
+succ (T (Yellow (One ones) cnbr)) := T (ensure_green (Red (Two ones) (ensure_green cnbr))).
 
 (* The function [headed_ones_to_nat] gives the integer represented by a headed
    list of ones. *)
@@ -205,67 +205,27 @@ Fixpoint colored_nbr_to_nat {color} (cnbr : colored_nbr color) : nat :=
 Definition nbr_to_nat (n : nbr) : nat := 
   let '(T t) := n in colored_nbr_to_nat t.
 
-(* This is a support lemma for the fourth case of [valid_ensure_green]: 
-       20... -> 01... *)
-
-Lemma valid_ensure_green_red_hole_green {GreenAmount YellowAmount RedAmount}
-    (ones : headed_ones (Mix NoGreen YellowAmount NoRed))
-    (cnbr : colored_nbr (Mix GreenAmount NoYellow RedAmount)) : 
-        colored_nbr_to_nat (Green (Zero (One ones)) cnbr) = 
-            colored_nbr_to_nat (Red (Two Hole) (Green (Zero ones) cnbr)).
-Proof.
-  simpl; lia.
-Qed.
-
-(* This is a support lemma for the fifth case of [valid_ensure_green]: 
-       21... -> 02... *)
-
-Lemma valid_ensure_green_red_ones {YellowAmount} 
-    (ones : headed_ones (Mix NoGreen YellowAmount NoRed))
-    (cnbr : colored_nbr green) : 
-        colored_nbr_to_nat (Green (Zero Hole) (Red (Two ones) cnbr)) = 
-            colored_nbr_to_nat (Red (Two (One ones)) cnbr).
-Proof.
-  simpl; lia.
-Qed.
-
-(* The function [valid_ensure_green] ensures that the integer represented by a 
+(* The lemma [valid_ensure_green] ensures that the integer represented by a 
    colored number remains unchanged after the transformation performed by 
    [ensure_green]. *)
 
-Equations valid_ensure_green {GreenAmount RedAmount} 
+Lemma valid_ensure_green {GreenAmount RedAmount} 
     (cnbr : colored_nbr (Mix GreenAmount NoYellow RedAmount)) : 
-        colored_nbr_to_nat (ensure_green cnbr) = colored_nbr_to_nat cnbr :=
-valid_ensure_green Null := eq_refl;
-valid_ensure_green (Green zero cnbr) := eq_refl;
-valid_ensure_green (Red (Two Hole) Null) := eq_refl;
-valid_ensure_green (Red (Two Hole) (Green (Zero ones) cnbr)) := 
-    valid_ensure_green_red_hole_green ones cnbr;
-valid_ensure_green (Red (Two (One ones)) cnbr) := 
-    valid_ensure_green_red_ones ones cnbr.
-
-(* This is a support lemma for the third case of [valid_succ], when the 
-   colored number starts with a 1. *)
-
-Lemma valid_succ_yellow {GreenAmount YellowAmount RedAmount} 
-    (ones : headed_ones (Mix NoGreen YellowAmount NoRed)) 
-    (cnbr : colored_nbr (Mix GreenAmount NoYellow RedAmount)) : 
-        nbr_to_nat (T (ensure_green (Red (Two ones) (ensure_green cnbr)))) = 
-            S (nbr_to_nat (T (Yellow (One ones) cnbr))).
+        colored_nbr_to_nat (ensure_green cnbr) = colored_nbr_to_nat cnbr.
 Proof.
-  simpl.
-  rewrite valid_ensure_green.
-  simpl.
-  do 2 f_equal.
-  rewrite valid_ensure_green.
-  lia.
+   eapply ensure_green_elim; eauto; simpl; lia.
 Qed.
 
-(* The function [valid_succ] ensures that for 'n' being a [nbr], the integer 
+(* The lemma [valid_succ] ensures that for 'n' being a [nbr], the integer 
    represented by (succ n) is indeed the integer represented by 'n' 
    incremented by 1. *)
 
-Equations valid_succ (n : nbr) : nbr_to_nat (succ n) = S (nbr_to_nat n) :=
-valid_succ (T Null) := eq_refl;
-valid_succ (T (Green (Zero ones) cnbr)) := eq_refl;
-valid_succ (T (Yellow (One ones) cnbr)) := valid_succ_yellow ones cnbr.
+Lemma valid_succ (n : nbr) : nbr_to_nat (succ n) = S (nbr_to_nat n).
+Proof.
+   eapply succ_elim; eauto.
+   simpl. intros.
+   rewrite valid_ensure_green.
+   simpl. do 2 f_equal.
+   rewrite valid_ensure_green.
+   lia.
+Qed.
