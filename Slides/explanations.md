@@ -16,7 +16,7 @@ let rec succ = function
   = 00000000001 ...
 ```
 
-### Skewed binary representation
+### Redundant binary representation
 
 ```ml
 type t =
@@ -33,7 +33,7 @@ We must add an invariant to the representation otherwise we still have the same 
   = 11111111112 ...
 ```
 
-### 2 colored skewed binary representation
+### 2 colored redundant binary representation
 
 To this end, we decorate the type with 2 color, green and red. Green meaning we can add 1, and red the opposite.
 
@@ -73,7 +73,7 @@ We do not have yet a O(1) cost when adding 1, there are still some cases when we
   = 11111111101 ...
 ```
 
-### 3 colored skewed binary representation
+### 3 colored redundant binary representation
 
 The idea for this improvement is that we want to access and modify the end of the list of ones in constant time. To this end, a number will now be represented recursively as a pair of a list of ones and another number:
 
@@ -128,7 +128,7 @@ type 'a t =
   | One  of 'a * ('a * 'a) t
 ```
 
-### List 3 colored skewed binary representation
+### List 3 colored redundant binary representation
 
 ```ml
 type ('in_, 'out) ones =
