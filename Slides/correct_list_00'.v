@@ -35,11 +35,18 @@ Notation red := (Mix NoGreen NoYellow SomeRed).
 Notation uncolored := (Mix NoGreen NoYellow NoRed).
 
 (* For a type abstraction [L], an instance of [ListRep L] means that [L A] can 
-   represent a [list A]. This type class only contains one function, [value], 
+   represent a [list A]. This type class only contains one function, [to_list], 
    that returns the [list A] stored by an element of type [L A]. *)
 
 Class ListRep (L : Type -> Type) := {
-  value {A : Type} : L A -> list A
+  to_list {A : Type} : L A -> list A
+}.
+
+(* The type class [DecoratedListRep] is similar to [ListRep] but the structures
+   represented by this one takes extra arguments, called decoration. *)
+
+Class DecoratedListRep {Dec : Type} (L : Dec -> Type -> Type) := {
+  value {d : Dec} {A : Type} : L d A -> list A
 }.
 
 (* The lemma [app_cons_one] is trivial but it is mandatory as ++ is later made
@@ -139,8 +146,8 @@ Fixpoint packet_value {info : color * nat} {A : Type} (p : packet info A) :
 (* Packets can represent lists, and they are decorated with a color and a nat, 
    therefor we can add an instance of DecoratedListRep. *)
 
-Instance PacketRep {info : color * nat} : ListRep (packet info) := {
-  value := fun _ => packet_value
+Instance PacketRep : DecoratedListRep packet := {
+  value := fun _ _ => packet_value
 }.
 
 (* The type [colored_list] denotes lists represented in redundant binary form, 
@@ -236,8 +243,8 @@ Fixpoint colored_list_value {c : color} {A : Type} (clist : colored_list c A) :
 (* Colored lists can represent lists, and they are decorated with colors, we 
    add an instance of DecoratedListRep for them. *)
 
-Instance ColoredListRep {c : color} : ListRep (colored_list c) := {|
-  value := fun _ => colored_list_value
+Instance ColoredListRep : DecoratedListRep colored_list := {|
+  value := fun _ _ => colored_list_value
 |}.
 
 (* The function [ensure_green] takes a green or red colored list and returns 
@@ -292,7 +299,7 @@ Definition blist_value {A : Type} (bl : blist A) : list A :=
    ListRep for [blist].  *)
 
 Instance BListRep : ListRep blist := {|
-  value := fun _ => blist_value
+  to_list := fun _ => blist_value
 |}.
 
 (* The function [bcons] simply adds an element to a list. *)
@@ -308,14 +315,12 @@ bcons a (T (Yellow (One b ones) clist)) :=
    a. *)
 
 Lemma valid_bcons {A : Type} (a : A) (l : blist A) : 
-    value (bcons a l) = [a] ++ value l.
+    to_list (bcons a l) = [a] ++ to_list l.
 Proof.
   eapply bcons_elim; eauto; simpl; intros.
-  assert (forall {G R A} (clist' : colored_list (Mix G NoYellow R) A),
-      colored_list_value (ensure_green clist') = colored_list_value clist').
-  { intros; apply valid_ensure_green. }
-  rewrite H.
+  rewrite valid_ensure_green.
   simpl. 
-  rewrite H.
+  rewrite valid_ensure_green.
+  simpl.
   aac_reflexivity.
 Qed.
