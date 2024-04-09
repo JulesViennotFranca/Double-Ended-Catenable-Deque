@@ -1,11 +1,9 @@
-From Coq Require Import ssreflect.
 From Coq Require Import List.
 Import ListNotations.
 From Equations Require Import Equations.
 From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
-From Hammer Require Import Tactics.
 
 (* Here, [green_hue], [yellow_hue], and [red_hue] will be utilized to generate 
    the colors essential for our program. They function as boolean variables, 
@@ -35,6 +33,21 @@ Notation green := (Mix SomeGreen NoYellow NoRed).
 Notation yellow := (Mix NoGreen SomeYellow NoRed).
 Notation red := (Mix NoGreen NoYellow SomeRed).
 Notation uncolored := (Mix NoGreen NoYellow NoRed).
+
+(* For a type abstraction [L], an instance of [ListRep L] means that [L] can 
+   represent a list. This type class only contains one function, [to_list], 
+   that returns the list stored by an element of type [L]. *)
+
+Class ListRep (L : Type -> Type) := {
+  to_list {A : Type} : L A -> list A
+}.
+
+(* The type class [DecoratedListRep] is similar to [ListRep] but the structures
+   represented by this one takes extra arguments, called decoration. *)
+
+Class DecoratedListRep {Dec : Type} (L : Dec -> Type -> Type) := {
+  value {d : Dec} {A : Type} : L d A -> list A
+}.
 
 (* The lemma [app_cons_one] is trivial but it is mandatory as ++ is later made
    opaque. *)
@@ -82,20 +95,20 @@ Fixpoint power (A : Type) (n : nat) : Type :=
    variable [YellowAmount] of type [yellow_hue]. This variable may be either 
    [SomeYellow] or [NoYellow], resulting in either yellow or uncolored outcomes. *)
 
-Inductive packet : forall (In : Type) (length : nat), color -> Type :=
-  | Hole {A} : packet A 0 uncolored
+Inductive packet : color * nat -> Type -> Type :=
+  | Hole {A} : packet (uncolored, 0) A
   | Zero {A n} : forall {YellowAmount}, 
-                  packet (A * A) n (Mix NoGreen YellowAmount NoRed) ->
-                   packet A (S n) green
+                  packet ((Mix NoGreen YellowAmount NoRed), n) (A * A) ->
+                   packet (green, S n) A
   | One {A n} : forall {YellowAmount}, 
                  A ->
-                  packet (A * A) n (Mix NoGreen YellowAmount NoRed) ->
-                   packet A (S n) yellow
+                  packet ((Mix NoGreen YellowAmount NoRed), n) (A * A) ->
+                   packet (yellow, S n) A
   | Two {A n} : forall {YellowAmount}, 
                  A ->
                   A -> 
-                   packet (A * A) n (Mix NoGreen YellowAmount NoRed) ->
-                    packet A (S n) red.
+                   packet ((Mix NoGreen YellowAmount NoRed), n) (A * A) ->
+                    packet (red, S n) A.
 
 (* The function [flatten] transform a list of pairs into a list of single 
    elements, preserving their order. *)
@@ -119,18 +132,9 @@ Proof.
     aac_reflexivity.
 Qed.
 
-(* To help automatize proofs, we design a list of useful tactics. *)
-
-#[export] Hint Rewrite <-app_comm_cons : rlist.
-#[export] Hint Rewrite <-app_cons_one : rlist.
-#[export] Hint Rewrite flatten_app : rlist.
-
-#[local] Obligation Tactic :=
-  try first [ done | hauto db:rlist ].
-
 (* The function [packet_value] gives the list stored in a packet. *)
 
-Fixpoint packet_value {A : Type} {n : nat} {c : color} (p : packet A n c) : 
+Fixpoint packet_value {info : color * nat} {A : Type} (p : packet info A) : 
     list A := 
   match p with 
   | Hole => []
@@ -138,6 +142,13 @@ Fixpoint packet_value {A : Type} {n : nat} {c : color} (p : packet A n c) :
   | One a ones => [a] ++ flatten (packet_value ones)
   | Two a b ones => [a] ++ [b] ++ flatten (packet_value ones)
   end.
+
+(* Packets can represent lists, and they are decorated with a color and a nat, 
+   therefor we can add an instance of DecoratedListRep. *)
+
+Instance PacketRep : DecoratedListRep packet := {
+  value := fun _ _ => packet_value
+}.
 
 (* The type [colored_list] denotes lists represented in redundant binary form, 
    embellished with colors representing the ease of adding elements to the list.
@@ -174,19 +185,19 @@ Fixpoint packet_value {A : Type} {n : nat} {c : color} (p : packet A n c) :
    and red colored lists, [Equations] will discard the two impossible colors, 
    leaving us with a green or red tail. *)
 
-Inductive colored_list : Type -> color -> Type :=
-  | Null {A} : colored_list A green
+Inductive colored_list : color -> Type -> Type :=
+  | Null {A} : colored_list green A
   | Green {A n} : forall {GreenAmount RedAmount}, 
-                   packet A n green -> 
-                    colored_list (power A n) (Mix GreenAmount NoYellow RedAmount) -> 
-                     colored_list A green
+                   packet (green, n) A -> 
+                    colored_list (Mix GreenAmount NoYellow RedAmount) (power A n) -> 
+                     colored_list green A
   | Yellow {A n} : forall {GreenAmount RedAmount}, 
-                    packet A n yellow -> 
-                     colored_list (power A n) (Mix GreenAmount NoYellow RedAmount) -> 
-                      colored_list A yellow 
-  | Red {A n} : packet A n red -> 
-                 colored_list (power A n) green -> 
-                  colored_list A red.
+                    packet (yellow, n) A -> 
+                     colored_list (Mix GreenAmount NoYellow RedAmount) (power A n) -> 
+                      colored_list yellow A 
+  | Red {A n} : packet (red, n) A -> 
+                 colored_list green (power A n) -> 
+                  colored_list red A.
 
 (* The function [flattenN] is simply a generalization of [flatten], to apply it 
    n times, where n is the number of times the size of element is doubled. *)
@@ -219,32 +230,52 @@ Transparent flattenN.
         = [1; 2] ++ [3; 4; 5; 6; 7; 8; 9; 10]
         = [1; 2; 3; 4; 5; 6; 7; 8; 9; 10]. *)
 
-Fixpoint colored_list_value {A : Type} {c : color} (clist : colored_list A c) : 
+Fixpoint colored_list_value {c : color} {A : Type} (clist : colored_list c A) : 
     list A :=
   match clist with 
   | Null => []
   | Green p clist | Yellow p clist | Red p clist => 
-      let l1 := packet_value p in 
+      let l1 := value p in 
       let l2 := colored_list_value clist in 
       l1 ++ flattenN l2
   end.
 
-Notation "? x" := (@exist _ _ x _) (at level 100).
+(* Colored lists can represent lists, and they are decorated with colors, we 
+   add an instance of DecoratedListRep for them. *)
+
+Instance ColoredListRep : DecoratedListRep colored_list := {|
+  value := fun _ _ => colored_list_value
+|}.
 
 (* The function [ensure_green] takes a green or red colored list and returns 
    a green one representing the same list. *)
 
 Equations ensure_green {A : Type} {GreenAmount RedAmount} 
-    (clist : colored_list A (Mix GreenAmount NoYellow RedAmount)) :
-        { glist : colored_list A green | 
-            colored_list_value glist = colored_list_value clist } :=
-ensure_green Null := ? Null;
-ensure_green (Green zero clist) := ? Green zero clist;
-ensure_green (Red (Two a b Hole) Null) := ? Green (Zero (One (a, b) Hole)) Null;
+    (clist : colored_list (Mix GreenAmount NoYellow RedAmount) A) :
+        colored_list green A :=
+ensure_green Null := Null;
+ensure_green (Green zero clist) := Green zero clist;
+ensure_green (Red (Two a b Hole) Null) := Green (Zero (One (a, b) Hole)) Null;
 ensure_green (Red (Two a b Hole) (Green (Zero ones) clist)) := 
-    ? Green (Zero (One (a, b) ones)) clist;
+    Green (Zero (One (a, b) ones)) clist;
 ensure_green (Red (Two a b (One (c, d) ones)) clist) := 
-    ? Green (Zero Hole) (Red (Two (a, b) (c, d) ones) clist).
+    Green (Zero Hole) (Red (Two (a, b) (c, d) ones) clist).
+
+(* The lemma [valid_ensure_green] ensures that the list represented by a colored 
+   list remains unchanged after the transformation performed by [ensure_green]. *)
+
+Lemma valid_ensure_green {A : Type} {GreenAmount RedAmount} 
+    (clist : colored_list (Mix GreenAmount NoYellow RedAmount) A) : 
+        value (ensure_green clist) = value clist. 
+Proof.
+  eapply ensure_green_elim; eauto; simpl; intros.
+  - rewrite <- app_cons_one; simpl.
+    rewrite flatten_app.
+    aac_reflexivity.
+  - do 2 rewrite <- app_cons_one.
+    rewrite flatten_app.
+    simpl; aac_reflexivity.
+Qed.
 
 (* Lastly, the type [blist] will denote lists represented in redundant binary 
    form where the addition of one element in constant time is possible.
@@ -254,24 +285,42 @@ ensure_green (Red (Two a b (One (c, d) ones)) clist) :=
 
 Inductive blist : Type -> Type :=
   | T {A} : forall {GreenAmount YellowAmount}, 
-         colored_list A (Mix GreenAmount YellowAmount NoRed) -> 
+         colored_list (Mix GreenAmount YellowAmount NoRed) A -> 
           blist A.
 
 (* The function [blist_value] gives the list represented by a blist. *)
 
 Definition blist_value {A : Type} (bl : blist A) : list A :=
   match bl with 
-  | T clist => colored_list_value clist 
+  | T clist => value clist 
   end.
+
+(* The goal of [blist] is to represent lists, we obviously add an instance of 
+   ListRep for [blist].  *)
+
+Instance BListRep : ListRep blist := {|
+  to_list := fun _ => blist_value
+|}.
 
 (* The function [bcons] simply adds an element to a list. *)
 
-Equations bcons {A : Type} (a : A) (l : blist A) : 
-    { bl : blist A | blist_value bl = [a] ++ blist_value l } :=
-bcons a (T Null) := ? T (Yellow (One a Hole) Null);
-bcons a (T (Green (Zero ones) clist)) := ? T (Yellow (One a ones) clist);
+Equations bcons {A} (a : A) (l : blist A) : blist A :=
+bcons a (T Null) := T (Yellow (One a Hole) Null);
+bcons a (T (Green (Zero ones) clist)) := T (Yellow (One a ones) clist);
 bcons a (T (Yellow (One b ones) clist)) := 
-    let '(? gclist) := ensure_green clist in 
-    let '(? glist) := ensure_green (Red (Two a b ones) gclist) in 
-    ? T glist.
-  
+    T (ensure_green (Red (Two a b ones) (ensure_green clist))).
+
+(* The lemma [valid_bcons] ensures that for 'l' being a [blist], the list 
+   represented by (bcons a l) is indeed the list represented by 'l' appended by
+   a. *)
+
+Lemma valid_bcons {A : Type} (a : A) (l : blist A) : 
+    to_list (bcons a l) = [a] ++ to_list l.
+Proof.
+  eapply bcons_elim; eauto; simpl; intros.
+  rewrite valid_ensure_green.
+  simpl. 
+  rewrite valid_ensure_green.
+  simpl.
+  aac_reflexivity.
+Qed.

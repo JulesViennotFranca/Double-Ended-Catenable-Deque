@@ -1,11 +1,9 @@
-From Coq Require Import ssreflect.
 From Coq Require Import List.
 Import ListNotations.
 From Equations Require Import Equations.
 From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
-From Hammer Require Import Tactics.
 
 (* Here, [green_hue], [yellow_hue], and [red_hue] will be utilized to generate 
    the colors essential for our program. They function as boolean variables, 
@@ -118,15 +116,6 @@ Proof.
     rewrite IHl1.
     aac_reflexivity.
 Qed.
-
-(* To help automatize proofs, we design a list of useful tactics. *)
-
-#[export] Hint Rewrite <-app_comm_cons : rlist.
-#[export] Hint Rewrite <-app_cons_one : rlist.
-#[export] Hint Rewrite flatten_app : rlist.
-
-#[local] Obligation Tactic :=
-  try first [ done | hauto db:rlist ].
 
 (* The function [packet_value] gives the list stored in a packet. *)
 
