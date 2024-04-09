@@ -130,7 +130,7 @@ Qed.
 
 (* The function [packet_value] gives the list stored in a packet. *)
 
-Fixpoint packet_value {A : Type} {n : nat} {c : color} (p : packet A n c) : 
+Fixpoint packet_value {A : Type} {n : nat} {color : color} (p : packet A n color) : 
     list A := 
   match p with 
   | Hole => []
@@ -233,7 +233,7 @@ Transparent flattenN.
         = [1; 2] ++ [3; 4; 5; 6; 7; 8; 9; 10]
         = [1; 2; 3; 4; 5; 6; 7; 8; 9; 10]. *)
 
-Fixpoint colored_list_value {A : Type} {c : color} (clist : colored_list A c) : 
+Fixpoint colored_list_value {A : Type} {color} (clist : colored_list A color) : 
     list A :=
   match clist with 
   | Null => []
@@ -243,22 +243,35 @@ Fixpoint colored_list_value {A : Type} {c : color} (clist : colored_list A c) :
       l1 ++ flattenN l2
   end.
 
-Notation "? x" := (@exist _ _ x _) (at level 100).
-
 (* The function [ensure_green] takes a green or red colored list and returns 
    a green one representing the same list. *)
 
 Equations ensure_green {A : Type} {GreenAmount RedAmount} 
     (clist : colored_list A (Mix GreenAmount NoYellow RedAmount)) :
-        { glist : colored_list A green | 
-            colored_list_value glist = colored_list_value clist } :=
-ensure_green Null := ? Null;
-ensure_green (Green zero clist) := ? Green zero clist;
-ensure_green (Red (Two a b Hole) Null) := ? Green (Zero (One (a, b) Hole)) Null;
+        colored_list A green  :=
+ensure_green Null := Null;
+ensure_green (Green zero clist) := Green zero clist;
+ensure_green (Red (Two a b Hole) Null) := Green (Zero (One (a, b) Hole)) Null;
 ensure_green (Red (Two a b Hole) (Green (Zero ones) clist)) := 
-    ? Green (Zero (One (a, b) ones)) clist;
+    Green (Zero (One (a, b) ones)) clist;
 ensure_green (Red (Two a b (One (c, d) ones)) clist) := 
-    ? Green (Zero Hole) (Red (Two (a, b) (c, d) ones) clist).
+    Green (Zero Hole) (Red (Two (a, b) (c, d) ones) clist).
+
+(* The lemma [valid_ensure_green] ensures that the list represented by a colored 
+   list remains unchanged after the transformation performed by [ensure_green]. *)
+
+Lemma valid_ensure_green {A : Type} {GreenAmount RedAmount} 
+    (clist : colored_list A (Mix GreenAmount NoYellow RedAmount)) : 
+        colored_list_value (ensure_green clist) = colored_list_value clist. 
+Proof.
+  eapply ensure_green_elim; eauto; simpl; intros.
+  - rewrite <- app_cons_one; simpl.
+    rewrite flatten_app.
+    aac_reflexivity.
+  - do 2 rewrite <- app_cons_one.
+    rewrite flatten_app.
+    simpl; aac_reflexivity.
+Qed.
 
 (* Lastly, the type [blist] will denote lists represented in redundant binary 
    form where the addition of one element in constant time is possible.
@@ -273,19 +286,29 @@ Inductive blist : Type -> Type :=
 
 (* The function [blist_value] gives the list represented by a blist. *)
 
-Definition blist_value {A : Type} (bl : blist A) : list A :=
+Definition blist_value {A} (bl : blist A) : list A :=
   match bl with 
   | T clist => colored_list_value clist 
   end.
 
 (* The function [bcons] simply adds an element to a list. *)
 
-Equations bcons {A : Type} (a : A) (l : blist A) : 
-    { bl : blist A | blist_value bl = [a] ++ blist_value l } :=
-bcons a (T Null) := ? T (Yellow (One a Hole) Null);
-bcons a (T (Green (Zero ones) clist)) := ? T (Yellow (One a ones) clist);
+Equations bcons {A} (a : A) (l : blist A) : blist A :=
+bcons a (T Null) := T (Yellow (One a Hole) Null);
+bcons a (T (Green (Zero ones) clist)) := T (Yellow (One a ones) clist);
 bcons a (T (Yellow (One b ones) clist)) := 
-    let '(? gclist) := ensure_green clist in 
-    let '(? glist) := ensure_green (Red (Two a b ones) gclist) in 
-    ? T glist.
-  
+    T (ensure_green (Red (Two a b ones) (ensure_green clist))).
+
+(* The lemma [valid_bcons] ensures that for 'l' being a [blist], the list 
+   represented by (bcons a l) is indeed the list represented by 'l' appended by
+   a. *)
+
+Lemma valid_bcons {A : Type} (a : A) (l : blist A) : 
+    blist_value (bcons a l) = [a] ++ blist_value l.
+Proof.
+  eapply bcons_elim; eauto; simpl; intros.
+  rewrite valid_ensure_green.
+  simpl. 
+  rewrite valid_ensure_green.
+  aac_reflexivity.
+Qed.
