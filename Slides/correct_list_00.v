@@ -34,14 +34,6 @@ Notation yellow := (Mix NoGreen SomeYellow NoRed).
 Notation red := (Mix NoGreen NoYellow SomeRed).
 Notation uncolored := (Mix NoGreen NoYellow NoRed).
 
-(* For a type abstraction [L], an instance of [ListRep L] means that [L A] can 
-   represent a [list A]. This type class only contains one function, [value], 
-   that returns the [list A] stored by an element of type [L A]. *)
-
-Class ListRep (L : Type -> Type) := {
-  value {A : Type} : L A -> list A
-}.
-
 (* The lemma [app_cons_one] is trivial but it is mandatory as ++ is later made
    opaque. *)
 
@@ -88,20 +80,20 @@ Fixpoint power (A : Type) (n : nat) : Type :=
    variable [YellowAmount] of type [yellow_hue]. This variable may be either 
    [SomeYellow] or [NoYellow], resulting in either yellow or uncolored outcomes. *)
 
-Inductive packet : color * nat -> Type -> Type :=
-  | Hole {A} : packet (uncolored, 0) A
+Inductive packet : forall (In : Type) (length : nat), color -> Type :=
+  | Hole {A} : packet A 0 uncolored
   | Zero {A n} : forall {YellowAmount}, 
-                  packet ((Mix NoGreen YellowAmount NoRed), n) (A * A) ->
-                   packet (green, S n) A
+                  packet (A * A) n (Mix NoGreen YellowAmount NoRed) ->
+                   packet A (S n) green
   | One {A n} : forall {YellowAmount}, 
                  A ->
-                  packet ((Mix NoGreen YellowAmount NoRed), n) (A * A) ->
-                   packet (yellow, S n) A
+                  packet (A * A) n (Mix NoGreen YellowAmount NoRed) ->
+                   packet A (S n) yellow
   | Two {A n} : forall {YellowAmount}, 
                  A ->
                   A -> 
-                   packet ((Mix NoGreen YellowAmount NoRed), n) (A * A) ->
-                    packet (red, S n) A.
+                   packet (A * A) n (Mix NoGreen YellowAmount NoRed) ->
+                    packet A (S n) red.
 
 (* The function [flatten] transform a list of pairs into a list of single 
    elements, preserving their order. *)
@@ -127,7 +119,7 @@ Qed.
 
 (* The function [packet_value] gives the list stored in a packet. *)
 
-Fixpoint packet_value {info : color * nat} {A : Type} (p : packet info A) : 
+Fixpoint packet_value {A : Type} {n : nat} {color : color} (p : packet A n color) : 
     list A := 
   match p with 
   | Hole => []
@@ -135,13 +127,6 @@ Fixpoint packet_value {info : color * nat} {A : Type} (p : packet info A) :
   | One a ones => [a] ++ flatten (packet_value ones)
   | Two a b ones => [a] ++ [b] ++ flatten (packet_value ones)
   end.
-
-(* Packets can represent lists, and they are decorated with a color and a nat, 
-   therefor we can add an instance of DecoratedListRep. *)
-
-Instance PacketRep {info : color * nat} : ListRep (packet info) := {
-  value := fun _ => packet_value
-}.
 
 (* The type [colored_list] denotes lists represented in redundant binary form, 
    embellished with colors representing the ease of adding elements to the list.
@@ -178,19 +163,19 @@ Instance PacketRep {info : color * nat} : ListRep (packet info) := {
    and red colored lists, [Equations] will discard the two impossible colors, 
    leaving us with a green or red tail. *)
 
-Inductive colored_list : color -> Type -> Type :=
-  | Null {A} : colored_list green A
+Inductive colored_list : Type -> color -> Type :=
+  | Null {A} : colored_list A green
   | Green {A n} : forall {GreenAmount RedAmount}, 
-                   packet (green, n) A -> 
-                    colored_list (Mix GreenAmount NoYellow RedAmount) (power A n) -> 
-                     colored_list green A
+                   packet A n green -> 
+                    colored_list (power A n) (Mix GreenAmount NoYellow RedAmount) -> 
+                     colored_list A green
   | Yellow {A n} : forall {GreenAmount RedAmount}, 
-                    packet (yellow, n) A -> 
-                     colored_list (Mix GreenAmount NoYellow RedAmount) (power A n) -> 
-                      colored_list yellow A 
-  | Red {A n} : packet (red, n) A -> 
-                 colored_list green (power A n) -> 
-                  colored_list red A.
+                    packet A n yellow -> 
+                     colored_list (power A n) (Mix GreenAmount NoYellow RedAmount) -> 
+                      colored_list A yellow 
+  | Red {A n} : packet A n red -> 
+                 colored_list (power A n) green -> 
+                  colored_list A red.
 
 (* The function [flattenN] is simply a generalization of [flatten], to apply it 
    n times, where n is the number of times the size of element is doubled. *)
@@ -213,6 +198,20 @@ Transparent flattenN.
    this n from the context, and transform [l2] in a list of elements of type A.
    We just have to merge the two list and we have our final list.
 
+   For instance, if 376 is represented as 2110112, transforming it into colored 
+   list form, we obtain 211 (0111 (2 Null)). Let's manually apply our algorithm 
+   to this colored list:
+                Null -> 0;
+              2 Null : packet_value 2 := 2,
+                       thickness 2 := 2
+                     -> 2 + 2 * 0 = 2;
+        0111 (2 Null) : packet_value 0111 := 14,
+                       thickness 0111 := 16,
+                     -> 14 + 16 * 2 = 46;
+   211 (0111 (2 Null)) : packet_value 211 := 8,
+                         thickness 211 := 8,
+                     -> 8 + 8 * 46 = 376.
+
    Applying our algorithm manually on a list of 10 elements:
    - Null -> [];
    - [((3, 4), (5, 6)); ((7, 8), (9, 10)); []] ++ Null ->
@@ -223,29 +222,22 @@ Transparent flattenN.
         = [1; 2] ++ [3; 4; 5; 6; 7; 8; 9; 10]
         = [1; 2; 3; 4; 5; 6; 7; 8; 9; 10]. *)
 
-Fixpoint colored_list_value {c : color} {A : Type} (clist : colored_list c A) : 
+Fixpoint colored_list_value {A : Type} {color} (clist : colored_list A color) : 
     list A :=
   match clist with 
   | Null => []
   | Green p clist | Yellow p clist | Red p clist => 
-      let l1 := value p in 
+      let l1 := packet_value p in 
       let l2 := colored_list_value clist in 
       l1 ++ flattenN l2
   end.
-
-(* Colored lists can represent lists, and they are decorated with colors, we 
-   add an instance of DecoratedListRep for them. *)
-
-Instance ColoredListRep {c : color} : ListRep (colored_list c) := {|
-  value := fun _ => colored_list_value
-|}.
 
 (* The function [ensure_green] takes a green or red colored list and returns 
    a green one representing the same list. *)
 
 Equations ensure_green {A : Type} {GreenAmount RedAmount} 
-    (clist : colored_list (Mix GreenAmount NoYellow RedAmount) A) :
-        colored_list green A :=
+    (clist : colored_list A (Mix GreenAmount NoYellow RedAmount)) :
+        colored_list A green  :=
 ensure_green Null := Null;
 ensure_green (Green zero clist) := Green zero clist;
 ensure_green (Red (Two a b Hole) Null) := Green (Zero (One (a, b) Hole)) Null;
@@ -258,8 +250,8 @@ ensure_green (Red (Two a b (One (c, d) ones)) clist) :=
    list remains unchanged after the transformation performed by [ensure_green]. *)
 
 Lemma valid_ensure_green {A : Type} {GreenAmount RedAmount} 
-    (clist : colored_list (Mix GreenAmount NoYellow RedAmount) A) : 
-        value (ensure_green clist) = value clist. 
+    (clist : colored_list A (Mix GreenAmount NoYellow RedAmount)) : 
+        colored_list_value (ensure_green clist) = colored_list_value clist. 
 Proof.
   eapply ensure_green_elim; eauto; simpl; intros.
   - rewrite <- app_cons_one; simpl.
@@ -278,22 +270,15 @@ Qed.
 
 Inductive blist : Type -> Type :=
   | T {A} : forall {GreenAmount YellowAmount}, 
-         colored_list (Mix GreenAmount YellowAmount NoRed) A -> 
+         colored_list A (Mix GreenAmount YellowAmount NoRed) -> 
           blist A.
 
 (* The function [blist_value] gives the list represented by a blist. *)
 
-Definition blist_value {A : Type} (bl : blist A) : list A :=
+Definition blist_value {A} (bl : blist A) : list A :=
   match bl with 
-  | T clist => value clist 
+  | T clist => colored_list_value clist 
   end.
-
-(* The goal of [blist] is to represent lists, we obviously add an instance of 
-   ListRep for [blist].  *)
-
-Instance BListRep : ListRep blist := {|
-  value := fun _ => blist_value
-|}.
 
 (* The function [bcons] simply adds an element to a list. *)
 
@@ -308,14 +293,11 @@ bcons a (T (Yellow (One b ones) clist)) :=
    a. *)
 
 Lemma valid_bcons {A : Type} (a : A) (l : blist A) : 
-    value (bcons a l) = [a] ++ value l.
+    blist_value (bcons a l) = [a] ++ blist_value l.
 Proof.
   eapply bcons_elim; eauto; simpl; intros.
-  assert (forall {G R A} (clist' : colored_list (Mix G NoYellow R) A),
-      colored_list_value (ensure_green clist') = colored_list_value clist').
-  { intros; apply valid_ensure_green. }
-  rewrite H.
+  rewrite valid_ensure_green.
   simpl. 
-  rewrite H.
+  rewrite valid_ensure_green.
   aac_reflexivity.
 Qed.

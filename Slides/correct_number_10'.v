@@ -30,6 +30,21 @@ Notation yellow := (Mix NoGreen SomeYellow NoRed).
 Notation red := (Mix NoGreen NoYellow SomeRed).
 Notation uncolored := (Mix NoGreen NoYellow NoRed).
 
+(* For a type [N], an instance of [NatRep N] means that [N] can represent 
+   natural numbers. This type class only contains one function, [to_nat], that 
+   returns the integer represented by an element of type [N]. *)
+
+Class NatRep (N : Type) := {
+  to_nat : N -> nat
+}.
+
+(* The type class [DecoratedNatRep] is similar to [NatRep] but the structures
+   represented by this one takes extra arguments, called decoration. *)
+
+Class DecoratedNatRep {Dec : Type} (N : Dec -> Type) := {
+  value {d : Dec} : N d -> nat
+}.
+
 (* The type [packet] denotes lists of ones preceded by a head. Structurally, 
    it encompasses the empty list, [Hole], as well as lists of the format 011...1, 
    111...1, and 211...1, with their respective heads determined by the 
@@ -69,6 +84,13 @@ Fixpoint packet_value {color} (p : packet color) : nat :=
   | One ones  => 1 + 2 * packet_value ones 
   | Two ones  => 2 + 2 * packet_value ones
   end.
+
+(* Packets can represent integers, therefor we can add an instance of 
+   NatRep for packets. *)
+
+Instance PacketRep : DecoratedNatRep packet := {|
+  value := fun _ => packet_value
+|}.
 
 (* The function [thickness] determines the power of 2 associated with the bit 
    following the last '1' in a headed list of ones. For a headed list of ones, 
@@ -159,11 +181,18 @@ Fixpoint colored_nbr_value {color} (cnbr : colored_nbr color) : nat :=
   match cnbr with 
   | Null => 0 
   | Green ho tl | Yellow ho tl | Red ho tl => 
-    let n1 := packet_value ho in 
+    let n1 := value ho in 
     let pow1 := thickness ho in 
     let n2 := colored_nbr_value tl in
     n1 + pow1 * n2 
   end.
+
+(* Colored numbers can represent integers, an instance of NatRep is
+   created for them. *)
+
+Instance ColoredNbrRep : DecoratedNatRep colored_nbr := {|
+  value := fun _ => colored_nbr_value
+|}.
 
 (* The function [ensure_green] takes a green or red colored number and returns 
    a green one representing the same integer. *)
@@ -177,10 +206,10 @@ ensure_green (Green zero cnbr) := Green zero cnbr;
 ensure_green (Red (Two Hole) Null) := Green (Zero (One Hole)) Null;
 (* 20... -> 01... *)
 ensure_green (Red (Two Hole) (Green (Zero ones) cnbr)) := 
-      Green (Zero (One ones)) cnbr;
+    Green (Zero (One ones)) cnbr;
 (* 21... -> 02... *)
 ensure_green (Red (Two (One ones)) cnbr) := 
-      Green (Zero Hole) (Red (Two ones) cnbr).
+    Green (Zero Hole) (Red (Two ones) cnbr).
 
 (* The lemma [valid_ensure_green] ensures that the integer represented by a 
    colored number remains unchanged after the transformation performed by 
@@ -188,7 +217,7 @@ ensure_green (Red (Two (One ones)) cnbr) :=
 
 Lemma valid_ensure_green {GreenAmount RedAmount} 
     (cnbr : colored_nbr (Mix GreenAmount NoYellow RedAmount)) : 
-        colored_nbr_value (ensure_green cnbr) = colored_nbr_value cnbr.
+        value (ensure_green cnbr) = value cnbr.
 Proof.
   eapply ensure_green_elim; eauto; simpl; lia.
 Qed.
@@ -207,7 +236,14 @@ Inductive nbr : Type :=
 (* The function [nbr_value] gives the integer represented by a nbr. *)
 
 Definition nbr_value (n : nbr) : nat := 
-  let '(T t) := n in colored_nbr_value t.
+  let '(T t) := n in value t.
+
+(* The goal of [nbr] is to represent integers, we obviously add an instance of 
+   NatRep for nbr. *)
+
+Instance NbrRep : NatRep nbr := {|
+  to_nat := nbr_value
+|}.
 
 (* The function [succ] simply increments a number by 1. *)
 
@@ -215,17 +251,19 @@ Equations succ (n : nbr) : nbr :=
 succ (T Null) := T (Yellow (One Hole) Null);
 succ (T (Green (Zero ones) cnbr)) := T (Yellow (One ones) cnbr);
 succ (T (Yellow (One ones) cnbr)) := 
-      T (ensure_green (Red (Two ones) (ensure_green cnbr))).
+    T (ensure_green (Red (Two ones) (ensure_green cnbr))).
 
 (* The lemma [valid_succ] ensures that for 'n' being a [nbr], the integer 
    represented by (succ n) is indeed the integer represented by 'n' 
    incremented by 1. *)
 
-Lemma valid_succ (n : nbr) : nbr_value (succ n) = S (nbr_value n).
+Lemma valid_succ (n : nbr) : to_nat (succ n) = S (to_nat n).
 Proof.
-  eapply succ_elim; eauto; simpl; intros GreenAmount RedAmount YellowAmount ? ?.
+  eapply succ_elim; eauto; intros GreenAmount RedAmount YellowAmount ? ?.
+  simpl.
   rewrite valid_ensure_green.
   simpl. do 2 f_equal.
   rewrite valid_ensure_green.
+  simpl.
   lia.
 Qed.
