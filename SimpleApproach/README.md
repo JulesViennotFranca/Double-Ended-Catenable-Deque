@@ -1,8 +1,33 @@
-# Explications of the slides of Arthur Wendling
+# A first approach to our structure
 
-## Preliminaries : numbers representation
+## Introduction
 
-### Binary representation
+The `Slides` folder contains the first step to understand the whole structure. It describes a way to efficiently store number and list in binary form in order to add 1 or a new element in constant time.
+
+All practical information will be described later.
+
+Furthermore, coq proofs are provided to ensure correctness of such a structure. It is recommanded to first look at the numbers proofs, then the lists ones as they mimic them. Numbers proofs should be looked in this order:
+
+```c
+               correct_number_00.v
+                 /             \
+                /               \
+   correct_number_10.v      correct_number_01.v
+   correct_number_10'.v
+```
+
+- `correct_number_00.v`: Initially, implementations of `ensure_green` and `succ` are provided, followed by the proof of lemmas to ensure their correctness.
+- `correct_number_10.v`: A type class called `NatRep` is introduced, which represents structures containing integers. It includes a function called value that retrieves the integer stored in the structure. Consequently, this trait can be extended to `packet`, `colored_nbr`, and `nbr`.
+- `correct_number_10'.v`: Similar to the previous proof, but instead of a single type class encompassing all integer-storing structures, we now have two. We retain `NatRep` and introduce `DecoratedNatRep`, a type class for structures representing integers decorated with additional types. This distinction proves useful for types like `packet` or `colored_nbr`, which include extra arguments such as color. It assists Coq in selecting the correct instances during proofs.
+- `correct_number_01.v`: Rather than defining `ensure_green` and `succ` separately and then proving their correctness, these two processes are merged. The resulting output is accompanied by a proof of correctness using the dependent type sig.
+
+Thus, we can identify the following behaviors desired for our final code: either implementing functions and then proving their correctness or directly declaring them with a proof of correctness ; deciding whether to use a type class to describe structures or not.
+
+## Explanations of Arthur Wendling's slides
+
+### Preliminaries : numbers representation
+
+#### Binary representation
 
 There is a recursivity problem when adding 1, in the worst case, it costs O(logn):
 
@@ -16,7 +41,7 @@ let rec succ = function
   = 00000000001 ...
 ```
 
-### Redundant binary representation
+#### Redundant binary representation
 
 ```ml
 type t =
@@ -33,7 +58,7 @@ We must add an invariant to the representation otherwise we still have the same 
   = 11111111112 ...
 ```
 
-### 2 colored redundant binary representation
+#### 2 colored redundant binary representation
 
 To this end, we decorate the type with 2 color, green and red. Green meaning we can add 1, and red the opposite.
 
@@ -73,7 +98,7 @@ We do not have yet a O(1) cost when adding 1, there are still some cases when we
   = 11111111101 ...
 ```
 
-### 3 colored redundant binary representation
+#### 3 colored redundant binary representation
 
 The idea for this improvement is that we want to access and modify the end of the list of ones in constant time. To this end, a number will now be represented recursively as a pair of a list of ones and another number:
 
@@ -117,9 +142,9 @@ let succ : nat -> nat = function
           (Two (ones, ensure_green Not_Yellow t)))
 ```
 
-## List representation
+### List representation
 
-### List binary representation
+#### List binary representation
 
 ```ml
 type 'a t =
@@ -128,7 +153,7 @@ type 'a t =
   | One  of 'a * ('a * 'a) t
 ```
 
-### List 3 colored redundant binary representation
+#### List 3 colored redundant binary representation
 
 ```ml
 type ('in_, 'out) ones =
@@ -136,7 +161,7 @@ type ('in_, 'out) ones =
   | One  : 'a * ('a * 'a, 'b) ones -> ('a, 'b) ones
 ```
 
-Type decoration `'in_` and `'out` represent the 'depth' of the list of ones at its beginning and its end. In practice, `'in_` will be of the form 'a prod$^n$, and `'out` 'a prod$^{n + m}$.
+Type decoration `'in_` and `'out` represent the 'depth' of the list of ones at its beginning and its end. In practice, `'in_` will be of the form 'a to the power of n (...((a, a), (a, a)), ...), and `'out` 'a to the power of n + m.
 
 ```ml
 type ('a, 'color) t =
@@ -181,9 +206,9 @@ let cons a = function
            (Two (a, b, ones, ensure_green Not_yellow t)))
 ```
 
-## Final representation
+### Final representation
 
-### For numbers
+#### For numbers
 
 In the last representation, a number was either `Null` (=0), either a pair of a list of ones and another number. The first 'bit' of the number was given by the constructors `Zero`, `One` and `Two`, which also gave the crowdedness of the representation of the said number.
 
@@ -235,7 +260,7 @@ let succ : r -> r = function
           (R (Two ones, ensure_green Not_yellow t)))
 ```
 
-### For lists
+#### For lists
 
 The same transformations can be done for lists:
 
