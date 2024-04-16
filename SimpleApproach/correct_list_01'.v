@@ -177,12 +177,9 @@ Fixpoint packet_value {A : Type} {n : nat} {c : color} (p : packet A n c) :
    and red colored lists, [Equations] will discard the two impossible colors, 
    leaving us with a green or red tail. *)
 
-Definition not_yellow : green_hue -> red_hue -> color := 
-  fun GreenAmount RedAmount => Mix GreenAmount NoYellow RedAmount.
-
-Inductive next : color -> color -> Prop := 
-  | FromGreen {GreenAmount RedAmount} : next green (not_yellow GreenAmount RedAmount) 
-  | FromYellow {GreenAmount RedAmount} : next yellow (not_yellow GreenAmount RedAmount)  
+Inductive next : color -> color -> Type := 
+  | FromGreen {GreenAmount RedAmount} : next green (Mix GreenAmount NoYellow RedAmount) 
+  | FromYellow {GreenAmount RedAmount} : next yellow (Mix GreenAmount NoYellow RedAmount)  
   | FromRed : next red green.
 
 Inductive colored_list : Type -> color -> Type :=
@@ -259,12 +256,9 @@ ensure_green (Cons (Two a b (One (c, d) ones)) clist) :=
    We employ the same method as before to exclusively select green and yellow 
    colored lists. *)
 
-Definition not_red : green_hue -> yellow_hue -> color := 
-  fun GreenAmount YellowAmount => Mix GreenAmount YellowAmount NoRed.
-
 Inductive blist : Type -> Type :=
   | T {A} : forall {GreenAmount YellowAmount}, 
-         colored_list A (not_red GreenAmount YellowAmount) -> 
+         colored_list A (Mix GreenAmount YellowAmount NoRed) -> 
           blist A.
 
 (* The function [blist_value] gives the list represented by a blist. *)
@@ -280,7 +274,7 @@ Equations bcons {A : Type} (a : A) (l : blist A) :
     { bl : blist A | blist_value bl = [a] ++ blist_value l } :=
 bcons a (T Null) := ? T (Cons (One a Hole) Null);
 bcons a (T (Cons (Zero ones) clist)) := ? T (Cons (One a ones) clist);
-bcons a (T (Cons (One b ones) (next := FromYellow) clist)) := 
+bcons a (T (Cons (One b ones) clist (next := FromYellow))) := 
     let '(? gclist) := ensure_green clist in 
     let '(? glist) := ensure_green (Cons (Two a b ones) gclist) in 
     ? T glist.
@@ -288,6 +282,4 @@ Next Obligation.
   intros.
   destruct n0; exact FromYellow. 
 Qed.
-
-Print bcons.
   
