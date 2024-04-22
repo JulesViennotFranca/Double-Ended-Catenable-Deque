@@ -563,33 +563,33 @@ let eject_unsafe (T t) = match t with
 (** Types for deque stored with they length. A negative length means the deque
     should be read the other way around. This enables us to write a reverse 
     function in constant time. *)
-type 'a ldeque = { length : int ; s : 'a deque }
+type 'a t = { length : int ; s : 'a deque }
 
-(** The empty ldeque. *)
+(** The empty t. *)
 let empty = { length = 0 ; s = T (Small B0) }
 
 (** Emptyness test. *)
 let is_empty t = t.length = 0
 
-(** Returns the length of a ldeque. *)
+(** Returns the length of a t. *)
 let length t = abs t.length
 
-(** Reverses a ldeque. *)
+(** Reverses a t. *)
 let rev t = { t with length = - t.length }
 
-(** Pushes an element on a ldeque. *)
+(** Pushes an element on a t. *)
 let push x { length = n ; s } =
   if n >= 0
   then { length = n + 1 ; s = push x s }
   else { length = n - 1 ; s = inject s x }
 
-(** Injects an element on a ldeque. *)
+(** Injects an element on a t. *)
 and inject { length = n ; s } x =
   if n >= 0
   then { length = n + 1 ; s = inject s x }
   else { length = n - 1 ; s = push x s }
 
-(** Pops an element from a ldeque. *)
+(** Pops an element from a t. *)
 let pop { length = n ; s } =
   match n with
   | 0 -> None
@@ -600,7 +600,7 @@ let pop { length = n ; s } =
     let s, x = eject_unsafe s in
     Some (x, { length = n + 1 ; s })
 
-(** Ejects an element from a ldeque. *)
+(** Ejects an element from a t. *)
 let eject { length = n ; s } =
   match n with
   | 0 -> None
@@ -611,5 +611,5 @@ let eject { length = n ; s } =
       let x, s = pop_unsafe s in
       Some ({ length = n + 1 ; s }, x)
 
-(** Tests if a ldeque is to be read backward or not. *)
+(** Tests if a t is to be read backward or not. *)
 let is_rev t = t.length < 0

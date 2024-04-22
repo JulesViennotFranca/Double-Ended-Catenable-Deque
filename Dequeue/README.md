@@ -311,10 +311,10 @@ val red :
 To complete his structure, he constructs a final type for storing *deque* with their length:
 
 ```ml
-type 'a ldeque = { length : int ; s : 'a deque }
+type 'a t = { length : int ; s : 'a deque }
 ```
 
-If the length is negative, it means the *ldeque* is to be read backward. This enables Arthur Wendling to write a reverse function in constant time. Obviously, getting the length of a *ldeque* is done in constant time.
+If the length is negative, it means the *t* is to be read backward. This enables Arthur Wendling to write a reverse function in constant time. Obviously, getting the length of a *t* is done in constant time.
 
 ```ml
 let rev t = { t with length = - t.length }
@@ -322,13 +322,13 @@ let rev t = { t with length = - t.length }
 let length t = abs t.length
 ```
 
-To finish, he designs the functions *push*, *inject*, *pop* and *eject* for *ldeques*.
+To finish, he designs the functions *push*, *inject*, *pop* and *eject* for *ts*.
 
 ```ml
-val push : 'a -> 'a ldeque -> 'a ldeque
-val inject : 'a ldeque -> 'a -> 'a ldeque
-val pop : 'a ldeque -> ('a * 'a ldeque) option
-val eject : 'a ldeque -> ('a ldeque * 'a) option
+val push : 'a -> 'a t -> 'a t
+val inject : 'a t -> 'a -> 'a t
+val pop : 'a t -> ('a * 'a t) option
+val eject : 'a t -> ('a t * 'a) option
 ```
 
 The code is described in detail in [AWcode.ml](/Deque/AWcode.ml).
@@ -420,10 +420,10 @@ Notice that here, safe version of `pop` and `eject` are directly implemented for
 
 ### Final structure definition
 
-As in Arthur's code, Armaël defines *ldeque*, adding a field ensuring the `seq_length` field is indeed the length of the sequence represented by the *deque* `seq`.
+As in Arthur's code, Armaël defines *t*, adding a field ensuring the `seq_length` field is indeed the length of the sequence represented by the *deque* `seq`.
 
 ```coq
-Record ldeque (A: Type) : Type := {
+Record t (A: Type) : Type := {
   deq_length : Z;
   seq : deque A;
   length_inv : Z.abs_nat deq_length = length (deque_seq seq);
@@ -433,44 +433,44 @@ Record ldeque (A: Type) : Type := {
 Similarly, a model function is written:
 
 ```coq
-Equations ldeque_seq {A} : ldeque A -> list A := ...
+Equations t_seq {A} : t A -> list A := ...
 ```
 
 Then, as in the original code, there is a `is_empty`, a `length`, a `rev` and a `is_rev` function:
 
 ```coq
-Equations is_empty {A} (sq : ldeque A) :
-  { b : bool | b = true <-> ldeque_seq sq = [] } := ...
+Equations is_empty {A} (sq : t A) :
+  { b : bool | b = true <-> t_seq sq = [] } := ...
 
-Equations length {A} (sq : ldeque A) :
-  { n : Z | n = Z.of_nat (List.length (ldeque_seq sq)) } := ...
+Equations length {A} (sq : t A) :
+  { n : Z | n = Z.of_nat (List.length (t_seq sq)) } := ...
 
-Equations rev {A} (sq : ldeque A) : 
-  { sq' : ldeque A | ldeque_seq sq' = rev (ldeque_seq sq) } := ...
+Equations rev {A} (sq : t A) : 
+  { sq' : t A | t_seq sq' = rev (t_seq sq) } := ...
 
-Definition is_rev {A} (sq : ldeque A) : bool := ...
+Definition is_rev {A} (sq : t A) : bool := ...
 ```
 
-Finally, *push*, *inject*, *pop* and *eject* functions are defined for *ldeques*. They require a bit more work to prove than the previous ones:
+Finally, *push*, *inject*, *pop* and *eject* functions are defined for *ts*. They require a bit more work to prove than the previous ones:
 
 ```coq
-Equations push {A} (x : A) (sq : ldeque A) :
-  { sq' : ldeque A | ldeque_seq sq' = x :: ldeque_seq sq } := ...
+Equations push {A} (x : A) (sq : t A) :
+  { sq' : t A | t_seq sq' = x :: t_seq sq } := ...
 
-Equations inject {A} (sq : ldeque A) (x : A) :
-  { sq' : ldeque A | ldeque_seq sq' = ldeque_seq sq ++ [x] } := ...
+Equations inject {A} (sq : t A) (x : A) :
+  { sq' : t A | t_seq sq' = t_seq sq ++ [x] } := ...
 
-Equations pop {A} (sq : ldeque A) :
-  { o : option (A * ldeque A) |
-    ldeque_seq sq = match o with
+Equations pop {A} (sq : t A) :
+  { o : option (A * t A) |
+    t_seq sq = match o with
                | None => []
-               | Some (x, sq') => x :: ldeque_seq sq'
+               | Some (x, sq') => x :: t_seq sq'
                end } := ...
 
-Equations eject {A} (sq : ldeque A) :
-  { o : option (ldeque A * A) |
-    ldeque_seq sq = match o with
+Equations eject {A} (sq : t A) :
+  { o : option (t A * A) |
+    t_seq sq = match o with
                | None => []
-               | Some (sq', x) => ldeque_seq sq' ++ [x]
+               | Some (sq', x) => t_seq sq' ++ [x]
                end } := ...
 ```
