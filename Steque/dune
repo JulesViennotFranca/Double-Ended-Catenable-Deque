@@ -1,0 +1,7 @@
+(library
+ (name steque)
+ (libraries dequeue))
+
+(coq.theory
+ (name Steque)
+ (theories Dequeue))

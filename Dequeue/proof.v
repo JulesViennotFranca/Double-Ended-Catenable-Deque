@@ -55,8 +55,6 @@ Qed.
 
 (* Types *)
 
-(* Type for polymorphic variants appiering in Arthur'deque code. *)
-
 (* Here, [green_hue], [yellow_hue], and [red_hue] will be utilized to generate 
    the colors essential for our program. They function as boolean variables, 
    indicating whether or not a specific hue is present in our color. *)
@@ -785,7 +783,7 @@ Module S.
 (* Pushes an element on a deque. *)
 
 Equations push {A: Type} (x : A) (sq : deque A) :
-  { sq' : deque A | deque_seq sq' = x :: deque_seq sq }
+  { sq' : deque A | deque_seq sq' = [x] ++ deque_seq sq }
 :=
 push x (T (Small buf)) with buffer_push x buf => {
   | ? buf' => ? T buf' };
@@ -818,7 +816,7 @@ Equations pop {A: Type} (sq : deque A) :
   { o : option (A * deque A) |
     deque_seq sq = match o with
                | None => []
-               | Some (x, sq') => x :: deque_seq sq'
+               | Some (x, sq') => [x] ++ deque_seq sq'
                end } :=
 pop (T (Small buf)) with buffer_pop buf => {
   pop _ (? None) := ? None;
@@ -947,7 +945,7 @@ Qed.
 (* Pushes an element on a t. *)
 
 Equations push {A} (x : A) (sq : t A) :
-  { sq' : t A | t_seq sq' = x :: t_seq sq } :=
+  { sq' : t A | t_seq sq' = [x] ++ t_seq sq } :=
 push x {| seq_length := n; seq := deque |} with Z_lt_le_dec n 0 => {
   | right _ with S.push x deque => {
     | ? deque' => ? {| seq_length := n + 1; seq := deque' |} };
@@ -963,7 +961,7 @@ Next Obligation.
   { assert (n = 0) by lia; subst; simplist; hauto. }
 Qed.
 Next Obligation.
-  cbn. intros * ? * Hseq Hlen. rewrite Hseq //=. lia.
+  cbn. intros * ? * Hseq Hlen. rewrite Hseq //=. rewrite app_length /=. lia.
 Qed.
 Next Obligation.
   cbn. intros ? ? ? ? ? ? Hseq Hlen *. case_lt; last hauto.
@@ -980,7 +978,7 @@ inject {| seq_length := n; seq := deque |} x with Z_lt_le_dec n 0 => {
   | left _ with S.push x deque => {
     | ? deque' => ? {| seq_length := n - 1; seq := deque' |} }
 }.
-Next Obligation. cbn. intros * ? * Hlen * ->. cbn. lia. Qed.
+Next Obligation. cbn. intros * ? * Hlen * ->. cbn. rewrite app_length /=. lia. Qed.
 Next Obligation.
   cbn. intros ? ? ? ? Hlen ? ? Hseq. case_lt; first hauto.
   assert (n = 0) by lia; subst; simplist; hauto.
@@ -999,7 +997,7 @@ Equations pop {A} (sq : t A) :
   { o : option (A * t A) |
     t_seq sq = match o with
                | None => []
-               | Some (x, sq') => x :: t_seq sq'
+               | Some (x, sq') => [x] ++ t_seq sq'
                end } :=
 pop {| seq_length := n; seq := deque |} with Z_lt_le_dec n 0 => {
   | right _ with S.pop deque => {
@@ -1024,11 +1022,11 @@ Next Obligation.
 Qed.
 Next Obligation.
   cbn. intros * ? * Hseq%(f_equal (@List.length _)) Hlen.
-  cbn in *. lia.
+  cbn in *. rewrite app_length /= in Hseq. lia.
 Qed.
 Next Obligation.
   cbn. intros ? ? ? ? ? ? Hseq Hlen. case_lt; last hauto.
-  assert (n = 0) by lia; subst; simplist; hauto.
+  assert (n = 0) by lia; subst; simplist. rewrite <- app_cons_one in Hseq. hauto.
 Qed.
 
 (* Ejects an element from a t. *)
@@ -1050,12 +1048,13 @@ eject {| seq_length := n; seq := deque |} with Z_lt_le_dec n 0 => {
   }
 }.
 Next Obligation.
-  cbn. intros * ? * Hseq%(f_equal (@List.length _)) Hlen. hauto.
+  cbn. intros * ? * Hseq%(f_equal (@List.length _)) Hlen. rewrite app_length /= in Hseq. hauto.
 Qed.
 Next Obligation.
   cbn. intros ? ? ? ? ? ? Hseq Hlen. case_lt; first hauto.
   assert (n = -1) by lia; subst; simplist.
   rewrite Hseq /=. rewrite Hseq /= in Hlen.
+  rewrite app_length /= in Hlen.
   assert (0%nat = List.length (deque_seq deque')) by lia; simplist; hauto.
 Qed.
 Next Obligation.

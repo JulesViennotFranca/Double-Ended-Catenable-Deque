@@ -1,2 +1,6 @@
 (library
  (name dequeue))
+
+(coq.theory
+ (name Dequeue)
+ (theories Equations Hammer AAC_tactics))

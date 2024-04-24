@@ -1,0 +1,5 @@
+(lang dune 3.14)
+(name DECD)
+(version 0.1)
+(sections (lib .) (doc ../../doc/DECD))
+(files (lib (META dune-package opam)) (doc (README.md)))
