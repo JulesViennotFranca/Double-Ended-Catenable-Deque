@@ -1,6 +1,6 @@
 # Catenable Steque
 
-A *steque* is the name of a *deque* without the *eject* operation. In the following, catenable *steques* will be called *steques* for simplicity purpose. When a *steque* is non-catenable, it will be specified.
+A *steque* is the name of a *dequeue* without the *eject* operation. In the following, catenable *steques* will be called *steques* for simplicity purpose. When a *steque* is non-catenable, it will be specified.
 
 ## Structure description
 

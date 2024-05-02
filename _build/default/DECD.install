@@ -1,8 +1,0 @@
-lib: [
-  "_build/install/default/lib/DECD/META"
-  "_build/install/default/lib/DECD/dune-package"
-  "_build/install/default/lib/DECD/opam"
-]
-doc: [
-  "_build/install/default/doc/DECD/README.md"
-]
