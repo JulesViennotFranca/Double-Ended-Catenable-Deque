@@ -474,3 +474,185 @@ Equations eject {A} (sq : t A) :
                | Some (sq', x) => t_seq sq' ++ [x]
                end } := ...
 ```
+
+## Explanation of the leveled proof
+
+### Why a leveled proof ?
+
+First, lets define a type for complete binary trees storing elements of type B in their leaves and decorated with an element of type A :
+
+```coq
+Inductive DBT (A : Type) (B : Type) : Type :=
+  | Node : DBT A (B * B) -> DBT A B
+  | Leaf : A -> B -> DBT A B.
+```
+
+When creating an inductive type, there is two types of parameters in Coq : uniform parameters and non-uniform parameters. In the type `DBT`, `A` is a uniform parameter : it is the same for every constructor and is used uniformly in all recursive calls. On the other hand, the second parameter `B` in `DBT` will be non-uniform, it is not the same when calling `DBT` recursively : `B * B` is not `B` in `DBT A (B * B)`.
+
+Now, lets define a type containing lists of complete binary trees storing elements of type A in their leaves.
+
+```coq
+Inductive BT_list (A : Type) : Type :=
+  | Nil : DBT unit A -> BT_list A
+  | Cons : DBT (BT_list A) A -> BT_list A.
+```
+
+`BT_list` is defined recursively, it is called in `DBT`. This definition is valid in Coq has `BT_list` is called as a uniform parameter (`A` in `DBT`).
+
+Now, we try to define a type containing complete binary trees storing other complete binary trees in their leaves.
+
+```coq
+Inductive BT_BT : Type := 
+  | End : DBT unit unit -> BT_BT
+  | Body : DBT unit (BT_BT) -> BT_BT.
+```
+
+This time, `BT_BT` is called recursively, but as a non-uniform parameter (`B` in `DBT`). So `BT_BT` doens't pass the strict positivity constrains and will be rejected.
+
+As the *deque* structure defined in this section is reused, we must ensure that all strict positivity constrains are met when defining *deques*.
+
+Previously, our definition was not valid because of
+
+```coq
+Inductive packet : Type -> Type -> color -> Type :=
+(*| ... *)
+  | Green : forall {a b : Type} {Y},
+    buffer a green ->
+    packet (a * a) b (Mix NoGreen Y NoRed) ->
+    buffer a green ->
+    packet a b green
+(*| ... *).
+```
+
+and
+
+```coq
+Inductive cdeque : Type -> color -> Type :=
+(*| ... *)
+  | R : forall {a b : Type},
+    packet a b red ->
+    cdeque b green ->
+    cdeque a red.
+```
+
+In `packet` and `cdeque`, the first type parameter `a` is non-uniform as it is replaced by `a * a` in `packet`, and `b` in `cdeque`. But we will need it to be in order to design more complex types in following sections.
+
+If we look closely, we'll notice that elements in `packet` and `cdeque` are all of the form `prod (prod (... (prod A)))` for some type `A`. We can add a natural integer parameter that will account for this iteration of `prod`, thus leaving `A` uniform in all types definition.
+
+### Redefining our types
+
+The type for colors is redesigned:
+
+```coq
+Inductive green_hue  : Type := SomeGreen  | NoGreen.
+Inductive yellow_hue : Type := SomeYellow | NoYellow.
+Inductive red_hue    : Type := SomeRed    | NoRed.
+
+Inductive color : Type :=
+  | Mix : green_hue -> yellow_hue -> red_hue -> color.
+
+Notation green := (Mix SomeGreen NoYellow NoRed).
+Notation yellow := (Mix NoGreen SomeYellow NoRed).
+Notation red := (Mix NoGreen NoYellow SomeRed).
+Notation uncolored := (Mix NoGreen NoYellow NoRed).
+```
+
+The first important type is the one for iterated products:
+
+```coq
+Inductive prodN (A : Type) : nat -> Type := 
+  | prodZ : A -> prodN A 0 
+  | prodS {n : nat} : prodN A n * prodN A n -> prodN A (S n).
+```
+
+The natural number parameter is simply the number of times `prodN` is iterated.
+
+Then comes the *buffers*, *packets*, *cdeques* and *deques*:
+
+```coq
+Inductive buffer (A : Type) (lvl : nat) : color -> Type :=
+  | B0       : buffer A lvl red
+  | B1       : prodN A lvl -> buffer A lvl yellow
+  | B2 {G Y} : prodN A lvl -> prodN A lvl -> buffer A lvl (Mix G Y NoRed)
+(*| ... *).
+
+Inductive yellow_buffer (A: Type) (lvl : nat) : Type := ...
+Inductive any_buffer (A: Type) (lvl : nat) : Type := ...
+
+(* A relation between the prefix, suffix and packet colors. *)
+Inductive packet_color : color -> color -> color -> Type := ...
+
+Inductive lvl_packet (A : Type) (lvl : nat) : nat -> color -> Type :=
+  | Hole : lvl_packet A lvl 0 uncolored
+  | Triple {len : nat} {Y : yellow_hue} {C1 C2 C3 : color} :
+      buffer A lvl C1 ->
+      lvl_packet A (S lvl) len (Mix NoGreen Y NoRed) ->
+      buffer A lvl C2 ->
+      packet_color C1 C2 C3 ->
+      lvl_packet A lvl (S len) C3.
+
+(* A relation between the head packet and the following deque colors. *)
+Inductive cdeque_color : color -> color -> Type := ...
+
+Inductive lvl_cdeque (A : Type) (lvl : nat) : color -> Type :=
+  | Small {C : color} : 
+      buffer A lvl C -> 
+      lvl_cdeque A lvl green
+  | Big {len : nat} {C1 C2 : color} :
+      lvl_packet A lvl len C1 -> 
+      lvl_cdeque A (len + lvl) C2 -> 
+      cdeque_color C1 C2 ->
+      lvl_cdeque A lvl C1.
+
+Inductive deque (A : Type) : Type := 
+  T : forall (G : green_hue) (Y : yellow_hue), 
+      cdeque A (Mix G Y NoRed) -> 
+      deque A.
+```
+
+The decompose and sandwich types are also leveled:
+
+```coq
+Inductive decompose (A : Type) (lvl : nat) : Type :=
+| Underflow : option (prodN A lvl) -> decompose A lvl
+| Ok : buffer A lvl green -> decompose A lvl
+| Overflow : buffer A lvl green -> prodN A (S lvl) -> decompose A lvl.
+
+Inductive sandwich (A : Type) (lvl : nat) : Type :=
+| Alone : option (prodN A lvl) -> sandwich A lvl
+| Sandwich {C} : prodN A lvl -> buffer A lvl C -> prodN A lvl -> sandwich A lvl.
+```
+
+In all those definitions, the type parameter `A` is always uniform, we will not have strict positivity issues.
+
+### Redesigning models
+
+We need to translate those different structure to the list of elements they contain:
+
+```coq
+Equations prodN_seq {A} (n : nat) : prodN A n -> list A := 
+prodN_seq 0 (prodZ a) := [a];
+prodN_seq (S n) (prodS (p1, p2)) := prodN_seq n p1 ++ prodN_seq n p2.
+
+Equations option_seq {A lvl} : option (prodN A lvl) -> list A := ...
+
+Equations buffer_seq {A lvl C} : buffer A lvl C -> list A := ...
+Equations yellow_buffer_seq {A lvl} : yellow_buffer A lvl -> list A := ...
+Equations any_buffer_seq {A lvl} : any_buffer A lvl -> list A := ...
+
+Equations packet_front_seq {A lvl len C} : lvl_packet A lvl len C -> list A := ...
+Equations packet_rear_seq {A lvl len C} : lvl_packet A lvl len C -> list A := ...
+
+Equations cdeque_seq {A lvl C} : lvl_cdeque A lvl C -> list A := ...
+
+Equations decompose_main_seq {A lvl} (dec : decompose A lvl) : list A := ...
+Equations decompose_rest_seq {A lvl} (dec : decompose A lvl) : list A := ...
+
+Equations sandwich_seq {A lvl} (sw : sandwich A lvl) : list A := ...
+
+Equations deque_seq {A} : deque A -> list A := ...
+```
+
+### The rest of the proof
+
+The rest of the proof is similar, only the syntax and certain proofs must be adapted to our new definitions.
