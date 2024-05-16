@@ -74,49 +74,49 @@ Inductive csteque_color : color -> color -> color -> Type :=
    made of a prefix of elements of the previous level and a colored steque of 
    the new level. *)
       
-Inductive element (A : Type) : nat -> Type := 
-  | ZElt : A -> element A 0
-  | SElt {lvl : nat} {C1 C2 : color} : 
-      prefix' (element A lvl) C1 -> 
-      lvl_csteque A (S lvl) C2 -> 
-      element A (S lvl)
+Inductive element (A : Type) : nat -> nat -> Type := 
+  | ZElt {dpt : nat} : A -> element A 0 dpt
+  | SElt {lvl dpt : nat} {C1 C2 : color} : 
+      prefix' (element A lvl dpt) C1 -> 
+      lvl_csteque A (S lvl) dpt C2 -> 
+      element A (S lvl) (S dpt)
  
    (* Packets represents the same concept as before : either a Hole, the end of 
    the packet, or a triple prefix - next packet - suffix, with the next packet
    being of one level higher, and yellow or uncolored. *)
 
-with lvl_packet (A : Type) : nat -> nat -> color -> Type := 
-  | Hole {lvl : nat} : lvl_packet A lvl 0 uncolored 
-  | Triple {lvl len : nat} {Y : yellow_hue} {C : color} : 
-      prefix' (element A lvl) C -> 
-      lvl_packet A (S lvl) len (Mix NoGreen Y NoRed) ->
-      suffix' (element A lvl) ->
-      lvl_packet A lvl (S len) C
+with lvl_packet (A : Type) : nat -> nat -> nat -> color -> Type := 
+  | Hole {lvl dpt : nat} : lvl_packet A lvl 0 dpt uncolored 
+  | Triple {lvl len dpt : nat} {Y : yellow_hue} {C : color} : 
+      prefix' (element A lvl dpt) C -> 
+      lvl_packet A (S lvl) len dpt (Mix NoGreen Y NoRed) ->
+      suffix' (element A lvl dpt) ->
+      lvl_packet A lvl (S len) (S dpt) C
 
    (* Colored steques also look similar to colored deque in our previous structure,
    it is either Small, only made of a suffix, or big, made of one packet and a 
    following colored steque. *)
 
-with lvl_csteque (A : Type) : nat -> color -> Type := 
-  | Small {lvl : nat} : 
-      suffix' (element A lvl) -> 
-      lvl_csteque A lvl green 
-  | Big {lvl len nlvl : nat} {C1 C2 C3 : color} :
-      lvl_packet A lvl len C1 ->
-      lvl_csteque A nlvl C2 ->
+with lvl_csteque (A : Type) : nat -> nat -> color -> Type := 
+  | Small {lvl dpt : nat} : 
+      suffix' (element A lvl dpt) -> 
+      lvl_csteque A lvl (S dpt) green 
+  | Big {lvl len dpt nlvl : nat} {C1 C2 C3 : color} :
+      lvl_packet A lvl len dpt C1 ->
+      lvl_csteque A nlvl dpt C2 ->
       nlvl = len + lvl ->
       csteque_color C1 C2 C3 ->
-      lvl_csteque A lvl C3.
+      lvl_csteque A lvl (S dpt) C3.
     
-Arguments ZElt {A}.
-Arguments SElt {A lvl C1 C2}.
-Arguments Hole {A lvl}.
-Arguments Triple {A lvl len Y C}.
-Arguments Small {A lvl}.
-Arguments Big {A lvl len nlvl C1 C2 C3}.
+Arguments ZElt {A dpt}.
+Arguments SElt {A lvl dpt C1 C2}.
+Arguments Hole {A lvl dpt}.
+Arguments Triple {A lvl len dpt Y C}.
+Arguments Small {A lvl dpt}.
+Arguments Big {A lvl len dpt nlvl C1 C2 C3}.
 
-Definition suffix A lvl := suffix' (element A lvl).
-Definition prefix A lvl := prefix' (element A lvl).
+Definition suffix A lvl dpt := suffix' (element A lvl dpt).
+Definition prefix A lvl dpt := prefix' (element A lvl dpt).
 
 (* A type for colored steque. *)
 
@@ -125,10 +125,10 @@ Definition csteque (A : Type) := lvl_csteque A 0.
 (* A type for steque. *)
 
 Inductive steque (A : Type) : Type := 
-  T : forall (G : green_hue) (Y : yellow_hue), 
-      csteque A (Mix G Y NoRed) -> 
+  T : forall (dpt : nat) (G : green_hue) (Y : yellow_hue), 
+      csteque A dpt (Mix G Y NoRed) -> 
       steque A.
-Arguments T {A G Y}.
+Arguments T {A dpt G Y}.
 
 (* Models *)
 
@@ -145,6 +145,10 @@ Equations prefix'_seq {A C} : prefix' A C -> list A :=
 prefix'_seq (Pre2 a b) := [a] ++ [b];
 prefix'_seq (Pre3 a b c) := [a] ++ [b] ++ [c];
 prefix'_seq (Pre4 a b c d e) := [a] ++ [b] ++ [c] ++ [d] ++ deque_seq e.
+
+Equations map_concat {A B : Type} (f : A -> list B) (l : list A) : list B := 
+map_concat f [] := [];
+map_concat f (a :: l) := f a ++ map_concat f l.
 
 (* Equations element_seq {A lvl} (dpt : nat) : element A lvl dpt -> list A :=
 element_seq _ (ZElt a) := [a];
@@ -172,125 +176,37 @@ csteque_seq _ (Big dpt pkt cs eq_refl _) :=
     csteque_seq dpt cs ++
     packet_rear_seq dpt pkt. *)
 
-Equations max_list {A : Type} (f : A -> nat) (l : list A) : nat := 
-max_list _ [] := 0;
-max_list f (a :: l) := max (f a) (max_list f l).
-
-(* Fixpoint packet_fuel {A lvl len C} (element_fuel : forall A lvl, element A lvl -> nat) (pkt : lvl_packet A lvl len C) : nat := 
-    match pkt with 
-    | Hole => 0
-    | Triple p pkt s => 1 + max (max 
-        (max_list (element_fuel A _) (prefix'_seq p))
-        (packet_fuel element_fuel pkt))
-        (max_list (element_fuel A _) (suffix'_seq s))
-    end.
-
-Fixpoint csteque_fuel {A lvl C} (element_fuel : forall A lvl, element A lvl -> nat) (cs : lvl_csteque A lvl C) : nat := 
-    match cs with 
-    | Small s => 1 + max_list (element_fuel A _) (suffix'_seq s)
-    | Big pkt cs _ _ => 1 + max (packet_fuel element_fuel pkt) (csteque_fuel element_fuel cs)
-    end.
-
-Fixpoint element_fuel (A : Type) (lvl : nat) (e : element A lvl) {struct e} : nat :=     
-    match e with 
-    | ZElt _ => 1
-    | SElt p cs => 1 + max 
-        (max_list (element_fuel A _) (prefix'_seq p))
-        (csteque_fuel element_fuel cs)
-    end. *)
-
-Equations structure_fuel (k : kind) {A lvl len C}
-    (s : struct k A lvl len C) : nat := 
-structure_fuel Element (ZElt a) := 1;
-structure_fuel Element (SElt p cs) := 1 + max 
-    (max_list (structure_fuel Element) (prefix'_seq p))
-    (structure_fuel Csteque cs);
-structure_fuel Packet Hole := 0;
-structure_fuel Packet (Triple p pkt s) := 1 + max (max 
-    (max_list (structure_fuel Element) (prefix'_seq p))
-    (structure_fuel Packet pkt))
-    (max_list (structure_fuel Element) (suffix'_seq s));
-structure_fuel CSteque (Small s) := 1 + max_list (structure_fuel Element) (suffix'_seq s);
-structure_fuel CSteque (Big pkt cs eq_refl _) := 1 + max 
-    (structure_fuel Packet pkt)
-    (structure_fuel Csteque cs).
-
-Equations element_fuel {A} (lvl : nat) : element A lvl -> nat :=
-element_fuel 0 (ZElt _) := 1;
-element_fuel (S lvl) (SElt p _) := 1 + max 
-    (max_list (element_fuel lvl) (prefix'_seq p))
-    (1);.
-
-Equations csteque_fuel {A C} (lvl : nat) : lvl_csteque A lvl C -> nat := 
-csteque_fuel 0 (Small _) := 2;
-csteque_fuel (S lvl) (Small s) := 
-    max_list (fun '(SElt p cs) => )
-    
-
-Equations csteque_get_fuel {A lvl C} : lvl_csteque A lvl C -> nat := 
-csteque_get_fuel (Small s) := max_list element_get_fuel (suffix'_seq s);
-csteque_get_fuel (Big pkt cs eq_refl _) := 1 + max (packet_get_fuel pkt) (csteque_get_fuel cs)
-
-with packet_get_fuel {A lvl len C} : lvl_packet A lvl len C -> nat := 
-packet_get_fuel Hole := 0;
-packet_get_fuel (Triple p pkt s) := 1 + 
-    max (max_list element_get_fuel (prefix'_seq p)) 
-    (max (packet_get_fuel pkt)
-    (max_list element_get_fuel (suffix'_seq s)))
-
-with element_get_fuel {A lvl} : element A lvl -> nat :=
-element_get_fuel (ZElt _) := 1;
-element_get_fuel (SElt p cs) := 1 + max (max_list element_get_fuel (prefix'_seq p)) (csteque_get_fuel cs).
-
-Equations get_fuel {A lvl C} : lvl_csteque A lvl C -> nat := 
-get_fuel (Small _) := 1;
-get_fuel (Big _ cs eq_refl _) := 1 + get_fuel cs.
-
-Equations get_element_prefix_fuel {A} (lvl : nat) : element A lvl -> nat :=
-get_element_prefix_fuel 0 (ZElt _) := 1;
-get_element_prefix_fuel _ (SElt p _) := 1 + lvl.
-Arguments get_element_prefix_fuel {A lvl}.
-
 Inductive seq_kind : Type := Element | FPacket | RPacket | CSteque.
 
-Definition seq_struct (k : seq_kind) A lvl len C :=
+Definition seq_struct (k : seq_kind) A lvl len dpt C :=
     match k with 
-    | Element => element A lvl
-    | FPacket | RPacket => lvl_packet A lvl len C 
-    | CSteque => lvl_csteque A lvl C
+    | Element => element A lvl dpt 
+    | FPacket | RPacket => lvl_packet A lvl len dpt C 
+    | CSteque => lvl_csteque A lvl dpt C
     end.
 
 #[local] Obligation Tactic := try first [assumption | exact uncolored | lia].
 
-Equations fueled_element_seq {A lvl} (fuel : nat) : element A lvl -> list A := 
-fueled_element_seq 0 _ := [];
-fueled_element_seq (S _) (ZElt a) := [a];
-fueled_element_seq (S fuel) (SElt p cs) := 
-    concat (map (fueled_element_seq fuel) (prefix'_seq p)) ++
-    fueled_csteque_seq fuel cs
-
-with fueled_packet_front_seq {A lvl len C} (fuel : nat) : lvl_packet A lvl len C -> list A := 
-fueled_packet_front_seq 0 _ := [];
-fueled_packet_front_seq (S _) Hole := [];
-fueled_packet_front_seq (S fuel) (Triple p pkt _) := 
-    concat (map (fueled_element_seq fuel) (prefix'_seq p)) ++
-    fueled_packet_front_seq fuel pkt 
-
-with fueled_packet_rear_seq {A lvl len C} (fuel : nat) : lvl_packet A lvl len C -> list A :=
-fueled_packet_rear_seq 0 _ := [];
-fueled_packet_rear_seq (S _) Hole := [];
-fueled_packet_rear_seq (S fuel) (Triple _ pkt s) :=
-    fueled_packet_rear_seq fuel pkt ++
-    concat (map (fueled_element_seq fuel) (suffix'_seq s))
-
-with fueled_csteque_seq {A lvl C} (fuel : nat) : lvl_csteque A lvl C -> list A :=
-fueled_csteque_seq 0 _ := [];
-fueled_csteque_seq (S fuel) (Small s) := 
-    concat (map (fueled_element_seq fuel) (suffix'_seq s));
-fueled_csteque_seq (S fuel) (Big pkt cs eq_refl _) :=
-    fueled_packet_front_seq fuel pkt ++
-    fueled_csteque_seq fuel cs ++
-    fueled_packet_rear_seq fuel pkt.
+Equations structure_seq (k : seq_kind) {A lvl len dpt C}
+    (s : seq_struct k A lvl len dpt C) : list A by wf dpt := 
+structure_seq Element (ZElt a) := [a];
+structure_seq Element (SElt p cs) := 
+    map_concat (fun elt => structure_seq Element elt) (prefix'_seq p) ++
+    structure_seq CSteque cs;
+structure_seq FPacket Hole := [];
+structure_seq FPacket (Triple p pkt _) := 
+    map_concat (fun elt => structure_seq Element elt) (prefix'_seq p) ++   
+    structure_seq FPacket pkt;
+structure_seq RPacket Hole := [];
+structure_seq RPacket (Triple _ pkt s) :=
+    structure_seq RPacket pkt ++
+    map_concat (fun elt => structure_seq Element elt) (suffix'_seq s);
+structure_seq CSteque (Small s) := 
+    map_concat (fun elt => structure_seq Element elt) (suffix'_seq s);
+structure_seq CSteque (Big pkt cs eq_refl _) := 
+    structure_seq FPacket pkt ++
+    structure_seq CSteque cs ++
+    structure_seq RPacket pkt.
 
 Definition element_seq {A lvl dpt} := 
     structure_seq Element (A := A) (C := uncolored) (lvl := lvl) (len := 0) (dpt := dpt).
