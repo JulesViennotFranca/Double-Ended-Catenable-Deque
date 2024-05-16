@@ -57,7 +57,7 @@ Like before, the invariant that any top-level *steque* is *regular* must be main
     - otherwise, pop elements of suffix(s1), and push them in the right order onto prefix(s2), s3 is (prefix(s2), child(s2), suffix(s2)).
   - **case 3** - both s1 and s2 are suffixes:
     - if |suffix(s1)| ≥ 4, s3 is simply (suffix(s1), $\emptyset$, suffix(s2));
-    - otherwise, pop elements of suffix(s1), and push them in the right order onto prefix(s2), s3 is suffix(s2).
+    - otherwise, pop elements of suffix(s1), and push them in the right order onto suffix(s2), s3 is suffix(s2).
 - *pop*:
   - if the *steque* is a suffix, we pop the suffix;
   - otherwise, we pop the prefix, but we might end up with a *semiregular* *steque*. We have to restore the regularity:
