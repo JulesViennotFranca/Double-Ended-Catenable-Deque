@@ -4,4 +4,4 @@
 
 (coq.theory
  (name Steque)
- (theories Dequeue Equations Hammer AAC_tactics))
+ (theories Dequeue))
