@@ -43,17 +43,17 @@ Notation uncolored := (Mix NoGreen NoYellow NoRed).
 
 (* A type for suffixes, simply the final type of the previous structure. *)
 
-Inductive suffix (A : Type) : Type := 
-  | Suff : deque A -> suffix A.
+Inductive suffix' (A : Type) : Type := 
+  | Suff : deque A -> suffix' A.
 Arguments Suff {A}.
 
 (* A type for prefixes, possibly of length 2, 3 or 4 and more. The color will
    be given by the number of elements. *)
 
-Inductive prefix (A : Type) : color -> Type := 
-  | Pre2 : A -> A -> prefix A red
-  | Pre3 : A -> A -> A -> prefix A yellow
-  | Pre4 : A -> A -> A -> A -> deque A -> prefix A green.
+Inductive prefix' (A : Type) : color -> Type := 
+  | Pre2 : A -> A -> prefix' A red
+  | Pre3 : A -> A -> A -> prefix' A yellow
+  | Pre4 : A -> A -> A -> A -> deque A -> prefix' A green.
 Arguments Pre2 {A}.
 Arguments Pre3 {A}.
 Arguments Pre4 {A}.
@@ -74,57 +74,142 @@ Inductive csteque_color : color -> color -> color -> Type :=
    made of a prefix of elements of the previous level and a colored steque of 
    the new level. *)
       
-Inductive element (A : Type) : nat -> nat -> Type := 
-  | ZElt {dpt : nat} : A -> element A 0 dpt
-  | SElt {lvl dpt : nat} {C1 C2 : color} : 
-      prefix (element A lvl dpt) C1 -> 
-      lvl_csteque A (S lvl) dpt C2 -> 
-      element A (S lvl) (S dpt)
+Inductive element (A : Type) : nat -> Type := 
+  | ZElt : A -> element A 0 
+  | SElt {lvl : nat} {C1 C2 : color} : 
+      prefix' (element A lvl) C1 -> 
+      csteque A (S lvl) C2 -> 
+      element A (S lvl)
  
    (* Packets represents the same concept as before : either a Hole, the end of 
    the packet, or a triple prefix - next packet - suffix, with the next packet
    being of one level higher, and yellow or uncolored. *)
 
-with lvl_packet (A : Type) : nat -> nat -> nat -> color -> Type := 
-  | Hole {lvl dpt : nat} : lvl_packet A lvl 0 dpt uncolored 
-  | Triple {lvl len dpt : nat} {Y : yellow_hue} {C : color} : 
-      prefix (element A lvl dpt) C -> 
-      lvl_packet A (S lvl) len dpt (Mix NoGreen Y NoRed) ->
-      suffix (element A lvl dpt) ->
-      lvl_packet A lvl (S len) (S dpt) C
+with packet (A : Type) : nat -> nat -> color -> Type := 
+  | Hole {lvl : nat} : packet A lvl 0 uncolored 
+  | Triple {lvl len : nat} {Y : yellow_hue} {C : color} : 
+      prefix' (element A lvl) C -> 
+      packet A (S lvl) len (Mix NoGreen Y NoRed) ->
+      suffix' (element A lvl) ->
+      packet A lvl (S len) C
 
    (* Colored steques also look similar to colored deque in our previous structure,
    it is either Small, only made of a suffix, or big, made of one packet and a 
    following colored steque. *)
 
-with lvl_csteque (A : Type) : nat -> nat -> color -> Type := 
-  | Small {lvl dpt : nat} : 
-      suffix (element A lvl dpt) -> 
-      lvl_csteque A lvl (S dpt) green 
-  | Big {lvl len dpt nlvl : nat} {C1 C2 C3 : color} :
-      lvl_packet A lvl len dpt C1 ->
-      lvl_csteque A nlvl dpt C2 ->
+with csteque (A : Type) : nat -> color -> Type := 
+  | Small {lvl : nat} : 
+      suffix' (element A lvl) -> 
+      csteque A lvl green 
+  | Big {lvl len nlvl : nat} {C1 C2 C3 : color} :
+      packet A lvl len C1 ->
+      csteque A nlvl C2 ->
       nlvl = len + lvl ->
       csteque_color C1 C2 C3 ->
-      lvl_csteque A lvl (S (len + dpt)) C3.
+      csteque A lvl C3.
     
 Arguments ZElt {A}.
-Arguments SElt {A lvl dpt C1 C2}.
-Arguments Hole {A lvl dpt}.
-Arguments Triple {A lvl len dpt Y C}.
-Arguments Small {A lvl dpt}.
-Arguments Big {A lvl} len dpt {nlvl C1 C2 C3}.
+Arguments SElt {A lvl C1 C2}.
+Arguments Hole {A lvl}.
+Arguments Triple {A lvl len Y C}.
+Arguments Small {A lvl}.
+Arguments Big {A lvl len nlvl C1 C2 C3}.
 
-(* A type for colored steque. *)
-
-Definition csteque (A : Type) := lvl_csteque A 0.
+Definition suffix A lvl := suffix' (element A lvl).
+Definition prefix A lvl := prefix' (element A lvl).
 
 (* A type for steque. *)
 
 Inductive steque (A : Type) : Type := 
-  T : forall (dpt : nat) (G : green_hue) (Y : yellow_hue), 
-      csteque A dpt (Mix G Y NoRed) -> 
+  T : forall (G : green_hue) (Y : yellow_hue), 
+      csteque A 0 (Mix G Y NoRed) -> 
       steque A.
-Arguments T {A dpt G Y}.
+Arguments T {A G Y}.
 
 (* Models *)
+
+Set Equations Transparent.
+
+Fixpoint element_seq {A lvl} (e : element A lvl) : list A :=
+  let fix prodN_seq {lvle lvlp} (p : prodN (element A lvle) lvlp) : list A :=
+    match p with 
+    | prodZ e => element_seq e
+    | prodS p1 p2 => prodN_seq p1 ++ prodN_seq p2
+    end in
+  let buffer_seq {lvle lvlp C} (b : buffer (element A lvle) lvlp C) : list A :=
+    match b with 
+    | B0 => []
+    | B1 p1 => prodN_seq p1
+    | B2 p1 p2 => prodN_seq p1 ++ prodN_seq p2 
+    | B3 p1 p2 p3 => prodN_seq p1 ++ prodN_seq p2 ++ prodN_seq p3
+    | B4 p1 p2 p3 p4 => prodN_seq p1 ++ prodN_seq p2 ++ prodN_seq p3 ++ prodN_seq p4
+    | B5 p1 p2 p3 p4 p5 => prodN_seq p1 ++ prodN_seq p2 ++ prodN_seq p3 ++ prodN_seq p4 ++ prodN_seq p5
+    end in 
+  let fix dpacket_front_seq {lvle lvlp len C} (pkt : lvl_packet (element A lvle) lvlp len C) : list A :=
+    match pkt with 
+    | lvlproof.Hole => []
+    | lvlproof.Triple p pkt _ _ => buffer_seq p ++ dpacket_front_seq pkt 
+    end in
+  let fix dpacket_rear_seq {lvle lvlp len C} (pkt : lvl_packet (element A lvle) lvlp len C) : list A :=
+    match pkt with 
+    | lvlproof.Hole => []
+    | lvlproof.Triple _ pkt s _ => dpacket_rear_seq pkt ++ buffer_seq s
+    end in
+  let fix cdeque_seq {lvle lvlp C} (cd : lvl_cdeque (element A lvle) lvlp C) : list A :=
+    match cd with
+    | lvlproof.Small b => buffer_seq b
+    | lvlproof.Big pkt cd _ _ => dpacket_front_seq pkt ++ cdeque_seq cd ++ dpacket_rear_seq pkt
+    end in
+  let prefix_seq {lvl C} (p : prefix A lvl C) : list A :=
+    match p with 
+    | Pre2 e1 e2 => element_seq e1 ++ element_seq e2 
+    | Pre3 e1 e2 e3 => element_seq e1 ++ element_seq e2 ++ element_seq e3
+    | Pre4 e1 e2 e3 e4 (lvlproof.T d) => 
+      element_seq e1 ++ element_seq e2 ++ element_seq e3 ++ element_seq e4 ++ cdeque_seq d
+    end in
+  let fix packet_front_seq {lvl len C} (pkt : packet A lvl len C) : list A :=
+    match pkt with
+    | Hole => []
+    | Triple p pkt _ => prefix_seq p ++ packet_front_seq pkt
+    end in
+  let fix packet_rear_seq {lvl len C} (pkt : packet A lvl len C) : list A :=
+    match pkt with
+    | Hole => []
+    | Triple _ pkt (Suff (lvlproof.T d)) => packet_rear_seq pkt ++ cdeque_seq d
+    end in
+  let fix csteque_seq {lvl C} (cs : csteque A lvl C) : list A :=
+    match cs with 
+    | Small (Suff (lvlproof.T d)) => cdeque_seq d
+    | Big pkt cs _ _ => packet_front_seq pkt ++ csteque_seq cs ++ packet_rear_seq pkt
+    end in
+  match e with 
+  | ZElt a => [a]
+  | SElt p cs => prefix_seq p ++ csteque_seq cs 
+  end.
+
+Equations suffix_seq {A lvl} : suffix A lvl -> list A := 
+suffix_seq (Suff d) := concat (map element_seq (deque_seq d)).
+
+Equations prefix_seq {A lvl C} : prefix A lvl C -> list A :=
+prefix_seq (Pre2 e1 e2) := element_seq e1 ++ element_seq e2;
+prefix_seq (Pre3 e1 e2 e3) := element_seq e1 ++ element_seq e2 ++ element_seq e3;
+prefix_seq (Pre4 e1 e2 e3 e4 d) := element_seq e1 ++ element_seq e2 ++ element_seq e3 ++ element_seq e4 ++
+                                   concat (map element_seq (deque_seq d)).
+
+Equations packet_front_seq {A lvl len C} : packet A lvl len C -> list A :=
+packet_front_seq Hole := [];
+packet_front_seq (Triple p pkt _) := prefix_seq p ++ packet_front_seq pkt.
+
+Equations packet_rear_seq {A lvl len C} : packet A lvl len C -> list A :=
+packet_rear_seq Hole := [];
+packet_rear_seq (Triple _ pkt s) := packet_rear_seq pkt ++ suffix_seq s.
+
+Equations csteque_seq {A lvl C} : csteque A lvl C -> list A :=
+csteque_seq (Small s) := suffix_seq s;
+csteque_seq (Big pkt cs eq_refl _) := packet_front_seq pkt ++ csteque_seq cs ++ packet_rear_seq pkt.
+
+Unset Equations Transparent.
+
+Notation "? x" := (@exist _ _ x _) (at level 100).
+
+(* Functions *)
