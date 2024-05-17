@@ -129,7 +129,7 @@ prefix'_seq (Pre4 a b c d e) := [a] ++ [b] ++ [c] ++ [d] ++ deque_seq e.
 Section test.
 
   Fixpoint element_seq {A lvl} (e : element A lvl) : list A :=
-    let fix prodN_seq {lvle lvlp C} (p : prodN (element A lvle) lvlp) : list A :=
+    let fix prodN_seq {lvle lvlp} (p : prodN (element A lvle) lvlp) : list A :=
       match p with 
       | prodZ e => element_seq e
       | prodS p1 p2 => prodN_seq p1 ++ prodN_seq p2
@@ -160,12 +160,22 @@ Section test.
       | Pre4 e1 e2 e3 e4 (lvlproof.T d) => 
         element_seq e1 ++ element_seq e2 ++ element_seq e3 ++ element_seq e4 ++ cdeque_seq d
       end in
+    let fix packet_seq {lvl len C} (pkt : packet A lvl len C) : list A :=
+      match pkt with
+      | Hole => []
+      | Triple p pkt (Suff (lvlproof.T d)) => prefix_seq p ++ packet_seq pkt ++ cdeque_seq d
+      end in
+    let fix csteque_seq {lvl C} (cs : csteque A lvl C) : list A :=
+      match cs with 
+      | Small (Suff (lvlproof.T d)) => cdeque_seq d
+      | Big pkt cs _ _ => packet_seq pkt ++ csteque_seq cs 
+      end in
     match e with 
     | ZElt a => [a]
     | SElt p cs => prefix_seq p ++ csteque_seq cs 
-    end
+    end.
   
-  with packet_seq {A lvl len C} (pkt : packet A lvl len C) : list A :=
+  (* with packet_seq {A lvl len C} (pkt : packet A lvl len C) : list A :=
     let fix prodN_seq {lvle lvlp C} (p : prodN (element A lvle) lvlp) : list A :=
       match p with 
       | prodZ e => element_seq e
@@ -230,7 +240,7 @@ Section test.
     match cs with 
     | Small (Suff (lvlproof.T d)) => cdeque_seq d
     | Big pkt cs _ _ => packet_seq pkt ++ csteque_seq cs 
-    end.
+    end. *)
 
 Section rect.
 
