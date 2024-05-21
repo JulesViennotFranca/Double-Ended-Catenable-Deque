@@ -49,7 +49,7 @@ Like before, the invariant that any top-level *steque* is *regular* must be main
 - *concat* s1 and s2 to form s3:
   - **case 1** - s1 is a triple:
     - if suffix(s1) contains at least two elements, inject the pair (suffix(s1), $\emptyset$) into child(s1),
-    - otherwise, if there is an element in s1, push it onto s2,
+    - otherwise, if there is an element in suffix(s1), push it onto s2,
     - if s2 is a triple, inject (prefix(s2), child(s2)) into child(s1),
     - s3 is the triple (prefix(s1), child(s1), suffix(s2)).
   - **case 2** - s1 is a suffix and s2 is a triple:

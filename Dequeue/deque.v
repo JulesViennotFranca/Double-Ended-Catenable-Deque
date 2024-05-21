@@ -42,7 +42,7 @@ Notation uncolored := (Mix NoGreen NoYellow NoRed).
 
 Inductive prodN (A : Type) : nat -> Type := 
   | prodZ : A -> prodN A 0 
-  | prodS {n : nat} : prodN A n * prodN A n -> prodN A (S n).
+  | prodS {n : nat} : prodN A n -> prodN A n -> prodN A (S n).
 Arguments prodZ {A}.
 Arguments prodS {A n}.
 
@@ -183,7 +183,7 @@ Opaque singleton.
 
 Equations prodN_seq {A} (n : nat) : prodN A n -> list A := 
 prodN_seq 0 (prodZ a) := [a];
-prodN_seq (S n) (prodS (p1, p2)) := prodN_seq n p1 ++ prodN_seq n p2.
+prodN_seq (S n) (prodS p1 p2) := prodN_seq n p1 ++ prodN_seq n p2.
 Arguments prodN_seq {A n}.
 
 (* Get a list from an option. *)
@@ -270,13 +270,13 @@ Notation "? x" := (@exist _ _ x _) (at level 100).
 
 (* The empty colored deque. *)
 
-Equations cdempty {A lvl} : { cd : lvl_cdeque A lvl green | cdeque_seq cd = [] } :=
-cdempty := ? Small B0.
+Equations cempty {A lvl} : { cd : lvl_cdeque A lvl green | cdeque_seq cd = [] } :=
+cempty := ? Small B0.
 
 (* The empty deque. *)
 
-Equations dempty {A} : { d : deque A | deque_seq d = [] } :=
-dempty with cdempty => { | ? cd := ? T cd }.
+Equations empty {A} : { d : deque A | deque_seq d = [] } :=
+empty with cempty => { | ? cd := ? T cd }.
 
 (* Functions *)
 
@@ -300,16 +300,16 @@ Local Ltac destruct_prod :=
   apply (f_equal (@List.length _)) in H;
   apply (Nat.neq_succ_0 _ H) ].
 
-Equations is_dempty {A} (d : deque A) : 
+Equations is_empty {A} (d : deque A) : 
     { b : bool | if b then deque_seq d = [] else deque_seq d <> [] } :=
-is_dempty (T (Small B0)) := ? true;
-is_dempty (T (Small (B1 a))) := ? false;
-is_dempty (T (Small (B2 a b))) := ? false;
-is_dempty (T (Small (B3 a b c))) := ? false;
-is_dempty (T (Small (B4 a b c d))) := ? false;
-is_dempty (T (Small (B5 a b c d e))) := ? false;
-is_dempty (T (Big pkt cs eq_refl CCGreen)) := ? false;
-is_dempty (T (Big pkt cs eq_refl CCYellow)) := ? false.
+is_empty (T (Small B0)) := ? true;
+is_empty (T (Small (B1 a))) := ? false;
+is_empty (T (Small (B2 a b))) := ? false;
+is_empty (T (Small (B3 a b c))) := ? false;
+is_empty (T (Small (B4 a b c d))) := ? false;
+is_empty (T (Small (B5 a b c d e))) := ? false;
+is_empty (T (Big pkt cs eq_refl CCGreen)) := ? false;
+is_empty (T (Big pkt cs eq_refl CCYellow)) := ? false.
 Next Obligation.
   cbn. intros * H.
   dependent destruction pkt.
@@ -491,16 +491,16 @@ suffix_rot (B5 a b c d e) x := ? (a, B5 b c d e x).
 Equations prefix23 {A lvl G Y} (o : option (prodN A lvl)) (p: prodN A (S lvl)) :
   { b : buffer A lvl (Mix G Y NoRed) |
     buffer_seq b = option_seq o ++ prodN_seq p } :=
-prefix23 None (prodS (b, c)) := ? B2 b c;
-prefix23 (Some a) (prodS (b, c)) := ? B3 a b c.
+prefix23 None (prodS b c) := ? B2 b c;
+prefix23 (Some a) (prodS b c) := ? B3 a b c.
 
 (* Create a green buffer by poping a pair onto an option. *)
 
 Equations suffix23 {A lvl G Y} (p : prodN A (S lvl)) (o : option (prodN A lvl)) :
   { b : buffer A lvl (Mix G Y NoRed) |
     buffer_seq b = prodN_seq p ++ option_seq o } :=
-suffix23 (prodS (a, b)) None := ? B2 a b;
-suffix23 (prodS (a, b)) (Some c) := ? B3 a b c.
+suffix23 (prodS a b) None := ? B2 a b;
+suffix23 (prodS a b) (Some c) := ? B3 a b c.
 
 (* Create a yellow (or green) buffer by pushing an element onto an option. *)
 
@@ -519,8 +519,8 @@ prefix_decompose B0 := ? Underflow None;
 prefix_decompose (B1 x) := ? Underflow (Some x);
 prefix_decompose (B2 a b) := ? Ok (B2 a b);
 prefix_decompose (B3 a b c) := ? Ok (B3 a b c);
-prefix_decompose (B4 a b c d) := ? Overflow (B2 a b) (prodS (c, d));
-prefix_decompose (B5 a b c d e) := ? Overflow (B3 a b c) (prodS (d, e)).
+prefix_decompose (B4 a b c d) := ? Overflow (B2 a b) (prodS c d);
+prefix_decompose (B5 a b c d e) := ? Overflow (B3 a b c) (prodS d e).
 
 (* Returns the decomposed version of a buffer. Here, it is a suffix
    decomposition: when the buffer is overflowed, elements at the beginning are
@@ -532,8 +532,8 @@ suffix_decompose B0 := ? Underflow None;
 suffix_decompose (B1 x) := ? Underflow (Some x);
 suffix_decompose (B2 a b) := ? Ok (B2 a b);
 suffix_decompose (B3 a b c) := ? Ok (B3 a b c);
-suffix_decompose (B4 a b c d) := ? Overflow (B2 c d) (prodS (a, b));
-suffix_decompose (B5 a b c d e) := ? Overflow (B3 c d e) (prodS (a, b)).
+suffix_decompose (B4 a b c d) := ? Overflow (B2 c d) (prodS a b);
+suffix_decompose (B5 a b c d e) := ? Overflow (B3 c d e) (prodS a b).
 
 (* Returns the sandwich representation of a buffer. *)
 
@@ -557,10 +557,10 @@ Equations buffer_halve {A lvl C} (b : buffer A lvl C) :
     buffer_seq b = option_seq o ++ any_buffer_seq b' } :=
 buffer_halve B0 := ? (None, Any B0);
 buffer_halve (B1 a) := ? (Some a, Any B0);
-buffer_halve (B2 a b) := ? (None, Any (B1 (prodS (a, b))));
-buffer_halve (B3 a b c) := ? (Some a, Any (B1 (prodS (b, c))));
-buffer_halve (B4 a b c d) := ? (None, Any (B2 (prodS (a, b)) (prodS (c, d))));
-buffer_halve (B5 a b c d e) := ? (Some a, Any (B2 (prodS (b, c)) (prodS (d, e)))).
+buffer_halve (B2 a b) := ? (None, Any (B1 (prodS a b)));
+buffer_halve (B3 a b c) := ? (Some a, Any (B1 (prodS b c)));
+buffer_halve (B4 a b c d) := ? (None, Any (B2 (prodS a b) (prodS c d)));
+buffer_halve (B5 a b c d e) := ? (Some a, Any (B2 (prodS b c) (prodS d e))).
 
 (* Takes any n-buffer and a green (n+1)-buffer, and rearranges elements 
    contained in the two buffers to return a green n-buffer and a yellow 
@@ -660,10 +660,10 @@ cdeque_of_opt3 None None None := ? Small B0;
 cdeque_of_opt3 (Some a) None None := ? Small (B1 a);
 cdeque_of_opt3 None None (Some a) := ? Small (B1 a);
 cdeque_of_opt3 (Some a) None (Some b) := ? Small (B2 a b);
-cdeque_of_opt3 None (Some (prodS (a, b))) None := ? Small (B2 a b);
-cdeque_of_opt3 (Some a) (Some (prodS (b, c))) None := ? Small (B3 a b c);
-cdeque_of_opt3 None (Some (prodS (a, b))) (Some c) := ? Small (B3 a b c);
-cdeque_of_opt3 (Some a) (Some (prodS (b, c))) (Some d) := ? Small (B4 a b c d).
+cdeque_of_opt3 None (Some (prodS a b)) None := ? Small (B2 a b);
+cdeque_of_opt3 (Some a) (Some (prodS b c)) None := ? Small (B3 a b c);
+cdeque_of_opt3 None (Some (prodS a b)) (Some c) := ? Small (B3 a b c);
+cdeque_of_opt3 (Some a) (Some (prodS b c)) (Some d) := ? Small (B4 a b c d).
 
 #[local] Obligation Tactic :=
   cbn; intros; destruct_prod; try (unfold id); try hauto db:rlist.
@@ -807,8 +807,6 @@ Equations make_red {A len} {C1 Y2 C3}
 make_red p1 child s1 cd with green_of_red (Big (Triple p1 child s1 PCRed) cd _ CCRed) => {
   | ? cd' => ? T cd' }.
 
-Module S.
-
 (* Pushes an element on a deque. *)
 
 Equations push {A: Type} (x : A) (sq : deque A) :
@@ -876,5 +874,3 @@ eject (T (Big (Triple p1 child s1 PCGreen) cd eq_refl CCGreen)) with green_eject
 eject (T (Big (Triple p1 child s1 PCYellow) cd eq_refl CCYellow)) with yellow_eject (Yellowish s1) => {
   | ? (Any s1', prodZ x) with make_red p1 child s1' cd => {
     | ? sq' => ? Some (sq', x) } }.
-
-End S.
