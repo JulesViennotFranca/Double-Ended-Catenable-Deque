@@ -173,26 +173,24 @@ Opaque singleton.
 #[export] Hint Rewrite <-app_assoc : rlist.
 #[export] Hint Rewrite <-app_comm_cons : rlist.
 #[export] Hint Rewrite app_nil_r : rlist.
-#[export] Hint Rewrite compose_id_left : rlist.
-#[export] Hint Rewrite map_app : rlist.
 
 #[local] Obligation Tactic :=
   try first [ done | cbn; hauto db:rlist ].
 
-(* Get a list from a list of products. *)
+(* Returns the sequence contained in a product. *)
 
 Equations prodN_seq {A} (n : nat) : prodN A n -> list A := 
 prodN_seq 0 (prodZ a) := [a];
 prodN_seq (S n) (prodS p1 p2) := prodN_seq n p1 ++ prodN_seq n p2.
 Arguments prodN_seq {A n}.
 
-(* Get a list from an option. *)
+(* Returns the sequence contained in an option. *)
 
 Equations option_seq {A lvl} : option (prodN A lvl) -> list A :=
 option_seq None := [];
 option_seq (Some x) := prodN_seq x.
 
-(* Get a list from a buffer. *)
+(* Returns the sequence contained in a buffer. *)
 
 Equations buffer_seq {A lvl C} : buffer A lvl C -> list A :=
 buffer_seq B0 := [];
@@ -202,17 +200,17 @@ buffer_seq (B3 a b c) := prodN_seq a ++ prodN_seq b ++ prodN_seq c;
 buffer_seq (B4 a b c d) := prodN_seq a ++ prodN_seq b ++ prodN_seq c ++ prodN_seq d;
 buffer_seq (B5 a b c d e) := prodN_seq a ++ prodN_seq b ++ prodN_seq c ++ prodN_seq d ++ prodN_seq e.
 
-(* Get a list from a yellow buffer. *)
+(* Returns the sequence contained in a yellow buffer. *)
 
 Equations yellow_buffer_seq {A lvl} : yellow_buffer A lvl -> list A :=
 yellow_buffer_seq (Yellowish buf) := buffer_seq buf.
 
-(* Get a list from any buffer. *)
+(* Returns the sequence contained in any buffer. *)
 
 Equations any_buffer_seq {A lvl} : any_buffer A lvl -> list A :=
 any_buffer_seq (Any buf) := buffer_seq buf.
 
-(* Get the list corresponding to elements stored in prefix buffers along a 
+(* Returns the sequence of elements stored in prefix buffers along a 
    packet. *)
 
 Equations packet_front_seq {A lvl len C} : lvl_packet A lvl len C -> list A :=
@@ -220,7 +218,7 @@ packet_front_seq Hole := [];
 packet_front_seq (Triple buf1 p _ _) := 
   buffer_seq buf1 ++ packet_front_seq p.
 
-(* Get the list corresponding to elements stored in suffix buffers along a 
+(* Returns the sequence of elements stored in suffix buffers along a 
    packet. *)
 
 Equations packet_rear_seq {A lvl len C} : lvl_packet A lvl len C -> list A :=
@@ -228,7 +226,7 @@ packet_rear_seq Hole := [];
 packet_rear_seq (Triple _ p buf2 _) := 
   packet_rear_seq p ++ buffer_seq buf2.
 
-(* Get the list represented by a leveled colored deque. *)
+(* Returns the sequence contained in a leveled colored deque. *)
 
 Equations cdeque_seq {A lvl C} : lvl_cdeque A lvl C -> list A :=
 cdeque_seq (Small buf) := buffer_seq buf;
@@ -237,27 +235,27 @@ cdeque_seq (Big p cd _ _) :=
     cdeque_seq cd ++
     packet_rear_seq p.
 
-(* Get the list of non-excess elements of an object of type decompose. *)
+(* Returns the sequence of non-excess elements of an object of type decompose. *)
 
 Equations decompose_main_seq {A lvl} (dec : decompose A lvl) : list A :=
 decompose_main_seq (Underflow opt) := option_seq opt;
 decompose_main_seq (Ok b) := buffer_seq b;
 decompose_main_seq (Overflow b _) := buffer_seq b.
 
-(* Get the list of excess elements of an object of type decompose. *)
+(* Returns the sequence of excess elements of an object of type decompose. *)
 
 Equations decompose_rest_seq {A lvl} (dec : decompose A lvl) : list A :=
 decompose_rest_seq (Underflow _) := [];
 decompose_rest_seq (Ok _) := [];
 decompose_rest_seq (Overflow _ p) := prodN_seq p.
 
-(* Get the list of elements of an object of type sandwich. *)
+(* Returns the sequence of elements of an object of type sandwich. *)
 
 Equations sandwich_seq {A lvl} (sw : sandwich A lvl) : list A :=
 sandwich_seq (Alone opt) := option_seq opt;
 sandwich_seq (Sandwich x b y) := prodN_seq x ++ buffer_seq b ++ prodN_seq y.
 
-(* Get the list represented by a deque. *)
+(* Returns the sequence contained in a deque. *)
 
 Equations deque_seq {A} : deque A -> list A :=
 deque_seq (T dq) := cdeque_seq dq.
