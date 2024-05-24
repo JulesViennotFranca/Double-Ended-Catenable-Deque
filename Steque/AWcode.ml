@@ -1,4 +1,4 @@
-module Deque = Dequeue.AWcode
+module Deque = Deq.AWcode
 type 'a suffix = 'a Deque.t
 
 type (_, _) prefix =

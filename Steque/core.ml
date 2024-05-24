@@ -1,4 +1,4 @@
-module Deque = Dequeue.Core
+module Deque = Deq.Core
 
 (** A type for suffix buffers. *)
 type 'a suffix = 'a Deque.t

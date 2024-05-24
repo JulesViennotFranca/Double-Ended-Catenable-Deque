@@ -7,7 +7,7 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Dequeue Require Import deque.
+From Deq Require Import deque.
 
 (* Types *)
 
@@ -171,13 +171,13 @@ Fixpoint element_seq {A lvl} (e : element A lvl) : list A :=
     | deque.Hole => []
     | deque.Triple _ pkt s _ => dpacket_rear_seq pkt ++ buffer_seq s
     end in
-  let fix cdeque_seq {lvle lvlp C} 
+  let fix cdeq_seq {lvle lvlp C} 
       (cd : lvl_cdeque (element A lvle) lvlp C) : list A :=
     match cd with
     | deque.Small b => buffer_seq b
     | deque.Big pkt cd _ _ => 
       dpacket_front_seq pkt ++ 
-      cdeque_seq cd ++ 
+      cdeq_seq cd ++ 
       dpacket_rear_seq pkt
     end in
   let prefix_seq {lvl C} (p : prefix A lvl C) : list A :=
@@ -186,7 +186,7 @@ Fixpoint element_seq {A lvl} (e : element A lvl) : list A :=
     | Pre3 e1 e2 e3 => element_seq e1 ++ element_seq e2 ++ element_seq e3
     | Pre4 e1 e2 e3 e4 (deque.T d) => 
       element_seq e1 ++ element_seq e2 ++ element_seq e3 ++ element_seq e4 ++ 
-      cdeque_seq d
+      cdeq_seq d
     end in
   let fix packet_front_seq {lvl len C} (pkt : packet A lvl len C) : list A :=
     match pkt with
@@ -196,11 +196,11 @@ Fixpoint element_seq {A lvl} (e : element A lvl) : list A :=
   let fix packet_rear_seq {lvl len C} (pkt : packet A lvl len C) : list A :=
     match pkt with
     | Hole => []
-    | Triple _ pkt (Suff (deque.T d)) => packet_rear_seq pkt ++ cdeque_seq d
+    | Triple _ pkt (Suff (deque.T d)) => packet_rear_seq pkt ++ cdeq_seq d
     end in
   let fix csteque_seq {lvl C} (cs : csteque A lvl C) : list A :=
     match cs with 
-    | Small (Suff (deque.T d)) => cdeque_seq d
+    | Small (Suff (deque.T d)) => cdeq_seq d
     | Big pkt cs _ _ => 
       packet_front_seq pkt ++ 
       csteque_seq cs ++ 
@@ -321,7 +321,7 @@ Proof.
   cbn; autorewrite with rlist;
   (* Remove element sequences at the beginning. *)
   repeat apply (f_equal (fun l => _ ++ l));
-  (* Split the cdeque and csteque parts from the Pre4 case. *)
+  (* Split the cdeq and csteque parts from the Pre4 case. *)
   try (apply div_app2; clear_h);
   (* For csteques cases, we start an induction. *)
   try (induction cs as [ ? [[G Y c]] | ?????? pkt cs ? e cc ]; simpl csteque_seq);
@@ -348,9 +348,9 @@ Proof.
   try apply (f_equal (fun l => l ++ _));
   (* Remove parts about packet in case Suff. *)
   try apply (f_equal (fun l => _ ++ l));
-  (* Now we only need to proove things for cdeques. *)
+  (* Now we only need to proove things for cdeqs. *)
   clear_h;
-  (* Handle cdeques by induction. *)
+  (* Handle cdeqs by induction. *)
   induction c as [?? b | ????? dpkt cd ? e cc];
   (* Format for simplification. *)
   cbn; autorewrite with rlist;
@@ -823,7 +823,7 @@ Equations green_prefix_pop {A lvl} (p : prefix A lvl green) :
         element_seq e ++ gy_prefix_seq p' = prefix_seq p } := 
 green_prefix_pop (Pre4 e1 e2 e3 e4 ded) with deque.pop ded => {
   | ? None := ? (e1, GY_prefix (Pre3 e2 e3 e4));
-  | ? Some (e5, deq') := ? (e1, GY_prefix (Pre4 e2 e3 e4 e5 deq')) }.
+  | ? Some (e5, deque') := ? (e1, GY_prefix (Pre4 e2 e3 e4 e5 deque')) }.
 
 (* Pops from a yellow prefix. *)
 
@@ -851,9 +851,9 @@ green_of_red (Big (Triple (Pre2 e1 e2) Hole (Suff s1))
     with green_prefix_pop p => {
       | ? (SElt pref rest, GY_prefix p1) with prefix_push2 e1 e2 pref => {
         | ? pref1 with p1 => {
-          | Pre4 a b c d deq
+          | Pre4 a b c d deque
             with concat_any rest (Any_csteque 
-              (Big (Triple (Pre4 a b c d deq) child s) cs _ CCGreen)) => {
+              (Big (Triple (Pre4 a b c d deque) child s) cs _ CCGreen)) => {
                 | ? Any_csteque child1 
                   with make_green pref1 child1 (Suff s1) => {
                     | ? cs' := ? cs' } };
@@ -894,8 +894,8 @@ pop (T (Big (Triple p child s) cs eq_refl CCGreen)) with green_prefix_pop p => {
     | Pre3 b c d with ensure_green cs => {
       | ? cs' := 
         ? Some (a, T (Big (Triple (Pre3 b c d) child s) cs' eq_refl CCYellow)) };
-    | Pre4 b c d e deq := 
-      ? Some (a, T (Big (Triple (Pre4 b c d e deq) child s) cs eq_refl CCGreen)) } };
+    | Pre4 b c d e deque := 
+      ? Some (a, T (Big (Triple (Pre4 b c d e deque) child s) cs eq_refl CCGreen)) } };
 pop (T (Big (Triple p child s) cs eq_refl CCYellow)) with yellow_prefix_pop p => {
   | ? (ZElt a, p') with green_of_red (Big (Triple p' child s) cs eq_refl CCRed) => {
     | ? cs' := ? Some (a, T cs') } }.
