@@ -65,8 +65,8 @@ Inductive buffer (A : Type) (lvl : nat) : color -> Type :=
   | B3 {G Y} : prodN A lvl -> prodN A lvl -> prodN A lvl -> buffer A lvl (Mix G Y NoRed)
   | B4       : prodN A lvl -> prodN A lvl -> prodN A lvl -> prodN A lvl -> buffer A lvl yellow
   | B5       : prodN A lvl -> prodN A lvl -> prodN A lvl -> prodN A lvl -> prodN A lvl -> buffer A lvl red.
-Arguments B1 {A lvl}.
 Arguments B0 {A lvl}.
+Arguments B1 {A lvl}.
 Arguments B2 {A lvl G Y}.
 Arguments B3 {A lvl G Y}.
 Arguments B4 {A lvl}.
@@ -547,8 +547,8 @@ buffer_unsandwich (B5 a b c d e) := ? Sandwich a (B3 b c d) e.
 (* In the following, when talking about structures, we will write n-struct for
    a structure of level n. *)
 
-(* Translates a n-buffer to a (n+1)-buffer. A additional option type is returned 
-   to handle cases where the buffer contains an odd number of elements. *)
+(* Translates a n-buffer to a (n+1)-buffer. An additional option type is 
+   returned to handle cases where the buffer contains an odd number of elements. *)
 
 Equations buffer_halve {A lvl C} (b : buffer A lvl C) :
   { '(o, b') : option (prodN A lvl) * any_buffer A (S lvl) |
