@@ -6,7 +6,6 @@ From Hammer Require Import Tactics.
 From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
-Import Instances.Peano.
 
 (* Pas besoin de gérer des power2 lvl en vrai;
    Utiliser égalités dans les arguments des fonctions pour simplifier les preuves. *)
@@ -292,14 +291,6 @@ Notation "? x" := (@exist _ _ x _) (at level 100).
 Lemma power2_neq0 {n : nat} : power2 n <> 0.
 Proof. induction n; simpl; lia. Qed.
 
-(* Proves that for any natural number [n], [power2 n] is strictly positive. *)
-
-Lemma power2_pos {n : nat} : 0 < power2 n.
-Proof. pose (@power2_neq0 n); lia. Qed.
-
-Lemma power2_div_mul {n m : nat} : m / 2 * power2 (S n) = m / 2 * 2 * power2 n.
-Proof. simpl power2; lia. Qed.
-
 (* Takes a product and links its level to the length of its sequence. *)
 
 Lemma prodN_size {A lvl} (p : prodN A lvl) :
@@ -340,20 +331,10 @@ Qed.
 Lemma empty_buffer_size {A lvl size C} (b : buffer A lvl size C) :
     buffer_seq b = [] -> size = 0.
 Proof.
-  intros e%(f_equal (@length _)); rewrite buffer_size in e; simpl length in e;
-  eapply Nat.eq_mul_0_l.
-  - exact e.
-  - intro; eapply Nat.nlt_0_r; rewrite <-H; apply power2_pos.
-Qed.
-
-(* Proves that if a buffer is empty, its size is strictly positive. *)
-
-Lemma non_empty_buffer_size {A lvl size C} (b : buffer A lvl size C) :
-    0 < length (buffer_seq b) -> 0 < size.
-Proof.
-  intros i; rewrite buffer_size in i; eapply Nat.mul_pos_cancel_r. 
-  - apply (@power2_pos lvl).
-  - exact i.
+  intros e%(f_equal (@length _)); rewrite buffer_size in e;
+  apply Nat.mul_eq_0_l in e.
+  - assumption.
+  - apply power2_neq0.
 Qed.
 
 (* Takes a packet and links its level and size to the length of its sequence. *)
@@ -826,13 +807,18 @@ Local Ltac destruct_prod :=
   | p : _ * _ |- _ => destruct p
   end; cbn in *.
 
-Local Ltac to_length H :=
+(* A new tactic [to_size] is introduced. It converts an equality on lists to
+   an equality on their sizes. *)
+
+Local Ltac to_size H :=
   apply (f_equal (@length _)) in H; 
   repeat rewrite app_length in H;
   repeat rewrite buffer_size in H;
   repeat rewrite prodN_size in H;
   repeat rewrite option_size in H;
   repeat rewrite deque_size in H.
+
+(* Small lemmas needed for the next tactics. *)
 
 Lemma add_r {n m p : nat} : n + p = m + p -> n = m.
 Proof. lia. Qed.
@@ -843,7 +829,10 @@ Proof. lia. Qed.
 Lemma add_l_0 {n p : nat} : n + p = p -> n = 0.
 Proof. lia. Qed.
 
-Local Ltac absurd_power2 := 
+(* A new tactic [absurd_power2_eq] is introduced. It aims at showing that an 
+   equality of sums of powers of 2 is wrong. *)
+
+Local Ltac absurd_power2_eq := 
   repeat
   match goal with 
   | H : 0 = power2 _ + _ |- _ => 
@@ -918,15 +907,15 @@ make_small prefix1 buf suffix1
         Big (Triple p1 (Triple prefix Hole (B1 cd) PCYellow) s1 PCGreen) 
             (Small rest) eq_refl _ CCGreen } } }.
 Next Obligation.
-  to_length e1; destruct_opt_buff; simpl in e1; rewrite Nat.add_0_r in e1;
-  absurd_power2.
+  to_size e1; destruct_opt_buff; simpl in e1; rewrite Nat.add_0_r in e1;
+  absurd_power2_eq.
 Qed.
 Next Obligation.
   apply empty_buffer_size in e1; subst; reflexivity.
 Qed.
 Next Obligation.
-  to_length e1; destruct_opt_buff; simpl in e1; rewrite Nat.add_0_r in e1;
-   absurd_power2.
+  to_size e1; destruct_opt_buff; simpl in e1; rewrite Nat.add_0_r in e1;
+   absurd_power2_eq.
 Qed.
 Next Obligation.
   apply empty_buffer_size in e1; subst; reflexivity.
@@ -936,13 +925,13 @@ Next Obligation.
   destruct_prod; rewrite e1; aac_rewrite <-y; hauto db:rlist.
 Qed.
 Next Obligation.
-  to_length e1; destruct_opt_buff; simpl in e1; absurd_power2.
+  to_size e1; destruct_opt_buff; simpl in e1; absurd_power2_eq.
 Qed.
 Next Obligation.
   apply empty_buffer_size in e1; subst; lia.
 Qed.
 Next Obligation.
-  to_length e1; destruct_opt_buff; simpl in e1; absurd_power2.
+  to_size e1; destruct_opt_buff; simpl in e1; absurd_power2_eq.
 Qed.
 Next Obligation.
   apply empty_buffer_size in e1; subst; lia.
@@ -952,8 +941,8 @@ Next Obligation.
   destruct_prod; rewrite e1; aac_rewrite <-y; hauto db:rlist.
 Qed.
 Next Obligation.
-  to_length y; destruct_opt_buff; simp size_option in y; 
-  simpl in y; autorewrite with rnat in y; absurd_power2.
+  to_size y; destruct_opt_buff; simp size_option in y; 
+  simpl in y; autorewrite with rnat in y; absurd_power2_eq.
 Qed.
 
 (* Takes a red cdeque and returns a green one representing the same set. *)
@@ -1122,7 +1111,7 @@ pop d with unsafe_pop d => {
   | ? None := _;
   | ? Some (x, d') := ? (x, d') }.
 Next Obligation.
-  to_length e; apply Nat.neq_succ_0 in e; destruct e.
+  to_size e; apply Nat.neq_succ_0 in e; destruct e.
 Qed.
 
 (* Ejects an element from a deque. *)
@@ -1150,5 +1139,5 @@ eject d with unsafe_eject d => {
   | ? None := _;
   | ? Some (d', x) := ? (d', x) }.
 Next Obligation.
-  to_length e; apply Nat.neq_succ_0 in e; destruct e.
+  to_size e; apply Nat.neq_succ_0 in e; destruct e.
 Qed.
