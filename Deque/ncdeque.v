@@ -978,7 +978,7 @@ green_of_red
     | ? (p1', Yellowish p2'), ? (Yellowish s2', s1') :=
     ? Big (Triple p1' (Triple p2' child s2' PCYellow) s1' PCGreen) cd _ _ CCGreen }.
 Next Obligation.
-  dependent destruction p1; dependent destruction s1. 
+  dependent destruction p1; dependent destruction s1;
   (match goal with 
   | b : buffer _ _ psize0 _ |- _ => 
     dependent destruction b end);
