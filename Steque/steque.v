@@ -84,8 +84,10 @@ with csteque (A : Type) : nat -> color -> Type :=
     
 Arguments ZElt {A}.
 Arguments SElt {A lvl C1 C2}.
+
 Arguments Hole {A lvl}.
 Arguments Triple {A lvl len Y C}.
+
 Arguments Small {A lvl}.
 Arguments Big {A lvl len nlvl C1 C2 C3}.
 
