@@ -3,7 +3,7 @@ module Deq = Deq.Core
 type 'a pr = out_channel -> 'a -> unit
 
 type nh = NOT_HOLE
-type hole = HOLE
+type hole = Hole
 type has_hole = HAS_HOLE
 
 (* Types for the different kinds of triples. *)
@@ -121,26 +121,26 @@ module Buffer : sig
   val push_vector : ('a, _) vector -> ('a, 'n) t -> ('a, 'n) t
   val inject_vector : ('a, 'n) t -> ('a, _) vector -> ('a, 'n) t
 
-  (* A type storing either 0 element or a buffer with more than 1 elements. *)
+  (* A type storing either 0 element or a buffer with at least 1 element. *)
 
   type _ has1 =
     | Exact_0 : 'a has1
     | Lte1 : ('a, _ ge1) t -> 'a has1
   val has1 : ('a, 'n) t -> 'a has1
 
-  (* Translation between buffers and non-catenable deque. *)
+  (* Translation between buffers and non-catenable non_empty_cdeque. *)
 
   val to_dequeue : ('a, _) t -> 'a Deq.t
   val of_dequeue : 'a Deq.t -> 'a has1
 
-  (* A type storing either 4 elements or a buffer with more than 5 elements. *)
+  (* A type storing either 4 elements or a buffer with at least 5 elements. *)
 
   type 'a has5 =
     | Exact_4 : 'a four -> 'a has5
     | At_least_5 : ('a, _ ge5) t -> 'a has5
   val has5   : ('a, _ ge4) t -> 'a has5
 
-  (* A type storing either 1 to 6 elements or a buffer with more than 5 
+  (* A type storing either 1 to 6 elements or a buffer with at least 5 
      elements and 2 additionnal elements. *)
 
   type 'a has5p2 =
@@ -149,14 +149,14 @@ module Buffer : sig
   val has5p2 : ('a, _ ge1) t -> 'a has5p2
 
   (* A type storing either 1 to 6 elements or 2 elements along a buffer with 
-     more than 5 elements. *)
+     at least 5 elements. *)
 
   type 'a has2p5 =
     | Less_than_2p5 : ('a, eq6) vector -> 'a has2p5
     | At_least_2p5 : 'a * 'a * ('a, _ ge5) t -> 'a has2p5
   val has2p5 : ('a, _ ge1) t -> 'a has2p5
 
-  (* A type storing either 5 to 7 elements or a buffer with more than 8 
+  (* A type storing either 5 to 7 elements or a buffer with at least 8 
      elements. *)
 
   type 'a has8 =
@@ -165,7 +165,7 @@ module Buffer : sig
   val has8   : ('a, _ ge5) t -> 'a has8
 
   (* A type storing either 8 to 10 elements or 3 elements along a buffer with 
-     more than 8 elements. *)
+     at least 8 elements. *)
 
   type 'a has3p8 =
     | Less_than_11 : 'a eight * ('a, eq2) vector -> 'a has3p8
@@ -359,12 +359,12 @@ type ('a, 'n) suffix = ('a, 'n) Buffer.t
 type is_hole = IS_HOLE
 
 and 'a stored_triple =
-  (* A stored triple is either only a buffer (the child deque and the other buffer are empty) ... *)
-  | Stored_prefix : ('a, _ ge3) prefix -> 'a stored_triple
+  (* A stored triple is either only a buffer (the child non_empty_cdeque and the other buffer are empty) ... *)
+  | ST_small : ('a, _ ge3) prefix -> 'a stored_triple
   (* ... or a triple with non-empty prefix and suffix. *)
-  | Stored : ('a, _ ge3) prefix
+  | ST_triple : ('a, _ ge3) prefix
              (* Triples contained in a stored triple are also stored triples. *)
-           * ('a stored_triple, _) st
+           * ('a stored_triple, _) cdeque
            * ('a, _ ge3) suffix
           -> 'a stored_triple
 
@@ -387,39 +387,39 @@ and ('a, 'b, 'color, 'kind, 'hole_loc, 'is_hole, 'has_hole) triple =
 
   (* The hole constructor, is yellow or orange, works for every kind, is and 
      has a hole. *)
-  | HOLE : ('a, 'a, [< `yellow | `orange], 'k, 'k, is_hole, has_hole) triple
+  | Hole : ('a, 'a, [< `yellow | `orange], 'k, 'k, is_hole, has_hole) triple
 
   (* If there is only one non-empty buffer. *)
-  | Only_prefix : ('a, _ ge1) prefix
+  | Only_small : ('a, _ ge1) prefix
                -> ('a, 'a, [`green], only, nh, nh, nh) triple
 
-  (* If it is a green only triple, followed by a stored_triple deque. *)
+  (* If it is a green only triple, followed by a stored_triple non_empty_cdeque. *)
   | Only_green :
            ('a, _ ge8) prefix
-         * ('a stored_triple, [< `green | `red]) deque
+         * ('a stored_triple, [< `green | `red]) non_empty_cdeque
          * ('a, _ ge8) suffix
         -> ('a, 'a, [`green], only, nh, nh, nh) triple
 
-  (* If it is a yellow only triple, followed by a non-empty deque that has a 
+  (* If it is a yellow only triple, followed by a non-empty non_empty_cdeque that has a 
      hole. The preferred child is the left one. *)
   | Only_yellow :
            ('a, _ ge7) prefix
-         * ('a stored_triple, 'b, preferred_left, 'hole) not_empty
+         * ('a stored_triple, 'b, preferred_left, 'hole) packet
          * ('a, _ ge7) suffix
         -> ('a, 'b, [`yellow], only, 'hole, nh, has_hole) triple
 
-  (* If it is an orange only triple, followed by a non-empty deque that has a 
+  (* If it is an orange only triple, followed by a non-empty non_empty_cdeque that has a 
      hole. The preferred child is the right one. *)
   | Only_orange :
            ('a, _ ge6) prefix
-         * ('a stored_triple, 'b, preferred_right, 'hole) not_empty
+         * ('a stored_triple, 'b, preferred_right, 'hole) packet
          * ('a, _ ge6) suffix
         -> ('a, 'b, [`orange], only, 'hole, nh, has_hole) triple
 
-  (* If it is a red only triple, followed by a stored_triple green deque. *)
+  (* If it is a red only triple, followed by a stored_triple green non_empty_cdeque. *)
   | Only_red :
            ('a, _ ge5) prefix
-         * ('a stored_triple, [`green]) deque
+         * ('a stored_triple, [`green]) non_empty_cdeque
          * ('a, _ ge5) suffix
         -> ('a, 'a, [`red], only, nh, nh, nh) triple
 
@@ -431,22 +431,22 @@ and ('a, 'b, 'color, 'kind, 'hole_loc, 'is_hole, 'has_hole) triple =
         -> ('a, 'b, [`green], left, nh, nh, nh) triple
   | Left_green :
            ('a, _ ge8) prefix
-         * ('a stored_triple, [< `green | `red]) deque
+         * ('a stored_triple, [< `green | `red]) non_empty_cdeque
          * ('a, eq2) suffix
         -> ('a, 'b, [`green], left, nh, nh, nh) triple
   | Left_yellow :
            ('a, _ ge7) prefix
-         * ('a stored_triple, 'b, preferred_left, 'hole) not_empty
+         * ('a stored_triple, 'b, preferred_left, 'hole) packet
          * ('a, eq2) suffix
         -> ('a, 'b, [`yellow], left, 'hole, nh, has_hole) triple
   | Left_orange :
            ('a, _ ge6) prefix
-         * ('a stored_triple, 'b, preferred_right, 'hole) not_empty
+         * ('a stored_triple, 'b, preferred_right, 'hole) packet
          * ('a, eq2) suffix
         -> ('a, 'b, [`orange], left, 'hole, nh, has_hole) triple
   | Left_red :
            ('a, _ ge5) prefix
-         * ('a stored_triple, [`green]) deque
+         * ('a stored_triple, [`green]) non_empty_cdeque
          * ('a, eq2) suffix
         -> ('a, 'a, [`red], left, nh, nh, nh) triple
 
@@ -456,80 +456,80 @@ and ('a, 'b, 'color, 'kind, 'hole_loc, 'is_hole, 'has_hole) triple =
         -> ('a, 'b, [`green], right, nh, nh, nh) triple
   | Right_green :
            ('a, eq2) prefix
-         * ('a stored_triple, [< `green | `red]) deque
+         * ('a stored_triple, [< `green | `red]) non_empty_cdeque
          * ('a, _ ge8) suffix
         -> ('a, 'a, [`green], right, nh, nh, nh) triple
   | Right_yellow :
            ('a, eq2) prefix
-         * ('a stored_triple, 'b, preferred_left, 'hole) not_empty
+         * ('a stored_triple, 'b, preferred_left, 'hole) packet
          * ('a, _ ge7) suffix
         -> ('a, 'b, [`yellow], right, 'hole, nh, has_hole) triple
   | Right_orange :
            ('a, eq2) prefix
-         * ('a stored_triple, 'b, preferred_right, 'hole) not_empty
+         * ('a stored_triple, 'b, preferred_right, 'hole) packet
          * ('a, _ ge6) suffix
         -> ('a, 'b, [`orange], right, 'hole, nh, has_hole) triple
   | Right_red :
            ('a, eq2) prefix
-         * ('a stored_triple, [`green]) deque
+         * ('a stored_triple, [`green]) non_empty_cdeque
          * ('a, _ ge5) suffix
         -> ('a, 'a, [`red], right, nh, nh, nh) triple
 
-(* not_empty are triple with at least a yellow or orange child. *)
-and ('a, 'b, 'preference, 'hole_loc) not_empty =
-  | Only_of :
+(* packet are triple with at least a yellow or orange child. *)
+and ('a, 'b, 'preference, 'hole_loc) packet =
+  | Only_child :
        ('a, 'b, [< `yellow | `orange], only, 'hole_loc, _, has_hole) triple
-    -> ('a, 'b, _, 'hole_loc) not_empty
+    -> ('a, 'b, _, 'hole_loc) packet
 
-  | Pair_left  :
+  | Left_child  :
        ('a, 'b, [< `yellow | `orange], left, 'hole_loc, _, has_hole) triple
      * ('a, _, right) path
-    -> ('a, 'b, preferred_left, 'hole_loc) not_empty
+    -> ('a, 'b, preferred_left, 'hole_loc) packet
 
-  | Pair_right :
+  | Right_child :
        ('a, [`green], left) path
      * ('a, 'b, [< `yellow | `orange], right, 'hole_loc, _, has_hole) triple
-    -> ('a, 'b, preferred_right, 'hole_loc) not_empty
+    -> ('a, 'b, preferred_right, 'hole_loc) packet
 
 (* A path stores the natural child and the adoptive child. *)
 and ('a, 'color, 'kind) path =
-  | Path :
+  | Children :
        ('a, 'b, [< `yellow | `orange], 'kind, 'hole_loc, _, has_hole) triple
      * ('b, 'b, [< `green | `red] as 'color, 'hole_loc, nh, nh, nh) triple
     -> ('a, 'color, 'kind) path
 
-(* A non-empty deque is represented as the compressed forest form. *)
-and ('a, 'parent_color) deque =
-  | Only_path : ('a, [< `green | `red] as 'c, only) path -> ('a, 'c) deque
+(* A non-empty non_empty_cdeque is represented as the compressed forest form. *)
+and ('a, 'parent_color) non_empty_cdeque =
+  | Only_path : ('a, [< `green | `red] as 'c, only) path -> ('a, 'c) non_empty_cdeque
   | Pair_green :
         ('a, _, left) path
       * ('a, _, right) path
-     -> ('a, [`red]) deque
+     -> ('a, [`red]) non_empty_cdeque
   | Pair_red :
         ('a, [`green], left) path
       * ('a, [`green], right) path
-     -> ('a, [`green]) deque
+     -> ('a, [`green]) non_empty_cdeque
 
 (* Types for green and red deques. *)
 
-and 'a green_deque = ('a, [`green]) deque
-and 'a red_deque = ('a, [`red]) deque
+and 'a green_deque = ('a, [`green]) non_empty_cdeque
+and 'a red_deque = ('a, [`red]) non_empty_cdeque
 
-(* A type for deques, either empty or made of a non-empty deque. *)
-and ('a, 'c) st =
-  | Void : ('a, [`green]) st
-  | T    : ('a, [< `green | `red] as 'c) deque -> ('a, 'c) st
+(* A type for deques, either empty or made of a non-empty non_empty_cdeque. *)
+and ('a, 'c) cdeque =
+  | Empty : ('a, [`green]) cdeque
+  | NonEmpty : ('a, [< `green | `red] as 'c) non_empty_cdeque -> ('a, 'c) cdeque
 
 (* A type for semiregular deques. *)
-type 'a semi = S : ('a, _) st -> 'a semi
+type 'a sdeque = Sd : ('a, _) cdeque -> 'a sdeque
 
 (* A type for regulare deques. *)
-type 'a t = Regular : ('a, [`green]) st -> 'a t
+type 'a deque = T : ('a, [`green]) cdeque -> 'a deque
 
-let empty = Regular Void
+let empty = T Empty
 
 let is_empty = function
-  | Regular Void -> true
+  | T Empty -> true
   | _ -> false
 
 
@@ -538,7 +538,7 @@ let push_only_triple
   a -> (a, b, c, h, hh) only_triple -> (a, b, c, h, hh) only_triple
 = fun x triple ->
   match triple with
-  | Only_prefix buf       -> Only_prefix (Buffer.push x buf)
+  | Only_small buf       -> Only_small (Buffer.push x buf)
   | Only_green  (p, c, s) -> Only_green  (Buffer.push x p, c, s)
   | Only_yellow (p, c, s) -> Only_yellow (Buffer.push x p, c, s)
   | Only_orange (p, c, s) -> Only_orange (Buffer.push x p, c, s)
@@ -549,7 +549,7 @@ let inject_only_triple
   (a, b, c, h, hh) only_triple -> a -> (a, b, c, h, hh) only_triple
 = fun triple x ->
   match triple with
-  | Only_prefix buf       -> Only_prefix (Buffer.inject buf x)
+  | Only_small buf       -> Only_small (Buffer.inject buf x)
   | Only_green  (p, c, s) -> Only_green  (p, c, Buffer.inject s x)
   | Only_yellow (p, c, s) -> Only_yellow (p, c, Buffer.inject s x)
   | Only_orange (p, c, s) -> Only_orange (p, c, Buffer.inject s x)
@@ -562,7 +562,7 @@ type _ hole_test =
 let is_hole
 : type a b c k hl h. (a, b, c, k, hl, h, has_hole) triple -> h hole_test
 = function
-  | HOLE -> Is_hole
+  | Hole -> Is_hole
   | Only_yellow _ -> Not_hole
   | Only_orange _ -> Not_hole
   | Left_yellow _ -> Not_hole
@@ -572,17 +572,17 @@ let is_hole
 
 let push_only_path
 : type a c. a -> (a, c, only) path -> (a, c, only) path
-= fun x (Path (only, kont)) ->
+= fun x (Children (only, kont)) ->
   match is_hole only, only with
-  | Is_hole, HOLE -> Path (only, push_only_triple x kont)
-  | Not_hole, _   -> Path (push_only_triple x only, kont)
+  | Is_hole, Hole -> Children (only, push_only_triple x kont)
+  | Not_hole, _   -> Children (push_only_triple x only, kont)
 
 let inject_only_path
 : type a c. (a, c, only) path -> a -> (a, c, only) path
-= fun (Path (only, kont)) x ->
+= fun (Children (only, kont)) x ->
   match is_hole only, only with
-  | Is_hole, HOLE -> Path (HOLE, inject_only_triple kont x)
-  | Not_hole, _   -> Path (inject_only_triple only x, kont)
+  | Is_hole, Hole -> Children (Hole, inject_only_triple kont x)
+  | Not_hole, _   -> Children (inject_only_triple only x, kont)
 
 let push_left_triple
 : type a b c hl hh.
@@ -612,20 +612,20 @@ let inject_right_triple
 
 let push_left_path
 : type a c. a -> (a, c, left) path -> (a, c, left) path
-= fun x (Path (left, kont)) ->
+= fun x (Children (left, kont)) ->
   match is_hole left, left with
-  | Is_hole, HOLE -> Path (left, push_left_triple x kont)
-  | Not_hole, _   -> Path (push_left_triple x left, kont)
+  | Is_hole, Hole -> Children (left, push_left_triple x kont)
+  | Not_hole, _   -> Children (push_left_triple x left, kont)
 
 let inject_right_path
 : type a c. (a, c, right) path -> a -> (a, c, right) path
-= fun (Path (right, kont)) x ->
+= fun (Children (right, kont)) x ->
   match is_hole right, right with
-  | Is_hole, HOLE -> Path (right, inject_right_triple kont x)
-  | Not_hole, _   -> Path (inject_right_triple right x, kont)
+  | Is_hole, Hole -> Children (right, inject_right_triple kont x)
+  | Not_hole, _   -> Children (inject_right_triple right x, kont)
 
 let push_deque
-: type a c. a -> (a, c) deque -> (a, c) deque
+: type a c. a -> (a, c) non_empty_cdeque -> (a, c) non_empty_cdeque
 = fun x deq ->
   match deq with
   | Only_path p -> Only_path (push_only_path x p)
@@ -633,7 +633,7 @@ let push_deque
   | Pair_red   (prefix, suffix) -> Pair_red   (push_left_path x prefix, suffix)
 
 let inject_deque
-: type a c. (a, c) deque -> a -> (a, c) deque
+: type a c. (a, c) non_empty_cdeque -> a -> (a, c) non_empty_cdeque
 = fun deq x ->
   match deq with
   | Only_path p -> Only_path (inject_only_path p x)
@@ -642,29 +642,29 @@ let inject_deque
   | Pair_red (prefix, suffix) ->
       Pair_red (prefix, inject_right_path suffix x)
 
-let single_triple x = Only_prefix (Buffer.single x)
-let only_single x = Only_path (Path (HOLE, single_triple x))
-let single x = T (only_single x)
+let single_triple x = Only_small (Buffer.single x)
+let only_single x = Only_path (Children (Hole, single_triple x))
+let single x = NonEmpty (only_single x)
 
 let push_t
-: type a c. a -> (a, c) st -> (a, c) st
+: type a c. a -> (a, c) cdeque -> (a, c) cdeque
 = fun x t ->
   match t with
-  | Void  -> single x
-  | T deq -> T (push_deque x deq)
+  | Empty  -> single x
+  | NonEmpty deq -> NonEmpty (push_deque x deq)
 
 let inject_t
-: type a c. (a, c) st -> a -> (a, c) st
+: type a c. (a, c) cdeque -> a -> (a, c) cdeque
 = fun t x ->
   match t with
-  | Void  -> single x
-  | T deq -> T (inject_deque deq x)
+  | Empty  -> single x
+  | NonEmpty deq -> NonEmpty (inject_deque deq x)
 
-let push x (Regular t) = Regular (push_t x t)
-let inject (Regular t) x = Regular (inject_t t x)
+let push x (T t) = T (push_t x t)
+let inject (T t) x = T (inject_t t x)
 
-let push_semi x (S t) = S (push_t x t)
-let inject_semi (S t) x = S (inject_t t x)
+let push_semi x (Sd t) = Sd (push_t x t)
+let inject_semi (Sd t) x = Sd (inject_t t x)
 
 let push_vector v t = vector_fold_right (fun x t -> push x t) v t
 let inject_vector t v = vector_fold_left (fun t x -> inject t x) t v
@@ -684,139 +684,139 @@ let color
   | Left_red    _ -> Is_red
   | Right_red   _ -> Is_red
   | Only_green  _ -> Is_green
-  | Only_prefix _ -> Is_green
+  | Only_small _ -> Is_green
   | Left_small  _ -> Is_green
   | Left_green  _ -> Is_green
   | Right_small _ -> Is_green
   | Right_green _ -> Is_green
 
-let color_path
+let path_uncolored
 : type a c k. (a, c, k) path -> c green_or_red
-= fun (Path (_, t)) -> color t
+= fun (Children (_, t)) -> color t
 
 let color_deque
-: type a c. (a, c) deque -> c green_or_red
+: type a c. (a, c) non_empty_cdeque -> c green_or_red
 = function
-  | Only_path t -> color_path t
+  | Only_path t -> path_uncolored t
   | Pair_red _ -> Is_green
   | Pair_green _ -> Is_red
 
 let color_st
-: type a c. (a, c) st -> c green_or_red
+: type a c. (a, c) cdeque -> c green_or_red
 = function
-  | Void -> Is_green
-  | (T t) -> color_deque t
+  | Empty -> Is_green
+  | (NonEmpty t) -> color_deque t
 
 
 type 'a pref_left =
-  | Pref_left : ('a, 'b, preferred_left, 'hole2) not_empty
+  | Pref_left : ('a, 'b, preferred_left, 'hole2) packet
               * ('b, 'b, [< `green | `red], 'hole2, nh, nh, nh) triple
              -> 'a pref_left
 
 type 'a pref_right =
-  | Pref_right : ('a, 'b, preferred_right, 'hole2) not_empty
+  | Pref_right : ('a, 'b, preferred_right, 'hole2) packet
                * ('b, 'b, [< `green | `red], 'hole2, nh, nh, nh) triple
               -> 'a pref_right
 
 let pref_left
-: type a c.  (a, c) deque -> a pref_left
+: type a c.  (a, c) non_empty_cdeque -> a pref_left
 = function
-  | Only_path  (Path (d1, k))         -> Pref_left (Only_of d1, k)
-  | Pair_green (Path (le, ft), right) -> Pref_left (Pair_left (le, right), ft)
-  | Pair_red   (Path (le, ft), right) -> Pref_left (Pair_left (le, right), ft)
+  | Only_path  (Children (d1, k))         -> Pref_left (Only_child d1, k)
+  | Pair_green (Children (le, ft), right) -> Pref_left (Left_child (le, right), ft)
+  | Pair_red   (Children (le, ft), right) -> Pref_left (Left_child (le, right), ft)
 
 let pref_right
 : type a b.
-     (a, b, preferred_left, 'hole) not_empty
+     (a, b, preferred_left, 'hole) packet
   -> (b, b, [< `green | `red], 'hole, nh, nh, nh) triple
   -> a pref_right
 = fun deq ft ->
   match deq with
-  | Only_of le -> Pref_right (Only_of le, ft)
-  | Pair_left (le, Path (ri, ght)) ->
-      Pref_right (Pair_right (Path (le, ft), ri), ght)
+  | Only_child le -> Pref_right (Only_child le, ft)
+  | Left_child (le, Children (ri, ght)) ->
+      Pref_right (Right_child (Children (le, ft), ri), ght)
 
 let no_pref
 : type a b.
-     (a, b, preferred_right, 'hole) not_empty
+     (a, b, preferred_right, 'hole) packet
   -> (b, b, [`green], 'hole, nh, nh, nh) triple
-  -> (a, [`green]) deque
+  -> (a, [`green]) non_empty_cdeque
 = fun d1 ght ->
   match d1 with
-  | Only_of ri ->
-      Only_path (Path (ri, ght))
-  | Pair_right (left, ri) ->
-      Pair_red (left, Path (ri, ght))
+  | Only_child ri ->
+      Only_path (Children (ri, ght))
+  | Right_child (left, ri) ->
+      Pair_red (left, Children (ri, ght))
 
 
 let make_child
 : type a b c p hl.
-     (a, b, p, hl) not_empty
+     (a, b, p, hl) packet
   -> (b, b, c, hl, nh, nh, nh) triple
-  -> a semi
+  -> a sdeque
 = fun ne_deq trip ->
   match color trip, ne_deq, trip with
-  | Is_green, Only_of y, g -> S (T (Only_path (Path (y, g))))
-  | Is_red,   Only_of y, g -> S (T (Only_path (Path (y, g))))
-  | Is_green, Pair_left (le, right), ft ->
-      S (T (Pair_green (Path (le, ft), right)))
-  | Is_red, Pair_left (le, right), ft ->
-      S (T (Pair_green (Path (le, ft), right)))
-  | Is_green, Pair_right (left, ri), ght ->
-      S (T (Pair_red (left, Path (ri, ght))))
-  | Is_red, Pair_right (left, ri), ght ->
-      S (T (Pair_green (left, Path (ri, ght))))
+  | Is_green, Only_child y, g -> Sd (NonEmpty (Only_path (Children (y, g))))
+  | Is_red,   Only_child y, g -> Sd (NonEmpty (Only_path (Children (y, g))))
+  | Is_green, Left_child (le, right), ft ->
+      Sd (NonEmpty (Pair_green (Children (le, ft), right)))
+  | Is_red, Left_child (le, right), ft ->
+      Sd (NonEmpty (Pair_green (Children (le, ft), right)))
+  | Is_green, Right_child (left, ri), ght ->
+      Sd (NonEmpty (Pair_red (left, Children (ri, ght))))
+  | Is_red, Right_child (left, ri), ght ->
+      Sd (NonEmpty (Pair_green (left, Children (ri, ght))))
 
 let push_child
 : type a b c p hl.
      a
-  -> (a, b, p, hl) not_empty
+  -> (a, b, p, hl) packet
   -> (b, b, c, hl, nh, nh, nh) triple
-  -> (a, b, p, hl) not_empty
+  -> (a, b, p, hl) packet
    * (b, b, c, hl, nh, nh, nh) triple
 = fun x ne_deq trip ->
   match ne_deq, trip with
-  | Only_of only, g ->
+  | Only_child only, g ->
       begin match is_hole only, only with
-      | Is_hole, HOLE -> Only_of HOLE, push_only_triple x g
-      | Not_hole, only -> Only_of (push_only_triple x only), g
+      | Is_hole, Hole -> Only_child Hole, push_only_triple x g
+      | Not_hole, only -> Only_child (push_only_triple x only), g
       end
-  | Pair_left (left, right), g ->
+  | Left_child (left, right), g ->
       begin match is_hole left, left with
-      | Is_hole,  HOLE -> Pair_left (HOLE, right), push_left_triple x g
-      | Not_hole, left -> Pair_left (push_left_triple x left, right), g
+      | Is_hole,  Hole -> Left_child (Hole, right), push_left_triple x g
+      | Not_hole, left -> Left_child (push_left_triple x left, right), g
       end
-  | Pair_right (left, right), g ->
-      Pair_right (push_left_path x left, right), g
+  | Right_child (left, right), g ->
+      Right_child (push_left_path x left, right), g
 
 let inject_child
 : type a b c p hl.
-     (a, b, p, hl) not_empty
+     (a, b, p, hl) packet
   -> (b, b, c, hl, nh, nh, nh) triple
   -> a
-  -> (a, b, p, hl) not_empty
+  -> (a, b, p, hl) packet
    * (b, b, c, hl, nh, nh, nh) triple
 = fun ne_deq trip x ->
   match ne_deq, trip with
-  | Only_of only, g ->
+  | Only_child only, g ->
       begin match is_hole only, only with
-      | Is_hole,  HOLE -> Only_of only, inject_only_triple g x
-      | Not_hole, only -> Only_of (inject_only_triple only x), g
+      | Is_hole,  Hole -> Only_child only, inject_only_triple g x
+      | Not_hole, only -> Only_child (inject_only_triple only x), g
       end
-  | Pair_right (left, right), g ->
+  | Right_child (left, right), g ->
       begin match is_hole right, right with
-      | Is_hole,  HOLE  -> Pair_right (left, right), inject_right_triple g x
-      | Not_hole, right -> Pair_right (left, inject_right_triple right x), g
+      | Is_hole,  Hole  -> Right_child (left, right), inject_right_triple g x
+      | Not_hole, right -> Right_child (left, inject_right_triple right x), g
       end
-  | Pair_left (left, right), g ->
-      Pair_left (left, inject_right_path right x), g
+  | Left_child (left, right), g ->
+      Left_child (left, inject_right_path right x), g
 
 type 'a buffer_12 = 'a * ('a, eq1) vector
 
 let stored_left
 : type a c.
      (a, _ ge5) prefix
-  -> (a stored_triple, c) st
+  -> (a stored_triple, c) cdeque
   -> (a, eq2) suffix
   -> a buffer_12
   -> (a, eq2) prefix * a stored_triple
@@ -828,13 +828,13 @@ let stored_left
   let x, p2 = Buffer.pop p2 in
   let y, p2 = Buffer.pop p2 in
   let s3 = Buffer.pair x y in
-  s3, Stored (p2, d2, s2)
+  s3, ST_triple (p2, d2, s2)
 
 let stored_right
 : type a any_c.
      a buffer_12
   -> (a, eq2) prefix
-  -> (a stored_triple, any_c) st
+  -> (a stored_triple, any_c) cdeque
   -> (a, _ ge5) suffix
   -> a stored_triple * (a, eq2) suffix
 = fun s1 p2 d2 s2 ->
@@ -844,7 +844,7 @@ let stored_right
   in
   let s2, y, x = Buffer.eject2 s2 in
   let s3 = Buffer.pair y x in
-  Stored (p2, d2, s2), s3
+  ST_triple (p2, d2, s2), s3
 
 let extract_stored_left
 : type a c.
@@ -853,15 +853,15 @@ let extract_stored_left
   -> (a, eq2) suffix * a stored_triple
 = fun left s1 ->
   match left with
-  | Path (Left_orange (p2, d2, s2), d2_kont) ->
-      let S d2 = make_child d2 d2_kont in
+  | Children (Left_orange (p2, d2, s2), d2_kont) ->
+      let Sd d2 = make_child d2 d2_kont in
       stored_left p2 d2 s2 s1
-  | Path (Left_yellow (p2, d2, s2), d2_kont) ->
-      let S d2 = make_child d2 d2_kont in
+  | Children (Left_yellow (p2, d2, s2), d2_kont) ->
+      let Sd d2 = make_child d2 d2_kont in
       stored_left p2 d2 s2 s1
-  | Path (HOLE, Left_small (p2,     s2)) -> stored_left p2 Void   s2 s1
-  | Path (HOLE, Left_green (p2, d2, s2)) -> stored_left p2 (T d2) s2 s1
-  | Path (HOLE, Left_red   (p2, d2, s2)) -> stored_left p2 (T d2) s2 s1
+  | Children (Hole, Left_small (p2,     s2)) -> stored_left p2 Empty   s2 s1
+  | Children (Hole, Left_green (p2, d2, s2)) -> stored_left p2 (NonEmpty d2) s2 s1
+  | Children (Hole, Left_red   (p2, d2, s2)) -> stored_left p2 (NonEmpty d2) s2 s1
 
 let extract_stored_right
 : type a c.
@@ -870,15 +870,15 @@ let extract_stored_right
   -> a stored_triple * (a, eq2) suffix
 = fun s1 right ->
   match right with
-  | Path (Right_orange (p2, d2, s2), d2_kont) ->
-      let S d2 = make_child d2 d2_kont in
+  | Children (Right_orange (p2, d2, s2), d2_kont) ->
+      let Sd d2 = make_child d2 d2_kont in
       stored_right s1 p2 d2 s2
-  | Path (Right_yellow (p2, d2, s2), d2_kont) ->
-      let S d2 = make_child d2 d2_kont in
+  | Children (Right_yellow (p2, d2, s2), d2_kont) ->
+      let Sd d2 = make_child d2 d2_kont in
       stored_right s1 p2 d2 s2
-  | Path (HOLE, Right_small (p2,     s2)) -> stored_right s1 p2 Void   s2
-  | Path (HOLE, Right_green (p2, d2, s2)) -> stored_right s1 p2 (T d2) s2
-  | Path (HOLE, Right_red   (p2, d2, s2)) -> stored_right s1 p2 (T d2) s2
+  | Children (Hole, Right_small (p2,     s2)) -> stored_right s1 p2 Empty   s2
+  | Children (Hole, Right_green (p2, d2, s2)) -> stored_right s1 p2 (NonEmpty d2) s2
+  | Children (Hole, Right_red   (p2, d2, s2)) -> stored_right s1 p2 (NonEmpty d2) s2
 
 let left_of_pair
 : type a c1 c2.
@@ -886,468 +886,468 @@ let left_of_pair
   -> (a, c2, right) path
   -> (a, c1, left) path
 = fun left right ->
-  match color_path left, left with
-  | _, Path (Left_yellow (p1, d1, s1), kont) ->
+  match path_uncolored left, left with
+  | _, Children (Left_yellow (p1, d1, s1), kont) ->
       let a, b = Buffer.two s1 in
       let s1 = (a, V1 b) in
       let stored, s3 = extract_stored_right s1 right in
       let d1, kont = inject_child d1 kont stored in
-      Path (Left_yellow (p1, d1, s3), kont)
-  | _, Path (Left_orange (p1, d1, s1), kont) ->
+      Children (Left_yellow (p1, d1, s3), kont)
+  | _, Children (Left_orange (p1, d1, s1), kont) ->
       let a, b = Buffer.two s1 in
       let s1 = (a, V1 b) in
       let stored, s3 = extract_stored_right s1 right in
       let d1, kont = inject_child d1 kont stored in
-      Path (Left_orange (p1, d1, s3), kont)
-  | Is_green, Path (HOLE, Left_green (p1, d1, s1)) ->
+      Children (Left_orange (p1, d1, s3), kont)
+  | Is_green, Children (Hole, Left_green (p1, d1, s1)) ->
       let a, b = Buffer.two s1 in
       let s1 = (a, V1 b) in
       let stored, s3 = extract_stored_right s1 right in
       let d1 = inject_deque d1 stored in
-      Path (HOLE, Left_green (p1, d1, s3))
-  | Is_red, Path (HOLE, Left_red (p1, d1, s1)) ->
+      Children (Hole, Left_green (p1, d1, s3))
+  | Is_red, Children (Hole, Left_red (p1, d1, s1)) ->
       let a, b = Buffer.two s1 in
       let s1 = (a, V1 b) in
       let stored, s3 = extract_stored_right s1 right in
       let d1 = inject_deque d1 stored in
-      Path (HOLE, Left_red (p1, d1, s3))
-  | Is_green, Path (HOLE, Left_small (p1, s1)) ->
+      Children (Hole, Left_red (p1, d1, s3))
+  | Is_green, Children (Hole, Left_small (p1, s1)) ->
       let a, b = Buffer.two s1 in
       let p1 = Buffer.inject p1 a in
       let s1 = (b, V0) in
       let stored, s3 = extract_stored_right s1 right in
-      Path (Left_orange (p1, Only_of HOLE, s3), single_triple stored)
+      Children (Left_orange (p1, Only_child Hole, s3), single_triple stored)
 
 let right_of_pair
 : type a c1 c2.
    (a, c1, left) path -> (a, c2, right) path -> (a, c2, right) path
 = fun left right ->
-  match color_path right, right with
-  | _, Path (Right_yellow (p1, d1, s1), kont) ->
+  match path_uncolored right, right with
+  | _, Children (Right_yellow (p1, d1, s1), kont) ->
       let a, b = Buffer.two p1 in
       let p1 = (a, V1 b) in
       let p3, stored = extract_stored_left left p1 in
       let d1, kont = push_child stored d1 kont in
-      Path (Right_yellow (p3, d1, s1), kont)
-  | _, Path (Right_orange (p1, d1, s1), kont) ->
+      Children (Right_yellow (p3, d1, s1), kont)
+  | _, Children (Right_orange (p1, d1, s1), kont) ->
       let a, b = Buffer.two p1 in
       let p1 = (a, V1 b) in
       let p3, stored = extract_stored_left left p1 in
       let d1, kont = push_child stored d1 kont in
-      Path (Right_orange (p3, d1, s1), kont)
-  | Is_green, Path (HOLE, Right_green (p1, d1, s1)) ->
+      Children (Right_orange (p3, d1, s1), kont)
+  | Is_green, Children (Hole, Right_green (p1, d1, s1)) ->
       let a, b = Buffer.two p1 in
       let p1 = (a, V1 b) in
       let p3, stored = extract_stored_left left p1 in
       let d1 = push_deque stored d1 in
-      Path (HOLE, Right_green (p3, d1, s1))
-  | Is_red, Path (HOLE, Right_red (p1, d1, s1)) ->
+      Children (Hole, Right_green (p3, d1, s1))
+  | Is_red, Children (Hole, Right_red (p1, d1, s1)) ->
       let a, b = Buffer.two p1 in
       let p1 = (a, V1 b) in
       let p3, stored = extract_stored_left left p1 in
       let d1 = push_deque stored d1 in
-      Path (HOLE, Right_red (p3, d1, s1))
-  | Is_green, Path (HOLE, Right_small (p1, s1)) ->
+      Children (Hole, Right_red (p3, d1, s1))
+  | Is_green, Children (Hole, Right_small (p1, s1)) ->
       let a, b = Buffer.two p1 in
       let p1 = (a, V0) in
       let s1 = Buffer.push b s1 in
       let p3, stored = extract_stored_left left p1 in
-      Path (Right_orange (p3, Only_of HOLE, s1), single_triple stored)
+      Children (Right_orange (p3, Only_child Hole, s1), single_triple stored)
 
 type (_, _, _) path_attempt =
-  | Small : ('a, eq6) vector -> ('a, _, _) path_attempt
+  | ZeroSix : ('a, eq6) vector -> ('a, _, _) path_attempt
   | Ok : ('a, 'c, 'k) path -> ('a, 'c, 'k) path_attempt
   | Any : ('a, _, 'k) path -> ('a, [`red], 'k) path_attempt
 
 let left_of_only
 : type a c. (a, c, only) path -> (a, c, left) path_attempt
 = fun path ->
-  match color_path path, path with
-  | _, Path (Only_yellow (p1, d1, s1), kont) ->
+  match path_uncolored path, path with
+  | _, Children (Only_yellow (p1, d1, s1), kont) ->
       let s1, b, a = Buffer.eject2 s1 in
       let s1' = Buffer.pair b a in
-      let d1, kont = inject_child d1 kont (Stored_prefix s1) in
-      Ok (Path (Left_yellow (p1, d1, s1'), kont))
-  | _, Path (Only_orange (p1, d1, s1), kont) ->
+      let d1, kont = inject_child d1 kont (ST_small s1) in
+      Ok (Children (Left_yellow (p1, d1, s1'), kont))
+  | _, Children (Only_orange (p1, d1, s1), kont) ->
       let s1, b, a = Buffer.eject2 s1 in
       let s1' = Buffer.pair b a in
-      let d1, kont = inject_child d1 kont (Stored_prefix s1) in
-      Ok (Path (Left_orange (p1, d1, s1'), kont))
-  | Is_green, Path (HOLE, Only_green (p1, d1, s1)) ->
+      let d1, kont = inject_child d1 kont (ST_small s1) in
+      Ok (Children (Left_orange (p1, d1, s1'), kont))
+  | Is_green, Children (Hole, Only_green (p1, d1, s1)) ->
       let s1, b, a = Buffer.eject2 s1 in
       let s1' = Buffer.pair b a in
-      let d1 = inject_deque d1 (Stored_prefix s1) in
-      Ok (Path (HOLE, Left_green (p1, d1, s1')))
-  | Is_red, Path (HOLE, Only_red (p1, d1, s1)) ->
+      let d1 = inject_deque d1 (ST_small s1) in
+      Ok (Children (Hole, Left_green (p1, d1, s1')))
+  | Is_red, Children (Hole, Only_red (p1, d1, s1)) ->
       let s1, b, a = Buffer.eject2 s1 in
       let s1' = Buffer.pair b a in
-      let d1 = inject_deque d1 (Stored_prefix s1) in
-      Ok (Path (HOLE, Left_red (p1, d1, s1')))
-  | Is_green, Path (HOLE, Only_prefix p1) ->
+      let d1 = inject_deque d1 (ST_small s1) in
+      Ok (Children (Hole, Left_red (p1, d1, s1')))
+  | Is_green, Children (Hole, Only_small p1) ->
       begin match Buffer.has5p2 p1 with
-      | Buffer.Less_than_5p2 vec -> Small vec
+      | Buffer.Less_than_5p2 vec -> ZeroSix vec
       | Buffer.At_least_5p2 (p1, x, y) ->
           let s1 = Buffer.pair x y in
-          Ok (Path (HOLE, Left_small (p1, s1)))
+          Ok (Children (Hole, Left_small (p1, s1)))
       end
 
 let right_of_only
 : type a c.  (a, c, only) path -> (a, c, right) path_attempt
 = fun path ->
-  match color_path path, path with
-  | _, Path (Only_yellow (p1, d1, s1), kont) ->
+  match path_uncolored path, path with
+  | _, Children (Only_yellow (p1, d1, s1), kont) ->
       let a, b, p1 = Buffer.pop2 p1 in
-      let d1, kont = push_child (Stored_prefix p1) d1 kont in
+      let d1, kont = push_child (ST_small p1) d1 kont in
       let p1' = Buffer.pair a b in
-      Ok (Path (Right_yellow (p1', d1, s1), kont))
-  | _, Path (Only_orange (p1, d1, s1), kont) ->
+      Ok (Children (Right_yellow (p1', d1, s1), kont))
+  | _, Children (Only_orange (p1, d1, s1), kont) ->
       let a, b, p1 = Buffer.pop2 p1 in
-      let d1, kont = push_child (Stored_prefix p1) d1 kont in
+      let d1, kont = push_child (ST_small p1) d1 kont in
       let p1' = Buffer.pair a b in
-      Ok (Path (Right_orange (p1', d1, s1), kont))
-  | Is_green, Path (HOLE, Only_green (p1, d1, s1)) ->
+      Ok (Children (Right_orange (p1', d1, s1), kont))
+  | Is_green, Children (Hole, Only_green (p1, d1, s1)) ->
       let a, b, p1 = Buffer.pop2 p1 in
-      let d1 = push_deque (Stored_prefix p1) d1 in
+      let d1 = push_deque (ST_small p1) d1 in
       let p1' = Buffer.pair a b in
-      Ok (Path (HOLE, Right_green (p1', d1, s1)))
-  | Is_red, Path (HOLE, Only_red (p1, d1, s1)) ->
+      Ok (Children (Hole, Right_green (p1', d1, s1)))
+  | Is_red, Children (Hole, Only_red (p1, d1, s1)) ->
       let a, b, p1 = Buffer.pop2 p1 in
-      let d1 = push_deque (Stored_prefix p1) d1 in
+      let d1 = push_deque (ST_small p1) d1 in
       let p1' = Buffer.pair a b in
-      Ok (Path (HOLE, Right_red (p1', d1, s1)))
-  | Is_green, Path (HOLE, Only_prefix p1) ->
+      Ok (Children (Hole, Right_red (p1', d1, s1)))
+  | Is_green, Children (Hole, Only_small p1) ->
       begin match Buffer.has2p5 p1 with
-      | Buffer.Less_than_2p5 vec -> Small vec
+      | Buffer.Less_than_2p5 vec -> ZeroSix vec
       | Buffer.At_least_2p5 (x, y, s1) ->
           let p1 = Buffer.pair x y in
-          Ok (Path (HOLE, Right_small (p1, s1)))
+          Ok (Children (Hole, Right_small (p1, s1)))
       end
 
 let make_left
-: type a c. (a, c) st -> (a, c, left) path_attempt
-= fun st ->
-  match color_st st, st with
-  | _, Void -> Small V0
-  | _, T (Only_path only) -> left_of_only only
-  | Is_green, T (Pair_red (a, b)) -> Ok  (left_of_pair a b)
-  | Is_red, T (Pair_green (a, b)) -> Any (left_of_pair a b)
+: type a c. (a, c) cdeque -> (a, c, left) path_attempt
+= fun cdeque ->
+  match color_st cdeque, cdeque with
+  | _, Empty -> ZeroSix V0
+  | _, NonEmpty (Only_path only) -> left_of_only only
+  | Is_green, NonEmpty (Pair_red (a, b)) -> Ok  (left_of_pair a b)
+  | Is_red, NonEmpty (Pair_green (a, b)) -> Any (left_of_pair a b)
 
 let make_right
-: type a c. (a, c) st -> (a, c, right) path_attempt
-= fun st ->
-  match color_st st, st with
-  | _, Void -> Small V0
-  | _, T (Only_path only) -> right_of_only only
-  | Is_green, T (Pair_red (a, b)) -> Ok  (right_of_pair a b)
-  | Is_red, T (Pair_green (a, b)) -> Any (right_of_pair a b)
+: type a c. (a, c) cdeque -> (a, c, right) path_attempt
+= fun cdeque ->
+  match color_st cdeque, cdeque with
+  | _, Empty -> ZeroSix V0
+  | _, NonEmpty (Only_path only) -> right_of_only only
+  | Is_green, NonEmpty (Pair_red (a, b)) -> Ok  (right_of_pair a b)
+  | Is_red, NonEmpty (Pair_green (a, b)) -> Any (right_of_pair a b)
 
 let concat_semi
-: type a. a semi -> a semi -> a semi
-= fun ((S dl) as deq_left) ((S dr) as deq_right) ->
+: type a. a sdeque -> a sdeque -> a sdeque
+= fun ((Sd dl) as deq_left) ((Sd dr) as deq_right) ->
   match make_left dl with
-  | Small vec -> push_semi_vector vec deq_right
+  | ZeroSix vec -> push_semi_vector vec deq_right
   | Ok left ->
       begin match make_right dr with
-      | Small vec -> inject_semi_vector deq_left vec
-      | Ok  right -> S (T (Pair_green (left, right)))
-      | Any right -> S (T (Pair_green (left, right)))
+      | ZeroSix vec -> inject_semi_vector deq_left vec
+      | Ok  right -> Sd (NonEmpty (Pair_green (left, right)))
+      | Any right -> Sd (NonEmpty (Pair_green (left, right)))
       end
   | Any left ->
       begin match make_right dr with
-      | Small vec -> inject_semi_vector deq_left vec
-      | Ok  right -> S (T (Pair_green (left, right)))
-      | Any right -> S (T (Pair_green (left, right)))
+      | ZeroSix vec -> inject_semi_vector deq_left vec
+      | Ok  right -> Sd (NonEmpty (Pair_green (left, right)))
+      | Any right -> Sd (NonEmpty (Pair_green (left, right)))
       end
 
 let concat
-: type a. a t -> a t -> a t
-= fun ((Regular dl) as deq_left) ((Regular dr) as deq_right) ->
+: type a. a deque -> a deque -> a deque
+= fun ((T dl) as deq_left) ((T dr) as deq_right) ->
   match make_left dl with
-  | Small vec -> push_vector vec deq_right
+  | ZeroSix vec -> push_vector vec deq_right
   | Ok left ->
       begin match make_right dr with
-      | Small vec -> inject_vector deq_left vec
-      | Ok right -> Regular (T (Pair_red (left, right)))
+      | ZeroSix vec -> inject_vector deq_left vec
+      | Ok right -> T (NonEmpty (Pair_red (left, right)))
       | _ -> .
       end
   | _ -> .
 
 
-type ('a, 'k) color_path =
-  | Exact_6 : 'a six -> ('a, _) color_path
-  | Any : ('a, _, 'k) path -> ('a, 'k) color_path
+type ('a, 'k) path_uncolored =
+  | Exact_6 : 'a six -> ('a, _) path_uncolored
+  | Any : ('a, _, 'k) path -> ('a, 'k) path_uncolored
 
 let semi_of_left
-: type a c.  (a, c, left) path -> a six -> a semi
+: type a c.  (a, c, left) path -> a six -> a sdeque
 = fun left six ->
-  match color_path left, left with
-  | Is_green, Path (HOLE, Left_small (p2, s2)) ->
+  match path_uncolored left, left with
+  | Is_green, Children (Hole, Left_small (p2, s2)) ->
       let c, d = Buffer.two s2 in
       let p2 = Buffer.inject2 p2 (c, d) in
       let p2 = Buffer.inject6 p2 six in
-      S (T (Only_path (Path (HOLE, Only_prefix p2))))
-  | Is_green, Path (HOLE, Left_green (p2, d2, s2)) ->
+      Sd (NonEmpty (Only_path (Children (Hole, Only_small p2))))
+  | Is_green, Children (Hole, Left_green (p2, d2, s2)) ->
       let s2 = Buffer.inject6 s2 six in
-      S (T (Only_path (Path (HOLE, Only_green (p2, d2, s2)))))
-  | _, Path (Left_yellow (p2, d2, s2), kont) ->
+      Sd (NonEmpty (Only_path (Children (Hole, Only_green (p2, d2, s2)))))
+  | _, Children (Left_yellow (p2, d2, s2), kont) ->
       let s2 = Buffer.inject6 s2 six in
-      S (T (Only_path (Path (Only_yellow (p2, d2, s2), kont))))
-  | _, Path (Left_orange (p2, d2, s2), kont) ->
+      Sd (NonEmpty (Only_path (Children (Only_yellow (p2, d2, s2), kont))))
+  | _, Children (Left_orange (p2, d2, s2), kont) ->
       let s2 = Buffer.inject6 s2 six in
-      S (T (Only_path (Path (Only_orange (p2, d2, s2), kont))))
-  | Is_red, Path (HOLE, Left_red (p2, d2, s2)) ->
+      Sd (NonEmpty (Only_path (Children (Only_orange (p2, d2, s2), kont))))
+  | Is_red, Children (Hole, Left_red (p2, d2, s2)) ->
       let s2 = Buffer.inject6 s2 six in
-      S (T (Only_path (Path (HOLE, Only_red (p2, d2, s2)))))
+      Sd (NonEmpty (Only_path (Children (Hole, Only_red (p2, d2, s2)))))
 
 let semi_of_right
-: type a c.  a six -> (a, c, right) path -> a semi
+: type a c.  a six -> (a, c, right) path -> a sdeque
 = fun six right ->
-  match color_path right, right with
-  | Is_green, Path (HOLE, Right_small (p2, s2)) ->
+  match path_uncolored right, right with
+  | Is_green, Children (Hole, Right_small (p2, s2)) ->
       let c, d = Buffer.two p2 in
       let s2 = Buffer.push2 (c, d) s2 in
       let s2 = Buffer.push6 six s2 in
-      S (T (Only_path (Path (HOLE, Only_prefix s2))))
-  | Is_green, Path (HOLE, Right_green (p2, d2, s2)) ->
+      Sd (NonEmpty (Only_path (Children (Hole, Only_small s2))))
+  | Is_green, Children (Hole, Right_green (p2, d2, s2)) ->
       let p2 = Buffer.push6 six p2 in
-      S (T (Only_path (Path (HOLE, Only_green (p2, d2, s2)))))
-  | _, Path (Right_yellow (p2, d2, s2), kont) ->
+      Sd (NonEmpty (Only_path (Children (Hole, Only_green (p2, d2, s2)))))
+  | _, Children (Right_yellow (p2, d2, s2), kont) ->
       let p2 = Buffer.push6 six p2 in
-      S (T (Only_path (Path (Only_yellow (p2, d2, s2), kont))))
-  | _, Path (Right_orange (p2, d2, s2), kont) ->
+      Sd (NonEmpty (Only_path (Children (Only_yellow (p2, d2, s2), kont))))
+  | _, Children (Right_orange (p2, d2, s2), kont) ->
       let p2 = Buffer.push6 six p2 in
-      S (T (Only_path (Path (Only_orange (p2, d2, s2), kont))))
-  | Is_red, Path (HOLE, Right_red (p2, d2, s2)) ->
+      Sd (NonEmpty (Only_path (Children (Only_orange (p2, d2, s2), kont))))
+  | Is_red, Children (Hole, Right_red (p2, d2, s2)) ->
       let p2 = Buffer.push6 six p2 in
-      S (T (Only_path (Path (HOLE, Only_red (p2, d2, s2)))))
+      Sd (NonEmpty (Only_path (Children (Hole, Only_red (p2, d2, s2)))))
 
 let pop_green_left
-: type a. (a, [`green], left) path -> a * (a, left) color_path
+: type a. (a, [`green], left) path -> a * (a, left) path_uncolored
 = function
-  | Path (HOLE, Left_small (p1, s1)) ->
+  | Children (Hole, Left_small (p1, s1)) ->
       let x, p1 = Buffer.pop p1 in
       let result = match Buffer.has5 p1 with
          | Buffer.At_least_5 p1 ->
-             Any (Path (HOLE, Left_small (p1, s1)))
+             Any (Children (Hole, Left_small (p1, s1)))
          | Buffer.Exact_4 (a, b, c, d) ->
              let e, f = Buffer.two s1 in
              Exact_6 (a, b, c, d, e, f) in
       x, result
-  | Path (HOLE, Left_green (p1, d1, s1)) ->
+  | Children (Hole, Left_green (p1, d1, s1)) ->
       let x, p1 = Buffer.pop p1 in
       let Pref_left (d1, k) = pref_left d1 in
-      let path = Path (Left_yellow (p1, d1, s1), k) in
+      let path = Children (Left_yellow (p1, d1, s1), k) in
       x, Any path
-  | Path (Left_yellow (p1, d1, s1), kont) ->
+  | Children (Left_yellow (p1, d1, s1), kont) ->
       let x, p1 = Buffer.pop p1 in
       let Pref_right (d1, kont) = pref_right d1 kont in
-      let path = Path (Left_orange (p1, d1, s1), kont) in
+      let path = Children (Left_orange (p1, d1, s1), kont) in
       x, Any path
-  | Path (Left_orange (p1, d1, s1), kont) ->
+  | Children (Left_orange (p1, d1, s1), kont) ->
       let x, p1 = Buffer.pop p1 in
       let d1 = no_pref d1 kont in
-      let path = Path (HOLE, Left_red (p1, d1, s1)) in
+      let path = Children (Hole, Left_red (p1, d1, s1)) in
       x, Any path
 
 let eject_green_right
-: type a. (a, [`green], right) path -> (a, right) color_path * a
+: type a. (a, [`green], right) path -> (a, right) path_uncolored * a
 = function
-  | Path (HOLE, Right_small (p1, s1)) ->
+  | Children (Hole, Right_small (p1, s1)) ->
       let s1, x = Buffer.eject s1 in
       let result = match Buffer.has5 s1 with
         | Buffer.At_least_5 s1 ->
-            Any (Path (HOLE, Right_small (p1, s1)))
+            Any (Children (Hole, Right_small (p1, s1)))
         | Buffer.Exact_4 (c, d, e, f) ->
             let a, b = Buffer.two p1 in
             Exact_6 (a, b, c, d, e, f) in
       result, x
-  | Path (HOLE, Right_green (p1, d1, s1)) ->
+  | Children (Hole, Right_green (p1, d1, s1)) ->
       let s1, x = Buffer.eject s1 in
       let Pref_left (d1, k) = pref_left d1 in
-      let path = Path (Right_yellow (p1, d1, s1), k) in
+      let path = Children (Right_yellow (p1, d1, s1), k) in
       Any path, x
-  | Path (Right_yellow (p1, d1, s1), kont) ->
+  | Children (Right_yellow (p1, d1, s1), kont) ->
       let s1, x = Buffer.eject s1 in
       let Pref_right (d1, kont) = pref_right d1 kont in
-      let path = Path (Right_orange (p1, d1, s1), kont) in
+      let path = Children (Right_orange (p1, d1, s1), kont) in
       Any path, x
-  | Path (Right_orange (p1, d1, s1), kont) ->
+  | Children (Right_orange (p1, d1, s1), kont) ->
       let s1, x = Buffer.eject s1 in
       let d1 = no_pref d1 kont in
-      let path = Path (HOLE, Right_red (p1, d1, s1)) in
+      let path = Children (Hole, Right_red (p1, d1, s1)) in
       Any path, x
 
 let pop_green
-: type a. (a, [`green]) deque -> a * a semi
+: type a. (a, [`green]) non_empty_cdeque -> a * a sdeque
 = function
-  | Only_path (Path (HOLE, Only_prefix p1)) ->
+  | Only_path (Children (Hole, Only_small p1)) ->
       let x, p1 = Buffer.pop p1 in
       x, begin match Buffer.has1 p1 with
-         | Buffer.Exact_0 -> S Void
-         | Buffer.Lte1 p1 -> S (T (Only_path (Path (HOLE, Only_prefix p1))))
+         | Buffer.Exact_0 -> Sd Empty
+         | Buffer.Lte1 p1 -> Sd (NonEmpty (Only_path (Children (Hole, Only_small p1))))
          end
-  | Only_path (Path (HOLE, Only_green (p1, d1, s1))) ->
+  | Only_path (Children (Hole, Only_green (p1, d1, s1))) ->
       let x, p1 = Buffer.pop p1 in
       let Pref_left (d1, k) = pref_left d1 in
-      let only = Path (Only_yellow (p1, d1, s1), k) in
-      x, S (T (Only_path only))
-  | Only_path (Path (Only_yellow (p1, d1, s1), kont)) ->
+      let only = Children (Only_yellow (p1, d1, s1), k) in
+      x, Sd (NonEmpty (Only_path only))
+  | Only_path (Children (Only_yellow (p1, d1, s1), kont)) ->
       let x, p1 = Buffer.pop p1 in
       let Pref_right (d1, kont) = pref_right d1 kont in
-      let only = (Path (Only_orange (p1, d1, s1), kont)) in
-      x, S (T (Only_path only))
-  | Only_path (Path (Only_orange (p1, d1, s1), kont)) ->
+      let only = (Children (Only_orange (p1, d1, s1), kont)) in
+      x, Sd (NonEmpty (Only_path only))
+  | Only_path (Children (Only_orange (p1, d1, s1), kont)) ->
       let x, p1 = Buffer.pop p1 in
       let d1 = no_pref d1 kont in
-      let only = Path (HOLE, Only_red (p1, d1, s1)) in
-      x, S (T (Only_path only))
+      let only = Children (Hole, Only_red (p1, d1, s1)) in
+      x, Sd (NonEmpty (Only_path only))
   | Pair_red (left, right) ->
       let x, result = pop_green_left left in
       x, begin match result with
          | Any left ->
-             S (T (Pair_green (left, right)))
+             Sd (NonEmpty (Pair_green (left, right)))
          | Exact_6 six ->
              semi_of_right six right
          end
 
 let eject_green
-: type a. (a, [`green]) deque -> a semi * a
+: type a. (a, [`green]) non_empty_cdeque -> a sdeque * a
 = function
-  | Only_path (Path (HOLE, Only_prefix p1)) ->
+  | Only_path (Children (Hole, Only_small p1)) ->
       let p1, x = Buffer.eject p1 in
       let result = match Buffer.has1 p1 with
-         | Buffer.Exact_0 -> S Void
-         | Buffer.Lte1 p1 -> S (T (Only_path (Path (HOLE, Only_prefix p1))))
+         | Buffer.Exact_0 -> Sd Empty
+         | Buffer.Lte1 p1 -> Sd (NonEmpty (Only_path (Children (Hole, Only_small p1))))
       in
       result, x
-  | Only_path (Path (HOLE, Only_green (p1, d1, s1))) ->
+  | Only_path (Children (Hole, Only_green (p1, d1, s1))) ->
       let s1, x = Buffer.eject s1 in
       let Pref_left (d1, k) = pref_left d1 in
-      let only = Path (Only_yellow (p1, d1, s1), k) in
-      S (T (Only_path only)), x
-  | Only_path (Path (Only_yellow (p1, d1, s1), kont)) ->
+      let only = Children (Only_yellow (p1, d1, s1), k) in
+      Sd (NonEmpty (Only_path only)), x
+  | Only_path (Children (Only_yellow (p1, d1, s1), kont)) ->
       let s1, x = Buffer.eject s1 in
       let Pref_right (d1, kont) = pref_right d1 kont in
-      let only = (Path (Only_orange (p1, d1, s1), kont)) in
-      S (T (Only_path only)), x
-  | Only_path (Path (Only_orange (p1, d1, s1), kont)) ->
+      let only = (Children (Only_orange (p1, d1, s1), kont)) in
+      Sd (NonEmpty (Only_path only)), x
+  | Only_path (Children (Only_orange (p1, d1, s1), kont)) ->
       let s1, x = Buffer.eject s1 in
       let d1 = no_pref d1 kont in
-      let only = Path (HOLE, Only_red (p1, d1, s1)) in
-      S (T (Only_path only)), x
+      let only = Children (Hole, Only_red (p1, d1, s1)) in
+      Sd (NonEmpty (Only_path only)), x
   | Pair_red (left, right) ->
       let result, x = eject_green_right right in
       let result = match result with
-         | Any right -> S (T (Pair_green (left, right)))
+         | Any right -> Sd (NonEmpty (Pair_green (left, right)))
          | Exact_6 six -> semi_of_left left six
       in
       result, x
 
 type _ unstored =
-  Unstored : ('a, _ ge3) prefix * 'a stored_triple semi -> 'a unstored
+  Unstored : ('a, _ ge3) prefix * 'a stored_triple sdeque -> 'a unstored
 
 let pop_stored
 = fun d1 ->
     let stored, d1 = pop_green d1 in
     match stored with
-    | Stored_prefix p2 -> Unstored (p2, d1)
-    | Stored (p2, d2, s2) ->
-        let s2 = Stored_prefix s2 in
+    | ST_small p2 -> Unstored (p2, d1)
+    | ST_triple (p2, d2, s2) ->
+        let s2 = ST_small s2 in
         let d1 = push_semi s2 d1 in
-        let d1 = concat_semi (S d2) d1 in
+        let d1 = concat_semi (Sd d2) d1 in
         Unstored (p2, d1)
 
 let eject_stored
 = fun d1 ->
     let d1, stored = eject_green d1 in
     match stored with
-    | Stored_prefix p2 -> Unstored (p2, d1)
-    | Stored (p2, d2, s2) ->
-        let p2 = Stored_prefix p2 in
+    | ST_small p2 -> Unstored (p2, d1)
+    | ST_triple (p2, d2, s2) ->
+        let p2 = ST_small p2 in
         let d1 = inject_semi d1 p2 in
-        let d1 = concat_semi d1 (S d2) in
+        let d1 = concat_semi d1 (Sd d2) in
         Unstored (s2, d1)
 
 type _ sandwich =
   | Alone : 'a -> 'a sandwich
-  | Sandwich : 'a * 'a semi * 'a -> 'a sandwich
+  | Sandwich : 'a * 'a sdeque * 'a -> 'a sandwich
 
 let unsandwich_green
-: type a. (a, [`green]) deque -> a sandwich
+: type a. (a, [`green]) non_empty_cdeque -> a sandwich
 = function
-  | Only_path (Path (HOLE, Only_prefix p1)) ->
+  | Only_path (Children (Hole, Only_small p1)) ->
       let x, p1 = Buffer.pop p1 in
       begin match Buffer.has1 p1 with
       | Buffer.Exact_0 -> Alone x
       | Buffer.Lte1 p1 ->
           let p1, y = Buffer.eject p1 in
           let d1 = match Buffer.has1 p1 with
-            | Buffer.Exact_0 -> S Void
-            | Buffer.Lte1 p1 -> S (T (Only_path (Path (HOLE, Only_prefix p1))))
+            | Buffer.Exact_0 -> Sd Empty
+            | Buffer.Lte1 p1 -> Sd (NonEmpty (Only_path (Children (Hole, Only_small p1))))
           in
           Sandwich (x, d1, y)
       end
-  | Only_path (Path (HOLE, Only_green (p1, d1, s1))) ->
+  | Only_path (Children (Hole, Only_green (p1, d1, s1))) ->
       let x, p1 = Buffer.pop p1 in
       let s1, y = Buffer.eject s1 in
       let Pref_left (d1, k) = pref_left d1 in
-      let only = Path (Only_yellow (p1, d1, s1), k) in
-      Sandwich (x, S (T (Only_path only)), y)
-  | Only_path (Path (Only_yellow (p1, d1, s1), kont)) ->
+      let only = Children (Only_yellow (p1, d1, s1), k) in
+      Sandwich (x, Sd (NonEmpty (Only_path only)), y)
+  | Only_path (Children (Only_yellow (p1, d1, s1), kont)) ->
       let x, p1 = Buffer.pop p1 in
       let s1, y = Buffer.eject s1 in
       let Pref_right (d1, kont) = pref_right d1 kont in
-      let only = (Path (Only_orange (p1, d1, s1), kont)) in
-      Sandwich (x, S (T (Only_path only)), y)
-  | Only_path (Path (Only_orange (p1, d1, s1), kont)) ->
+      let only = (Children (Only_orange (p1, d1, s1), kont)) in
+      Sandwich (x, Sd (NonEmpty (Only_path only)), y)
+  | Only_path (Children (Only_orange (p1, d1, s1), kont)) ->
       let x, p1 = Buffer.pop p1 in
       let s1, y = Buffer.eject s1 in
       let d1 = no_pref d1 kont in
-      let only = Path (HOLE, Only_red (p1, d1, s1)) in
-      Sandwich (x, S (T (Only_path only)), y)
+      let only = Children (Hole, Only_red (p1, d1, s1)) in
+      Sandwich (x, Sd (NonEmpty (Only_path only)), y)
 
   | Pair_red (left, right) ->
       let x, left = pop_green_left left in
       let right, y = eject_green_right right in
       let d1 = match left, right with
-        | Any left, Any right -> S (T (Pair_green (left, right)))
+        | Any left, Any right -> Sd (NonEmpty (Pair_green (left, right)))
         | Exact_6 lst, Any right -> semi_of_right lst right
         | Any left, Exact_6 lst  -> semi_of_left left lst
         | Exact_6 left_lst, Exact_6 right_lst ->
             let buf = Buffer.empty in
             let buf = Buffer.push6 right_lst buf in
             let buf = Buffer.push6 left_lst  buf in
-            S (T (Only_path (Path (HOLE, Only_prefix buf))))
+            Sd (NonEmpty (Only_path (Children (Hole, Only_small buf))))
       in
       Sandwich (x, d1, y)
 
 type _ unstored_sandwich =
   | Unstored_alone    : ('a, _ ge3) prefix -> 'a unstored_sandwich
   | Unstored_sandwich : ('a, _ ge3) prefix
-                      * 'a stored_triple semi
+                      * 'a stored_triple sdeque
                       * ('a, _ ge3) suffix
                      -> 'a unstored_sandwich
 
 let unsandwich_stored
 = fun d1 ->
   match unsandwich_green d1 with
-  | Alone (Stored_prefix x) -> Unstored_alone x
-  | Alone (Stored (p1, d1, s1)) -> Unstored_sandwich (p1, S d1, s1)
-  | Sandwich (Stored_prefix p2, d1, Stored_prefix s3) ->
+  | Alone (ST_small x) -> Unstored_alone x
+  | Alone (ST_triple (p1, d1, s1)) -> Unstored_sandwich (p1, Sd d1, s1)
+  | Sandwich (ST_small p2, d1, ST_small s3) ->
       Unstored_sandwich (p2, d1, s3)
-  | Sandwich (Stored (p2, d2, s2), d1, Stored_prefix s3) ->
-        let d1 = push_semi (Stored_prefix s2) d1 in
-        let d1 = concat_semi (S d2) d1 in
+  | Sandwich (ST_triple (p2, d2, s2), d1, ST_small s3) ->
+        let d1 = push_semi (ST_small s2) d1 in
+        let d1 = concat_semi (Sd d2) d1 in
         Unstored_sandwich (p2, d1, s3)
-  | Sandwich (Stored_prefix p2, d1, Stored (p3, d3, s3)) ->
-        let d1 = inject_semi d1 (Stored_prefix p3) in
-        let d1 = concat_semi d1 (S d3) in
+  | Sandwich (ST_small p2, d1, ST_triple (p3, d3, s3)) ->
+        let d1 = inject_semi d1 (ST_small p3) in
+        let d1 = concat_semi d1 (Sd d3) in
         Unstored_sandwich (p2, d1, s3)
-  | Sandwich (Stored (p2, d2, s2), d1, Stored (p3, d3, s3)) ->
-        let d1 = push_semi (Stored_prefix s2) d1 in
-        let d1 = inject_semi d1 (Stored_prefix p3) in
-        let d1 = concat_semi (S d2) d1 in
-        let d1 = concat_semi d1 (S d3) in
+  | Sandwich (ST_triple (p2, d2, s2), d1, ST_triple (p3, d3, s3)) ->
+        let d1 = push_semi (ST_small s2) d1 in
+        let d1 = inject_semi d1 (ST_small p3) in
+        let d1 = concat_semi (Sd d2) d1 in
+        let d1 = concat_semi d1 (Sd d3) in
         Unstored_sandwich (p2, d1, s3)
 
 let only_small
@@ -1359,15 +1359,15 @@ let only_small
   match Buffer.has3p8 s2 with
   | Buffer.Less_than_11 (eight, vec) ->
       let p2 = Buffer.inject_vector (Buffer.inject8 p2 eight) vec in
-      Only_prefix p2
+      Only_small p2
   | Buffer.At_least_11 (a, b, c, s2) ->
-      let stored = Stored_prefix (Buffer.triple a b c) in
+      let stored = ST_small (Buffer.triple a b c) in
       let d1 = only_single stored in
       Only_green (p2, d1, s2)
 
 let only_green p2 d2 s2 = match d2 with
-  | S (T d2) -> Only_green (p2, d2, s2)
-  | S Void -> only_small p2 s2
+  | Sd (NonEmpty d2) -> Only_green (p2, d2, s2)
+  | Sd Empty -> only_small p2 s2
 
 let ensure_green
 : type a ho c.
@@ -1386,7 +1386,7 @@ let ensure_green
           | Unstored_alone center ->
               let center = Buffer.push_5_vector p1_lst center in
               let center = Buffer.inject_5_vector center s1_lst in
-              Only_prefix center
+              Only_small center
           | Unstored_sandwich (p2, d2, s2) ->
               let p2 = Buffer.push_5_vector p1_lst p2 in
               let s2 = Buffer.inject_5_vector s2 s1_lst in
@@ -1407,11 +1407,11 @@ let ensure_green
       | Buffer.At_least_8 p1 ->
           Left_green (p1, d1, s1)
       | Buffer.Less_than_8 p1_lst ->
-          let Unstored (p2, S d1) = pop_stored d1 in
+          let Unstored (p2, Sd d1) = pop_stored d1 in
           let p2 = Buffer.push_5_vector p1_lst p2 in
           begin match d1 with
-          | Void -> Left_small (p2, s1)
-          | T d1 -> Left_green (p2, d1, s1)
+          | Empty -> Left_small (p2, s1)
+          | NonEmpty d1 -> Left_green (p2, d1, s1)
           end
       end
   | Is_red, Right_red (p1, d1, s1) ->
@@ -1419,20 +1419,20 @@ let ensure_green
       | Buffer.At_least_8 s1 ->
           Right_green (p1, d1, s1)
       | Buffer.Less_than_8 s1_lst ->
-          let Unstored (s2, S d1) = eject_stored d1 in
+          let Unstored (s2, Sd d1) = eject_stored d1 in
           let s2 = Buffer.inject_5_vector s2 s1_lst in
           begin match d1 with
-          | Void -> Right_small (p1, s2)
-          | T d1 -> Right_green (p1, d1, s2)
+          | Empty -> Right_small (p1, s2)
+          | NonEmpty d1 -> Right_green (p1, d1, s2)
           end
       end
 
 let ensure_green_path
 : type a c k. (a, c, k) path -> (a, [`green], k) path
-= fun (Path (y, g)) -> Path (y, ensure_green g)
+= fun (Children (y, g)) -> Children (y, ensure_green g)
 
 let ensure_green_deque
-: type a c. (a, c) deque -> (a, [`green]) deque
+: type a c. (a, c) non_empty_cdeque -> (a, [`green]) non_empty_cdeque
 = function
   | Only_path p -> Only_path (ensure_green_path p)
   | Pair_red (a, b) -> Pair_red (a, b)
@@ -1440,26 +1440,26 @@ let ensure_green_deque
       Pair_red (ensure_green_path a, ensure_green_path b)
 
 let regular_of_semi
-: type a. a semi -> a t
+: type a. a sdeque -> a deque
 = function
-  | S Void -> Regular Void
-  | S (T deq) -> Regular (T (ensure_green_deque deq))
+  | Sd Empty -> T Empty
+  | Sd (NonEmpty deq) -> T (NonEmpty (ensure_green_deque deq))
 
 let pop
-: type a. a t -> (a * a t) option
-= fun (Regular t) ->
+: type a. a deque -> (a * a deque) option
+= fun (T t) ->
   match t with
-  | Void -> None
-  | T deq ->
+  | Empty -> None
+  | NonEmpty deq ->
       let x, semi_deq = pop_green deq in
       let reg = regular_of_semi semi_deq in
       Some (x, reg)
 
 let eject
-: type a. a t -> (a t * a) option
-= fun (Regular t) ->
+: type a. a deque -> (a deque * a) option
+= fun (T t) ->
   match t with
-  | Void -> None
-  | T deq ->
+  | Empty -> None
+  | NonEmpty deq ->
       let semi_deq, x = eject_green deq in
       Some (regular_of_semi semi_deq, x)

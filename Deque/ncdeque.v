@@ -915,7 +915,7 @@ Next Obligation.
 Qed.
 Next Obligation.
   to_size e1; destruct_opt_buff; simpl in e1; rewrite Nat.add_0_r in e1;
-   absurd_power2_eq.
+  absurd_power2_eq.
 Qed.
 Next Obligation.
   apply empty_buffer_size in e1; subst; reflexivity.
