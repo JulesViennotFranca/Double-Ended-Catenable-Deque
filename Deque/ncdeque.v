@@ -192,6 +192,8 @@ Opaque singleton.
 #[export] Hint Rewrite <-app_assoc : rlist.
 #[export] Hint Rewrite <-app_comm_cons : rlist.
 #[export] Hint Rewrite app_nil_r : rlist.
+#[export] Hint Rewrite map_app : rlist.
+#[export] Hint Rewrite concat_app : rlist.
 
 #[local] Obligation Tactic :=
   try first [ done | cbn; hauto db:rlist ].
@@ -281,6 +283,109 @@ Equations deque_seq {A size} : deque A size -> list A :=
 deque_seq (T dq) := cdeque_seq dq.
 
 Unset Equations Transparent.
+
+(* Sequence mappings *)
+
+Definition map_deque {T : Type -> nat -> Type} {A : Type}
+  (f : forall {lvl : nat}, T A lvl -> list A) 
+  {lvl q : nat}
+  (d : deque (T A lvl) q) : list A := 
+  let fix prodN_seq {lvlt lvlp} (p : prodN (T A lvlt) lvlp) {struct p} : list A :=
+    match p with 
+    | prodZ z => f z
+    | prodS p1 p2 => prodN_seq p1 ++ prodN_seq p2
+    end in
+  let buffer_seq {lvlt lvlp size C} (b : buffer (T A lvlt) lvlp size C) : list A :=
+    match b with 
+    | B0 => []
+    | B1 p1 => prodN_seq p1
+    | B2 p1 p2 => prodN_seq p1 ++ prodN_seq p2 
+    | B3 p1 p2 p3 => prodN_seq p1 ++ prodN_seq p2 ++ prodN_seq p3
+    | B4 p1 p2 p3 p4 => 
+      prodN_seq p1 ++ prodN_seq p2 ++ prodN_seq p3 ++ prodN_seq p4
+    | B5 p1 p2 p3 p4 p5 => 
+      prodN_seq p1 ++ prodN_seq p2 ++ prodN_seq p3 ++ prodN_seq p4 ++ prodN_seq p5
+    end in 
+  let fix packet_front_seq {lvlt lvlp len size C} 
+      (pkt : packet (T A lvlt) lvlp len size C) {struct pkt} : list A :=
+    match pkt with 
+    | Hole => []
+    | Triple p pkt _ _ => buffer_seq p ++ packet_front_seq pkt 
+    end in
+  let fix packet_rear_seq {lvlt lvlp len size C} 
+      (pkt : packet (T A lvlt) lvlp len size C) {struct pkt} : list A :=
+    match pkt with 
+    | Hole => []
+    | Triple _ pkt s _ => packet_rear_seq pkt ++ buffer_seq s
+    end in
+  let fix cdeque_seq {lvlt lvlp size C} 
+      (cd : cdeque (T A lvlt) lvlp size C) {struct cd} : list A :=
+    match cd with
+    | Small b => buffer_seq b
+    | Big pkt cd _ _ _ => 
+      packet_front_seq pkt ++ 
+      cdeque_seq cd ++ 
+      packet_rear_seq pkt
+    end in
+  match d with 
+  | T cd => cdeque_seq cd
+  end.
+
+(* A lemma that destructs an equality of one app into 2 subgoals. *)
+
+Lemma div_app2 {A : Type} {l1 l1' l2 l2' : list A} : 
+    l1 = l1' -> l2 = l2' -> l1 ++ l2 = l1' ++ l2'.
+Proof. intros [] []; reflexivity. Qed.
+
+(* A tactic that cleans the removes the useless hypothesis. *)
+
+Local Ltac clear_h := 
+  repeat 
+  match goal with
+  | H : _ |- _ => clear H
+  end.
+
+Lemma correct_mapping {T : Type -> nat -> Type} {A : Type} 
+  (f : forall {lvl : nat}, T A lvl -> list A)
+  {lvl q : nat}
+  (d : deque (T A lvl) q) : 
+  map_deque (@f) d = concat (map f (deque_seq d)).
+Proof.
+  (* Destruction of the deque. *)
+  destruct d as [G Y cd]; cbn;
+  (* Induction on the cdeque. *)
+  induction cd as [lvlp size C b | lvlp len pktsize nlvl nsize size C1 C2 pkt cd IHcd elvl esize cc]; 
+  (* Format for simplification. *)
+  cbn; autorewrite with rlist;
+  (* Handling the Big case, with packets and a following cdeque. *)
+  try (repeat apply div_app2; 
+  (* The following cdeque case is handled by induction. *)
+  [clear_h | apply IHcd | clear_h];
+  (* Induction on the packet. *)
+  induction pkt as [ | lvlp ???????? p pkt IHpkt s pc];
+  (* Hole cases. *)
+  try reflexivity;
+  (* Format for simplification. *)
+  cbn; autorewrite with rlist;
+  (* Separate buffer and following packet cases. *)
+  apply div_app2;
+  (* Following packet cases are handled by induction. *)
+  [clear_h; rename p into b | apply IHpkt | apply IHpkt | clear_h; rename s into b]);
+  (* Case by case on buffers. *)
+  destruct b; 
+  (* Format for simplification. *)
+  cbn; autorewrite with rlist;
+  (* Simple B0 cases are handled. *)
+  try reflexivity;
+  (* Separate multi-app goals into subgoals. *)
+  repeat apply div_app2; clear_h;
+  (* Prove the remaining by induction on the right prodN. *)
+  (match goal with 
+  | _ : _ |- _ = concat (map (f lvl) (prodN_seq ?p)) => induction p
+  end);
+  (* Finish all the cases with hauto. *)
+  cbn; hauto db:rlist.
+Qed.
 
 Notation "? x" := (@exist _ _ x _) (at level 100).
 

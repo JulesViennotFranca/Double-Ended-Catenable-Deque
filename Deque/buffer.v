@@ -51,6 +51,23 @@ vector_seq (V6 a b c d e f) := [a] ++ [b] ++ [c] ++ [d] ++ [e] ++ [f].
 
 Unset Equations Transparent.
 
+(* Sequence mappings *)
+
+Definition map_buffer {T : Type -> nat -> Type} {A : Type}
+  (f : forall {lvl : nat}, T A lvl -> list A)
+  {lvl q : nat}
+  (b : t (T A lvl) q) : list A :=
+  match b with 
+  | Buffer d => map_deque (@f) d
+  end.
+
+Lemma correct_mapping {T : Type -> nat -> Type} {A : Type}
+  (f : forall {lvl : nat}, T A lvl -> list A)
+  {lvl q : nat}
+  (b : t (T A lvl) q) :
+  map_buffer (@f) b = concat (map f (seq b)).
+Proof. destruct b; cbn; apply ncdeque.correct_mapping. Qed.
+
 (* Lemmas *)
 
 Lemma empty_buffer [A] (b : t A 0) : seq b = [].

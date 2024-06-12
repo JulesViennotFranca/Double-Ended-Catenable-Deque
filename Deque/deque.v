@@ -7,6 +7,7 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
+From Deque Require Import ncdeque.
 From Deque Require Import buffer.
 
 (* Types *)
@@ -259,46 +260,147 @@ Arguments T {A}.
 
 Set Equations Transparent.
 
-Parameter stored_triple_seq : 
-  forall {A lvl}, stored_triple A lvl -> list A.
-
-Equations buffer_seq {A lvl q} : buffer.t (stored_triple A lvl) q -> list A :=
-buffer_seq p := concat (map stored_triple_seq (buffer.seq p)).
-
-Parameter triple_front_seq :
-  forall {A lvl len is_hole K1 K2 C}, 
-  triple A lvl len is_hole K1 K2 C -> list A.
-
-Parameter triple_rear_seq :
-  forall {A lvl len is_hole K1 K2 C}, 
-  triple A lvl len is_hole K1 K2 C -> list A.
-
-Equations triple_seq {A lvl len is_hole K1 K2 C} : 
-  triple A lvl len is_hole K1 K2 C -> list A := 
-triple_seq t := triple_front_seq t ++ triple_rear_seq t.
-
-Equations path_seq {A lvl K C} : path A lvl K C -> list A :=
-path_seq (Children nchild achild _) := 
-  triple_front_seq nchild ++ triple_seq achild ++ triple_rear_seq nchild.
+Fixpoint path_seq {A lvl K C} (p : path A lvl K C) {struct p} : list A :=
+  let ne_cdeque_seq {B lvl C} (cd : non_empty_cdeque B lvl C) : list B :=
+    match cd with
+    | Only_path p => path_seq p
+    | Pair_green pl pr => path_seq pl ++ path_seq pr
+    | Pair_red pl pr => path_seq pl ++ path_seq pr
+    end in
+  let cdeque_seq {B lvl C} (cd : cdeque B lvl C) : list B :=
+    match cd with
+    | Empty => []
+    | NonEmpty necd => ne_cdeque_seq necd
+    end in 
+  let fix stored_triple_seq {B lvl} (st : stored_triple B lvl) {struct st} : list B :=
+    let buffer_seq {B lvl q} (b : buffer.t (stored_triple B lvl) q) : list B := 
+      map_buffer (@stored_triple_seq B) b in
+    match st with
+    | ST_ground b => [b]
+    | ST_small p => buffer_seq p
+    | ST_triple p cd s => buffer_seq p ++ cdeque_seq cd ++ buffer_seq s
+    end in 
+  let buffer_seq {B lvl q} (b : buffer.t (stored_triple B lvl) q) : list B := 
+    map_buffer (@stored_triple_seq B) b in
+  let fix triple_front_seq {B lvl len is_hole K1 K2 C} (t : triple B lvl len is_hole K1 K2 C) {struct t} : list B :=
+    let packet_front_seq {B lvl len pc K} (pkt : packet B lvl len pc K) : list B := 
+      match pkt with 
+      | Only_child t => triple_front_seq t
+      | Left_child t _ => triple_front_seq t
+      | Right_child p t => path_seq p ++ triple_front_seq t
+      end in 
+    match t with 
+    | Hole => []
+    | Small p _ _ => buffer_seq p
+    | Green p cd _ _ => buffer_seq p ++ ne_cdeque_seq cd
+    | Yellow p pkt _ _ => buffer_seq p ++ packet_front_seq pkt
+    | Orange p pkt _ _ => buffer_seq p ++ packet_front_seq pkt
+    | Red p cd _ _ => buffer_seq p ++ ne_cdeque_seq cd 
+    end in
+  let fix triple_rear_seq {B lvl len is_hole K1 K2 C} (t : triple B lvl len is_hole K1 K2 C) {struct t} : list B :=
+    let packet_rear_seq {B lvl len pc K} (pkt : packet B lvl len pc K) : list B :=
+      match pkt with 
+      | Only_child t => triple_rear_seq t
+      | Left_child t p => triple_rear_seq t ++ path_seq p
+      | Right_child _ t => triple_rear_seq t
+      end in
+    match t with 
+    | Hole => []
+    | Small _ s _ => buffer_seq s
+    | Green _ _ s _ => buffer_seq s
+    | Yellow _ pkt s _ => packet_rear_seq pkt ++ buffer_seq s
+    | Orange _ pkt s _ => packet_rear_seq pkt ++ buffer_seq s
+    | Red _ _ s _ => buffer_seq s 
+    end in 
+  match p with 
+  | Children natur adopt _ => 
+    triple_front_seq natur ++ triple_front_seq adopt ++
+    triple_rear_seq adopt ++ triple_rear_seq natur
+  end.
 
 Equations ne_cdeque_seq {A lvl C} : non_empty_cdeque A lvl C -> list A :=
 ne_cdeque_seq (Only_path p) := path_seq p;
-ne_cdeque_seq (Pair_green p1 p2) := path_seq p1 ++ path_seq p2;
-ne_cdeque_seq (Pair_red p1 p2) := path_seq p1 ++ path_seq p2.
+ne_cdeque_seq (Pair_green pl pd) := path_seq pl ++ path_seq pd;
+ne_cdeque_seq (Pair_red pl pd) := path_seq pl ++ path_seq pd.
 
 Equations cdeque_seq {A lvl C} : cdeque A lvl C -> list A :=
 cdeque_seq Empty := [];
 cdeque_seq (NonEmpty cd) := ne_cdeque_seq cd.
 
+Fixpoint stored_triple_seq {A} {lvl : nat} (st : stored_triple A lvl) {struct st} : list A := 
+  let buffer_seq {lvl q} (b : buffer.t (stored_triple A lvl) q) : list A := 
+    map_buffer (@stored_triple_seq A) b in
+  match st with
+  | ST_ground a => [a]
+  | ST_small p => buffer_seq p
+  | ST_triple p cd s => buffer_seq p ++ cdeque_seq cd ++ buffer_seq s
+  end.
+
+Equations buffer_seq {A lvl q} : buffer.t (stored_triple A lvl) q -> list A :=
+buffer_seq p := concat (map stored_triple_seq (buffer.seq p)).
+
+Definition path_buffer_seq {A lvl q} (b : buffer.t (stored_triple A lvl) q) : list A := 
+  map_buffer ((fix stored_triple_seq (B : Type) (lvl : nat) (st : stored_triple B lvl) {struct st} : list B := match st with
+  | ST_ground b => [b]
+  | @ST_small _ lvl' q p => map_buffer (stored_triple_seq B) p
+  | @ST_triple _ lvl' qp qs _ p cd s => 
+    map_buffer (stored_triple_seq B) p ++ 
+    cdeque_seq cd ++ 
+    map_buffer (stored_triple_seq B) s
+  end) A) b.
+
+Lemma correct_path_buffer_seq {A lvl q} (b : buffer.t (stored_triple A lvl) q) :
+  path_buffer_seq b = buffer_seq b.
+Proof.
+  unfold path_buffer_seq; simp buffer_seq. 
+  rewrite buffer.correct_mapping. reflexivity.
+Qed.
+
+Fixpoint triple_front_seq {A lvl len is_hole K1 K2 C} (t : triple A lvl len is_hole K1 K2 C) : list A :=
+  let packet_front_seq {lvl len pc K} (pkt : packet A lvl len pc K) : list A :=
+    match pkt with
+    | Only_child t => triple_front_seq t
+    | Left_child t _ => triple_front_seq t
+    | Right_child p t => path_seq p ++ triple_front_seq t
+    end in
+  match t with
+  | Hole => []
+  | Small p _ _ => path_buffer_seq p
+  | Green p cd _ _ => path_buffer_seq p ++ ne_cdeque_seq cd
+  | Yellow p pkt _ _ => path_buffer_seq p ++ packet_front_seq pkt
+  | Orange p pkt _ _ => path_buffer_seq p ++ packet_front_seq pkt
+  | Red p cd _ _ => path_buffer_seq p ++ ne_cdeque_seq cd
+  end.
+
 Equations packet_front_seq {A lvl len pc K} : packet A lvl len pc K -> list A :=
-packet_front_seq (Only_child child) := triple_front_seq child;
-packet_front_seq (Left_child child _) := triple_front_seq child;
-packet_front_seq (Right_child path child) := path_seq path ++ triple_front_seq child.
+packet_front_seq (Only_child t) := triple_front_seq t;
+packet_front_seq (Left_child t _) := triple_front_seq t;
+packet_front_seq (Right_child p t) := path_seq p ++ triple_front_seq t.
+
+Fixpoint triple_rear_seq {A lvl len is_hole K1 K2 C} (t : triple A lvl len is_hole K1 K2 C) : list A :=
+  let packet_rear_seq {lvl len pc K} (pkt : packet A lvl len pc K) : list A :=
+    match pkt with
+    | Only_child t => triple_rear_seq t
+    | Left_child t p => triple_rear_seq t ++ path_seq p
+    | Right_child _ t => triple_rear_seq t
+    end in
+  match t with
+  | Hole => []
+  | Small _ s _ => path_buffer_seq s
+  | Green _ _ s _ => path_buffer_seq s
+  | Yellow _ pkt s _ => packet_rear_seq pkt ++ path_buffer_seq s
+  | Orange _ pkt s _ => packet_rear_seq pkt ++ path_buffer_seq s
+  | Red _ _ s _ => path_buffer_seq s
+  end.
 
 Equations packet_rear_seq {A lvl len pc K} : packet A lvl len pc K -> list A :=
-packet_rear_seq (Only_child child) := triple_rear_seq child;
-packet_rear_seq (Left_child child path) := triple_rear_seq child ++ path_seq path;
-packet_rear_seq (Right_child _ child) := triple_rear_seq child.
+packet_rear_seq (Only_child t) := triple_rear_seq t;
+packet_rear_seq (Left_child t p) := triple_rear_seq t ++ path_seq p;
+packet_rear_seq (Right_child _ t) := triple_rear_seq t.
+
+Equations triple_seq {A lvl len is_hole K1 K2 C} : 
+  triple A lvl len is_hole K1 K2 C -> list A := 
+triple_seq t := triple_front_seq t ++ triple_rear_seq t.
 
 Equations pref_left_seq {A lvl} : pref_left A lvl -> list A :=
 pref_left_seq (Pref_left pkt t eq_refl) := packet_front_seq pkt ++ triple_seq t ++ packet_rear_seq pkt.
@@ -344,98 +446,6 @@ deque_seq (T cd) := cdeque_seq cd.
 
 Unset Equations Transparent.
 
-Axiom stored_triple_ground : forall [A], forall (x : A),
-  stored_triple_seq (ST_ground x) = [x].
-
-Axiom stored_triple_small : forall [A lvl q], forall 
-  (p : prefix A lvl (3 + q)),
-  stored_triple_seq (ST_small p) = buffer_seq p.
-  
-Axiom stored_triple_triple : forall [A lvl qp qs C], forall 
-  (p : prefix A lvl (3 + qp)) 
-  (cd : cdeque A (S lvl) C) 
-  (s : suffix A lvl (3 + qs)),
-  stored_triple_seq (ST_triple p cd s) =
-    buffer_seq p ++ cdeque_seq cd ++ buffer_seq s.
-
-Axiom triple_front_hole : forall (A : Type) (lvl : nat) (K : kind), 
-  triple_front_seq (A := A) (lvl := lvl) (K1 := K) Hole = [].
-
-Axiom triple_rear_hole : forall (A : Type) (lvl : nat) (K : kind), 
-  triple_rear_seq (A := A) (lvl := lvl) (K1 := K) Hole = [].
-
-Axiom triple_front_small : forall [A lvl qp qs K], forall
-  (p : prefix A lvl qp)
-  (s : suffix A lvl qs)
-  (ss : small_triple_size qp qs K),
-  triple_front_seq (Small p s ss) = buffer_seq p.
-
-Axiom triple_rear_small : forall [A lvl qp qs K], forall
-  (p : prefix A lvl qp)
-  (s : suffix A lvl qs)
-  (ss : small_triple_size qp qs K),
-  triple_rear_seq (Small p s ss) = buffer_seq s.
-
-Axiom triple_front_green : forall [A lvl qp qs K G R], forall
-  (p : prefix A lvl qp)
-  (cd : non_empty_cdeque A (S lvl) (Mix G NoYellow NoOrange R))
-  (s : suffix A lvl qs)
-  (bs : big_triple_size 8 qp qs K),
-  triple_front_seq (Green p cd s bs) = buffer_seq p ++ ne_cdeque_seq cd.
-
-Axiom triple_rear_green : forall [A lvl qp qs K G R], forall
-  (p : prefix A lvl qp)
-  (cd : non_empty_cdeque A (S lvl) (Mix G NoYellow NoOrange R))
-  (s : suffix A lvl qs)
-  (bs : big_triple_size 8 qp qs K),
-  triple_rear_seq (Green p cd s bs) = buffer_seq s.
-
-Axiom triple_front_yellow : forall [A lvl len qp qs K1 K2], forall
-  (p : prefix A lvl qp)
-  (pkt : packet A (S lvl) len preferred_left K2)
-  (s : suffix A lvl qs)
-  (bs : big_triple_size 7 qp qs K1),
-  triple_front_seq (Yellow p pkt s bs) =
-    buffer_seq p ++ packet_front_seq pkt.
-
-Axiom triple_rear_yellow : forall [A lvl len qp qs K1 K2], forall
-  (p : prefix A lvl qp)
-  (pkt : packet A (S lvl) len preferred_left K2)
-  (s : suffix A lvl qs)
-  (bs : big_triple_size 7 qp qs K1),
-  triple_rear_seq (Yellow p pkt s bs) =
-    packet_rear_seq pkt ++ buffer_seq s.
-
-Axiom triple_front_orange : forall [A lvl len qp qs K1 K2], forall
-  (p : prefix A lvl qp)
-  (pkt : packet A (S lvl) len preferred_right K2)
-  (s : suffix A lvl qs)
-  (bs : big_triple_size 6 qp qs K1),
-  triple_front_seq (Orange p pkt s bs) =
-    buffer_seq p ++ packet_front_seq pkt.
-
-Axiom triple_rear_orange : forall [A lvl len qp qs K1 K2], forall
-  (p : prefix A lvl qp)
-  (pkt : packet A (S lvl) len preferred_right K2)
-  (s : suffix A lvl qs)
-  (bs : big_triple_size 6 qp qs K1),
-  triple_rear_seq (Orange p pkt s bs) =
-    packet_rear_seq pkt ++ buffer_seq s.
-
-Axiom triple_front_red : forall [A lvl qp qs K], forall
-  (p : prefix A lvl qp)
-  (cd : non_empty_cdeque A (S lvl) green)
-  (s : suffix A lvl qs)
-  (bs : big_triple_size 5 qp qs K),
-  triple_front_seq (Red p cd s bs) = buffer_seq p ++ ne_cdeque_seq cd.
-
-Axiom triple_rear_red : forall [A lvl qp qs K], forall
-  (p : prefix A lvl qp)
-  (cd : non_empty_cdeque A (S lvl) green)
-  (s : suffix A lvl qs)
-  (bs : big_triple_size 5 qp qs K),
-  triple_rear_seq (Red p cd s bs) = buffer_seq s.
-
 (* The list application is made opaque. *)
 
 Opaque app.
@@ -451,6 +461,146 @@ Opaque singleton.
 #[export] Hint Rewrite map_app : rlist.
 #[export] Hint Rewrite concat_app : rlist.
 
+Lemma path_children [A lvl nlvl len is_hole K1 K2 G Y O R] 
+  (natur : triple A lvl len is_hole K1 K2 (Mix NoGreen Y O NoRed))
+  (adopt : triple A nlvl 0 false K2 K2 (Mix G NoYellow NoOrange R)) 
+  (e : nlvl = len + lvl) :
+  path_seq (Children natur adopt e) = 
+    triple_front_seq natur ++ triple_seq adopt ++ triple_rear_seq natur.
+Proof. subst; simp triple_seq; autorewrite with rlist; reflexivity. Qed.
+
+Lemma stored_triple_ground [A] (a : A) : stored_triple_seq (ST_ground a) = [a].
+Proof. simpl; reflexivity. Qed.
+
+Lemma stored_triple_small [A lvl q] (p : prefix A lvl (3 + q)) : 
+  stored_triple_seq (ST_small p) = buffer_seq p.
+Proof. apply buffer.correct_mapping. Qed.
+  
+Lemma stored_triple_triple [A lvl qp qs C] 
+  (p : prefix A lvl (3 + qp)) 
+  (cd : cdeque A (S lvl) C) 
+  (s : suffix A lvl (3 + qs)) : 
+  stored_triple_seq (ST_triple p cd s) = 
+    buffer_seq p ++ cdeque_seq cd ++ buffer_seq s.
+Proof.
+  simpl stored_triple_seq;
+  (* Separate prefix, child and suffix cases. *)
+  repeat apply div_app2;
+(* Handle the simple child case. *)
+  try reflexivity;
+  (* Finish with the buffers. *)
+  apply buffer.correct_mapping.
+Qed.
+
+Lemma triple_front_hole (A : Type) (lvl : nat) (K : kind) : 
+  triple_front_seq (A := A) (lvl := lvl) (K1 := K) Hole = [].
+Proof. reflexivity. Qed.
+
+Lemma triple_rear_hole (A : Type) (lvl : nat) (K : kind) :
+  triple_rear_seq (A := A) (lvl := lvl) (K1 := K) Hole = [].
+Proof. reflexivity. Qed.
+
+Lemma triple_front_small [A lvl qp qs K] 
+  (p : prefix A lvl qp) (s : suffix A lvl qs) 
+  (ss : small_triple_size qp qs K) :
+  triple_front_seq (Small p s ss) = buffer_seq p.
+Proof. cbn; apply correct_path_buffer_seq. Qed.
+  
+Lemma triple_rear_small [A lvl qp qs K] 
+  (p : prefix A lvl qp) (s : suffix A lvl qs) 
+  (ss : small_triple_size qp qs K) :
+  triple_rear_seq (Small p s ss) = buffer_seq s.
+Proof. cbn; apply correct_path_buffer_seq. Qed.
+
+Lemma triple_front_green [A lvl qp qs K G R] 
+  (p : prefix A lvl qp) 
+  (cd : non_empty_cdeque A (S lvl) (Mix G NoYellow NoOrange R)) 
+  (s : suffix A lvl qs)
+  (bs : big_triple_size 8 qp qs K) :
+  triple_front_seq (Green p cd s bs) = buffer_seq p ++ ne_cdeque_seq cd.
+Proof. 
+  cbn; apply div_app2. 
+  - apply correct_path_buffer_seq.
+  - reflexivity.
+Qed.
+
+Lemma triple_rear_green [A lvl qp qs K G R] 
+  (p : prefix A lvl qp) 
+  (cd : non_empty_cdeque A (S lvl) (Mix G NoYellow NoOrange R)) 
+  (s : suffix A lvl qs)
+  (bs : big_triple_size 8 qp qs K) :
+  triple_rear_seq (Green p cd s bs) = buffer_seq s.
+Proof. cbn; apply correct_path_buffer_seq. Qed.
+
+Lemma triple_front_yellow [A lvl len qp qs K1 K2] 
+  (p : prefix A lvl qp)
+  (pkt : packet A (S lvl) len preferred_left K2)
+  (s : suffix A lvl qs)
+  (bs : big_triple_size 7 qp qs K1) :
+  triple_front_seq (Yellow p pkt s bs) = buffer_seq p ++ packet_front_seq pkt.
+Proof. 
+  cbn; apply div_app2.
+  - apply correct_path_buffer_seq.
+  - reflexivity.
+Qed.
+
+Lemma triple_rear_yellow [A lvl len qp qs K1 K2] 
+  (p : prefix A lvl qp)
+  (pkt : packet A (S lvl) len preferred_left K2)
+  (s : suffix A lvl qs)
+  (bs : big_triple_size 7 qp qs K1) :
+  triple_rear_seq (Yellow p pkt s bs) = packet_rear_seq pkt ++ buffer_seq s.
+Proof. 
+  cbn; apply div_app2.
+  - reflexivity.
+  - apply correct_path_buffer_seq.
+Qed.
+
+Lemma triple_front_orange [A lvl len qp qs K1 K2] 
+  (p : prefix A lvl qp)
+  (pkt : packet A (S lvl) len preferred_right K2)
+  (s : suffix A lvl qs)
+  (bs : big_triple_size 6 qp qs K1) :
+  triple_front_seq (Orange p pkt s bs) = buffer_seq p ++ packet_front_seq pkt.
+Proof. 
+  cbn; apply div_app2.
+  - apply correct_path_buffer_seq.
+  - reflexivity.
+Qed.
+
+Lemma triple_rear_orange [A lvl len qp qs K1 K2] 
+  (p : prefix A lvl qp)
+  (pkt : packet A (S lvl) len preferred_right K2)
+  (s : suffix A lvl qs)
+  (bs : big_triple_size 6 qp qs K1) :
+  triple_rear_seq (Orange p pkt s bs) = packet_rear_seq pkt ++ buffer_seq s.
+Proof. 
+  cbn; apply div_app2.
+  - reflexivity.
+  - apply correct_path_buffer_seq.
+Qed.
+
+Lemma triple_front_red [A lvl qp qs K] 
+  (p : prefix A lvl qp) 
+  (cd : non_empty_cdeque A (S lvl) green) 
+  (s : suffix A lvl qs)
+  (bs : big_triple_size 5 qp qs K) :
+  triple_front_seq (Red p cd s bs) = buffer_seq p ++ ne_cdeque_seq cd.
+Proof. 
+  cbn; apply div_app2.
+  - apply correct_path_buffer_seq.
+  - reflexivity.
+Qed.
+
+Lemma triple_rear_red [A lvl qp qs K] 
+  (p : prefix A lvl qp) 
+  (cd : non_empty_cdeque A (S lvl) green) 
+  (s : suffix A lvl qs)
+  (bs : big_triple_size 5 qp qs K) :
+  triple_rear_seq (Red p cd s bs) = buffer_seq s.
+Proof. cbn; apply correct_path_buffer_seq. Qed.
+      
+#[export] Hint Rewrite path_children : rlist.
 #[export] Hint Rewrite stored_triple_ground : rlist.
 #[export] Hint Rewrite stored_triple_small : rlist.
 #[export] Hint Rewrite stored_triple_triple : rlist.
@@ -466,6 +616,11 @@ Opaque singleton.
 #[export] Hint Rewrite triple_rear_orange : rlist.
 #[export] Hint Rewrite triple_front_red : rlist.
 #[export] Hint Rewrite triple_rear_red : rlist.
+
+Opaque path_seq.
+Opaque stored_triple_seq.
+Opaque triple_front_seq.
+Opaque triple_rear_seq.
 
 (* Lemmas *)
 
@@ -570,7 +725,6 @@ inject_only_path (Children Hole adoptive eq_refl) x with inject_only_triple adop
   | ? adoptive' := ? Children Hole adoptive' eq_refl };
 inject_only_path (Children natural adoptive eq_refl) x with inject_only_triple natural x => {
   | ? natural' := ? Children natural' adoptive eq_refl }.
-Next Obligation. Qed.
 
 Equations push_left_triple {A lvl len K C}
   (x : stored_triple A lvl)
@@ -619,7 +773,6 @@ inject_right_path (Children Hole natural eq_refl) x with inject_right_triple nat
   | ? natural' := ? Children Hole natural' eq_refl };
 inject_right_path (Children natural adoptive eq_refl) x with inject_right_triple natural x => {
   | ? natural' := ? Children natural' adoptive eq_refl }.
-Next Obligation. Qed.
 
 Equations push_ne_cdeque {A lvl C} 
   (x : stored_triple A lvl) 
@@ -737,6 +890,13 @@ inject_vector cd (V6 a1 a2 a3 a4 a5 a6) with inject_cdeque cd a1 => {
     | ? cd3 with inject_cdeque cd3 a4 => { | ? cd4 with inject_cdeque cd4 a5 => {
       | ? cd5 with inject_cdeque cd5 a6 => { | ? cd6 := ? cd6 } } } } } }.
 
+#[local] Obligation Tactic :=
+  try first [ done | 
+    cbn beta iota delta zeta; intros; 
+    autorewrite with rlist;
+    try simp buffer_seq in *;
+    hauto db:rlist ].
+
 Equations to_pref_left {A lvl C} (cd : non_empty_cdeque A lvl C) : 
   { pl : pref_left A lvl | pref_left_seq pl = ne_cdeque_seq cd } :=
 to_pref_left (Only_path (Children natur adopt eq_refl)) := 
@@ -779,13 +939,6 @@ make_child (G := SomeGreen) (R := NoRed) (Right_child pl t1) t2 eq_refl :=
   ? Sd (NonEmpty (Pair_green pl (Children t1 t2 eq_refl)));
 make_child (G := NoGreen) (R := SomeRed) (Right_child pl t1) t2 eq_refl :=
   ? Sd (NonEmpty (Pair_red pl (Children t1 t2 eq_refl))).
-
-#[local] Obligation Tactic :=
-  try first [ done | 
-    cbn beta iota delta zeta; intros; 
-    autorewrite with rlist;
-    try simp buffer_seq in *;
-    hauto db:rlist ].
  
 Equations push_child {A lvl len nlvl pref K G R} 
   (x : stored_triple A lvl) 
@@ -857,12 +1010,34 @@ stored_right (x, v) p cd s with buffer.push_vector v p => {
       | ? (s1, x1, x2) with buffer.pair x1 x2 => {
         | ? s2 := ? (ST_triple p2 cd s1, s2) } } } }.
 
+Local Ltac rewrite_seq :=
+  repeat 
+  match goal with 
+  | H : _ = seq _ |- _ => rewrite <-H
+  end.
+
+(* #[local] Obligation Tactic :=
+  try first [ done | 
+    cbn beta iota delta zeta; intros; 
+    autorewrite with rlist;
+    try simp triple_seq in *;
+    try simp packet_front_seq packet_rear_seq in *;
+    autorewrite with rlist in *;
+    try simp buffer_seq in *;
+    try rewrite_seq;
+    hauto db:rlist ];
+  cbn; intros; autorewrite with rlist;
+  try simp triple_seq in *;
+  try simp packet_front_seq packet_rear_seq in *;
+  autorewrite with rlist in *;
+  try simp buffer_seq in *. *)
+
 #[local] Obligation Tactic :=
   try first [ done | 
     cbn beta iota delta zeta; intros; 
-    try simp triple_seq in *;
     autorewrite with rlist;
-    try simp buffer_seq in *;
+    try simp triple_seq in *;
+    autorewrite with rlist in *;
     hauto db:rlist ].
 
 Equations extract_stored_left {A lvl C} 
@@ -899,6 +1074,20 @@ extract_stored_right b (Children (Orange p pkt s BRight) t eq_refl)
 extract_stored_right b (Children Hole (Red p cd s BRight) eq_refl)
   with stored_right b p (NonEmpty cd) s => { | ? (x, s') := ? (x, s') }.
 
+#[local] Obligation Tactic :=
+  try first [ done | 
+    cbn beta iota delta zeta; intros; 
+    autorewrite with rlist;
+    try simp triple_seq in *;
+    autorewrite with rlist in *;
+    try simp buffer_seq in *;
+    hauto db:rlist ];
+  cbn beta iota delta zeta; intros; 
+  autorewrite with rlist;
+  try simp triple_seq in *;
+  autorewrite with rlist in *;
+  try simp buffer_seq in *.
+
 Equations left_of_pair {A lvl C1 C2}
   (pl : path A lvl Left C1) (pr : path A lvl Right C2) :
   { p : path A lvl Left C1 | path_seq p = path_seq pl ++ path_seq pr } :=
@@ -925,14 +1114,10 @@ left_of_pair (Children Hole (Red p cd s BLeft) eq_refl) pr
       | ? cd' := ? Children Hole (Red p cd' s' BLeft) eq_refl } } }.
 Next Obligation. Qed.
 Next Obligation.
-  cbn; intros; autorewrite with rlist.
-  simp buffer_seq in *; aac_rewrite y1.
-  hauto db:rlist.
+  aac_rewrite y1; rewrite <-y; hauto db:rlist.
 Qed.
 Next Obligation.
-  cbn; intros; autorewrite with rlist.
-  simp buffer_seq in *; aac_rewrite y1.
-  hauto db:rlist.
+  aac_rewrite y1; rewrite <-y; hauto db:rlist.
 Qed.
 
 Equations right_of_pair {A lvl C1 C2} 
@@ -960,30 +1145,19 @@ right_of_pair pl (Children Hole (Red p cd s BRight) eq_refl)
     | ? (p', stored) with push_ne_cdeque stored cd => {
       | ? cd' := ? Children Hole (Red p' cd' s BRight) eq_refl } } }.
 Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist.
-  simp packet_front_seq packet_rear_seq in *; autorewrite with rlist.
-  aac_rewrite e0; aac_rewrite y0; simp buffer_seq.
-  hauto db:rlist.
+  aac_rewrite e0; aac_rewrite y0; hauto db:rlist.
 Qed.
 Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist.
-  simp buffer_seq in *; aac_rewrite e; aac_rewrite y0.
-  hauto db:rlist.
+  aac_rewrite e; aac_rewrite y0; hauto db:rlist.
 Qed.
 Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist.
-  simp buffer_seq in *; aac_rewrite e; aac_rewrite y0.
-  hauto db:rlist.
+  aac_rewrite e; aac_rewrite y0; hauto db:rlist.
 Qed.
 Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist.
-  aac_rewrite y1; aac_rewrite y0; simp buffer_seq.
-  hauto db:rlist.
+  aac_rewrite y1; aac_rewrite y0; hauto db:rlist.
 Qed.
 Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist.
-  aac_rewrite y1; aac_rewrite y0; simp buffer_seq.
-  hauto db:rlist.
+  aac_rewrite y1; aac_rewrite y0; hauto db:rlist.
 Qed.
 
 Equations left_of_only {A lvl C} (p : path A lvl Only C) :
@@ -1010,11 +1184,9 @@ left_of_only (Children Hole (Red p cd s BOnly) eq_refl)
     | ? s' with inject_ne_cdeque cd (ST_small s1) => {
       | ? cd' := ? Ok (Children Hole (Red p cd' s' BLeft) eq_refl) } } }.
 Next Obligation.
-  cbn; intros; autorewrite with rlist; simp buffer_seq in *.
   aac_rewrite y0; hauto db:rlist.
 Qed.
 Next Obligation.
-  cbn; intros; autorewrite with rlist; simp buffer_seq in *.
   aac_rewrite y0; hauto db:rlist.
 Qed.
 
@@ -1042,11 +1214,9 @@ right_of_only (Children Hole (Red p cd s BOnly) eq_refl)
     | ? p' with push_ne_cdeque (ST_small p1) cd => {
       | ? cd' := ? Ok (Children Hole (Red p' cd' s BRight) eq_refl) } } }.
 Next Obligation.
-  cbn; intros; autorewrite with rlist; simp buffer_seq in *.
   aac_rewrite y0; hauto db:rlist.
 Qed.
 Next Obligation.
-  cbn; intros; autorewrite with rlist; simp buffer_seq in *.
   aac_rewrite y0; hauto db:rlist.
 Qed.
 
@@ -1094,6 +1264,22 @@ concat (T cd1) (T cd2) with make_left cd1 => {
       | ? cd := ? T cd };
     | ? Ok pr := ? T (NonEmpty (Pair_green pl pr)) } }.
 
+(* #[local] Obligation Tactic :=
+  try first [ done | 
+    cbn beta iota delta zeta; intros; 
+    autorewrite with rlist;
+    try simp triple_seq in *;
+    try simp packet_front_seq packet_rear_seq in *;
+    autorewrite with rlist in *;
+    try simp buffer_seq in *;
+    try rewrite_seq;
+    hauto db:rlist ];
+  cbn; intros; autorewrite with rlist;
+  try simp triple_seq in *;
+  try simp packet_front_seq packet_rear_seq in *;
+  autorewrite with rlist in *;
+  try simp buffer_seq in *. *)
+
 Equations semi_of_left {A lvl C} 
   (p : path A lvl Left C) 
   (x1 x2 x3 x4 x5 x6 : stored_triple A lvl) :
@@ -1122,9 +1308,8 @@ semi_of_left (Children Hole (Red p cd s BLeft) eq_refl) x1 x2 x3 x4 x5 x6
   with buffer.inject6 s x1 x2 x3 x4 x5 x6 => {
     | ? s' := 
     ? Sd (NonEmpty (Only_path (Children Hole (Red p cd s' BOnly) eq_refl))) }.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *. 
-  rewrite <-y; autorewrite with rlist; hauto db:rlist.
+Next Obligation. 
+  rewrite <-y; hauto db:rlist.
 Qed.
 
 Equations semi_of_right {A lvl C} 
@@ -1177,7 +1362,6 @@ pop_green_left (Children (Orange p pkt s BLeft) t eq_refl)
     | ? cd := ? (x, AnyColor (Children Hole (Red p1 cd s BLeft) eq_refl)) } }.
 Next Obligation. Qed.
 Next Obligation. 
-  cbn; intros; autorewrite with rlist; simp buffer_seq in *.
   aac_rewrite e; hauto db:rlist.
 Qed.
 
@@ -1202,7 +1386,6 @@ eject_green_right (Children (Orange p pkt s BRight) t eq_refl)
     | ? cd := ? (AnyColor (Children Hole (Red p cd s1 BRight) eq_refl), x) } }.
 Next Obligation. Qed.
 Next Obligation.
-  cbn; intros; autorewrite with rlist; simp buffer_seq in *.
   aac_rewrite e; hauto db:rlist.
 Qed.
 
@@ -1232,7 +1415,6 @@ pop_green (Pair_green pl pr) with pop_green_left pl => {
   | ? (x, AnyColor pl') := ? (x, Sd (NonEmpty (Pair_red pl' pr))) }.
 Next Obligation. Qed.
 Next Obligation.
-  cbn; intros; autorewrite with rlist; simp buffer_seq in *.
   aac_rewrite e; hauto db:rlist.
 Qed.
 
@@ -1262,7 +1444,6 @@ eject_green (Pair_green pl pr) with eject_green_right pr => {
   | ? (AnyColor pr', x) := ? (Sd (NonEmpty (Pair_red pl pr')), x) }.
 Next Obligation. Qed.
 Next Obligation. 
-  cbn; intros; autorewrite with rlist; simp buffer_seq in *.
   aac_rewrite e; hauto db:rlist.
 Qed.
 
@@ -1327,18 +1508,15 @@ unsandwich_green (Pair_green pl pr) with pop_green_left pl => {
     | ? (AnyColor pr1, x2) := 
       ? Sandwich x1 (Sd (NonEmpty (Pair_red pl1 pr1))) x2 } }.
 Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
   pose (buffer.empty_buffer s) as H; rewrite H; cbn.
   rewrite <-y; rewrite <-e; hauto db:rlist.
 Qed.
 Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
   pose (buffer.empty_buffer s) as H; rewrite H; cbn.
   rewrite <-y; rewrite <-e; hauto db:rlist.
 Qed.
 Next Obligation. Qed.
 Next Obligation.
-  cbn; intros; autorewrite with rlist; simp buffer_seq in *.
   aac_rewrite e; hauto db:rlist.
 Qed.
 
@@ -1374,10 +1552,6 @@ only_small p s with buffer.has3p8 s => {
   | ? inr (x1, x2, x3, s1) with buffer.triple x1 x2 x3 => {
     | ? b with only_single (ST_small b) => {
       | ? cd := ? Green p cd s1 BOnly } } }.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist. 
-  autorewrite with rlist in e1; simp buffer_seq in *; hauto db:rlist.
-Qed.
 
 Equations only_green {A lvl qp qs} 
   (p : prefix A lvl (8 + qp))
@@ -1388,18 +1562,15 @@ Equations only_green {A lvl qp qs}
 only_green p (Sd Empty) s with only_small p s => { | ? t := ? t };
 only_green p (Sd (NonEmpty cd)) s := ? Green p cd s BOnly.
 
-Local Ltac rewrite_seq :=
-  repeat 
-  match goal with 
-  | H : _ = seq _ |- _ => rewrite <-H
-  end.
-
-#[local] Obligation Tactic := idtac.
-
-(* #[local] Obligation Tactic := 
-  cbn; intros; simp triple_seq in *; 
-  autorewrite with rlist; simp buffer_seq in *;
-  rewrite_seq; hauto db:rlist. *)
+#[local] Obligation Tactic := 
+  cbn; intros; autorewrite with rlist;
+  try simp triple_seq in *;
+  try simp packet_front_seq packet_rear_seq in *;
+  autorewrite with rlist in *;
+  try simp buffer_seq in *; 
+  try (rewrite_seq; hauto db:rlist). 
+  
+  (* Returns an error for obligations : hauto failed. *)
 
 Equations green_of_red_only {A lvl} (t : triple A lvl 0 false Only Only red) :
   { t' : triple A lvl 0 false Only Only green | triple_seq t' = triple_seq t } :=
@@ -1420,26 +1591,10 @@ green_of_red_only (Red p cd s BOnly) with buffer.has8 p, buffer.has8 s => {
     | ? Unstored s1 sd with buffer.inject5_vector s1 y1 y2 y3 y4 y5 vs => {
       | ? s2 with only_green p1 sd s2 => { | ? t := ? t } } };
   | ? inr p1, ? inr s1 := ? Green p1 cd s1 BOnly }.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
-  rewrite_seq; hauto db:rlist.
-Qed.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
-  rewrite_seq; hauto db:rlist.
-Qed.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
-  rewrite_seq; hauto db:rlist.
-Qed.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
-  rewrite_seq; hauto db:rlist.
-Qed.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
-  rewrite_seq; hauto db:rlist.
-Qed.
+Next Obligation. Qed.
+Next Obligation. Qed.
+Next Obligation. Qed.
+Next Obligation. Qed.
 
 Equations green_of_red_left {A lvl} (t : triple A lvl 0 false Left Left red) :
   { t' : triple A lvl 0 false Left Left green | triple_seq t' = triple_seq t } :=
@@ -1450,18 +1605,6 @@ green_of_red_left (Red p cd s BLeft) with buffer.has8 p => {
         | Empty := ? Small p2 s SLeft; 
         | NonEmpty cd1' := ? Green p2 cd1' s BLeft } } };
   | ? inr p1 := ? Green p1 cd s BLeft }.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
-  rewrite_seq; hauto db:rlist.
-Qed.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
-  rewrite_seq; hauto db:rlist.
-Qed.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
-  rewrite_seq; hauto db:rlist.
-Qed.
 
 Equations green_of_red_right {A lvl} (t : triple A lvl 0 false Right Right red) :
   { t' : triple A lvl 0 false Right Right green | triple_seq t' = triple_seq t } :=
@@ -1472,18 +1615,8 @@ green_of_red_right (Red p cd s BRight) with buffer.has8 s => {
         | Empty := ? Small p s2 SRight;
         | NonEmpty cd1' := ? Green p cd1' s2 BRight } } };
   | ? inr s1 := ? Green p cd s1 BRight }.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
-  rewrite_seq; hauto db:rlist.
-Qed.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
-  rewrite_seq; hauto db:rlist.
-Qed.
-Next Obligation.
-  cbn; intros; simp triple_seq in *; autorewrite with rlist; simp buffer_seq in *.
-  rewrite_seq; hauto db:rlist.
-Qed.
+Next Obligation. Qed.
+Next Obligation. Qed.
 
 #[local] Obligation Tactic :=
   try first [ done | 
@@ -1509,9 +1642,6 @@ Equations ensure_green_path {A lvl K C} (p : path A lvl K C) :
   { p' : path A lvl K green | path_seq p' = path_seq p } :=
 ensure_green_path (Children natur adopt eq_refl) with ensure_green adopt => {
   | ? adopt' := ? Children natur adopt' eq_refl }.
-Next Obligation.
-  cbn; intros; rewrite e; reflexivity.
-Qed.
 
 Equations ensure_green_cdeque {A lvl C} (cd : non_empty_cdeque A lvl C) :
   { cd' : non_empty_cdeque A lvl green | ne_cdeque_seq cd' = ne_cdeque_seq cd } :=
