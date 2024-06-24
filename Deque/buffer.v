@@ -72,7 +72,7 @@ Proof. destruct b; cbn; apply ncdeque.correct_mapping. Qed.
 
 Lemma empty_buffer [A] (b : t A 0) : seq b = [].
 Proof.
-  dependent destruction b; simp seq;
+  dependent elimination b; simp seq;
   apply length_zero_iff_nil;
   rewrite deque_size; reflexivity.
 Qed.

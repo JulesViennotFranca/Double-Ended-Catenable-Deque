@@ -440,7 +440,7 @@ Qed.
 Lemma buffer_size {A lvl size C} (b : buffer A lvl size C) :
     length (buffer_seq b) = size * power2 lvl.
 Proof.
-  dependent destruction b;
+  dependent elimination b;
   simp buffer_seq;
   repeat rewrite app_length;
   repeat rewrite prodN_size; 
@@ -788,9 +788,9 @@ buffer_translate b eq with comp_eq eq => { | eq_refl => ? b }.
 Local Ltac destruct_opt_buff :=
   do 7 (try match goal with
   | o : option _ |- _ => destruct o
-  | b : buffer _ _ _ green |- _ => dependent destruction b
-  | b : buffer _ _ _ (Mix _ _ NoRed) |- _ => dependent destruction b
-  | b : buffer _ _ _ _ |- _ => dependent destruction b
+  | b : buffer _ _ _ green |- _ => dependent elimination b
+  | b : buffer _ _ _ (Mix _ _ NoRed) |- _ => dependent elimination b
+  | b : buffer _ _ _ _ |- _ => dependent elimination b
   end; cbn; try reflexivity).
 
 #[local] Obligation Tactic :=
@@ -919,8 +919,8 @@ cdeque_translate cd eq with comp_eq eq => { | eq_refl := ? cd }.
 Local Ltac destruct_prod :=
   repeat 
   match goal with 
-  | a : prodN _ 0 |- _ => dependent destruction a
-  | ab : prodN _ (S _) |- _ => dependent destruction ab
+  | a : prodN _ 0 |- _ => dependent elimination a
+  | ab : prodN _ (S _) |- _ => dependent elimination ab
   | p : _ * _ |- _ => destruct p
   end; cbn in *.
 
@@ -1084,11 +1084,11 @@ green_of_red
     | ? (p1', Yellowish p2'), ? (Yellowish s2', s1') :=
     ? Big (Triple p1' (Triple p2' child s2' PCYellow) s1' PCGreen) cd (comp_eq _) (comp_eq _) CCGreen }.
 Next Obligation.
-  dependent destruction p1; dependent destruction s1;
+  dependent elimination p1; dependent elimination s1;
   (match goal with 
   | b : buffer _ _ psize0 _ |- _ => 
-    dependent destruction b end);
-  dependent destruction s2; simpl; lia.
+    dependent elimination b end);
+  dependent elimination s2; simpl; lia.
 Qed.
 Next Obligation.
   simp cdeque_seq packet_front_seq packet_rear_seq;
@@ -1099,11 +1099,11 @@ Next Obligation.
   symmetry; assumption.
 Qed.
 Next Obligation. 
-  dependent destruction p1; dependent destruction s1; 
+  dependent elimination p1; dependent elimination s1;
   (match goal with 
   | b : buffer _ _ psize0 _ |- _ => 
-    dependent destruction b end);
-  dependent destruction s2; simpl; lia.
+    dependent elimination b end);
+  dependent elimination s2; simpl; lia.
 Qed.
 Next Obligation.
   simp cdeque_seq packet_front_seq packet_rear_seq;

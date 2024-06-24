@@ -284,8 +284,8 @@ empty with cempty => { | ? cd := ? T cd }.
 Local Ltac destruct_prod :=
   repeat 
   match goal with 
-  | a : prodN _ 0 |- _ => dependent destruction a
-  | ab : prodN _ (S _) |- _ => dependent destruction ab
+  | a : prodN _ 0 |- _ => dependent elimination a
+  | ab : prodN _ (S _) |- _ => dependent elimination ab
   | p : _ * _ |- _ => destruct p
   end;
   cbn in *.
@@ -310,10 +310,10 @@ is_empty (T (Big pkt cs eq_refl CCGreen)) := ? false;
 is_empty (T (Big pkt cs eq_refl CCYellow)) := ? false.
 Next Obligation.
   cbn. intros * H.
-  dependent destruction pkt.
-  dependent destruction p.
+  dependent elimination pkt.
+  dependent elimination p.
   simp packet_front_seq in H.
-  dependent destruction b;
+  dependent elimination b;
   destruct_prod;
   simp buffer_seq in H;
   apply (f_equal (@List.length _)) in H;
@@ -322,10 +322,10 @@ Next Obligation.
 Qed.
 Next Obligation.
   cbn. intros * H.
-  dependent destruction pkt.
-  dependent destruction p.
+  dependent elimination pkt.
+  dependent elimination p.
   simp packet_front_seq in H.
-  dependent destruction b;
+  dependent elimination b;
   destruct_prod;
   simp buffer_seq in H;
   apply (f_equal (@List.length _)) in H;
