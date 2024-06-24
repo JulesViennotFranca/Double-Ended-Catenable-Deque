@@ -133,8 +133,8 @@ vector_fold_left fn init (V4 a b c d) := ? fn (fn (fn (fn init a) b) c) d;
 vector_fold_left fn init (V5 a b c d e) := ? fn (fn (fn (fn (fn init a) b) c) d) e;
 vector_fold_left fn init (V6 a b c d e f) := ? fn (fn (fn (fn (fn (fn init a) b) c) d) e) f.
 
-Equations translate {A q1 q2} (b : t A q1) : q1 = q2 -> { b' : t A q2 | seq b' = seq b } :=
-translate b eq_refl := ? b.
+Equations translate {A q1 q2} (b : t A q1) (eq: q1 = q2) : { b' : t A q2 | seq b' = seq b } :=
+translate b eq with comp_eq eq => { | eq_refl := ? b }.
 
 Equations push {A q} (a1 : A) (b : t A q) : { b' : t A (S q) | seq b' = [a1] ++ seq b } :=
 push a1 (Buffer d) with ncdeque.push a1 d => {

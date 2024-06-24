@@ -188,20 +188,18 @@ Definition right_triple (A : Type) (lvl len : nat) :=
   triple A lvl len Right.
 
 Inductive pref_left (A : Type) (lvl : nat) : Type :=
-  | Pref_left {len nlvl K G R} : 
+  | Pref_left {len K G R} :
       packet A lvl len preferred_left K ->
-      triple A nlvl 0 K K (Mix G NoYellow NoOrange R) ->
-      nlvl = len + lvl ->
+      triple A (len + lvl) 0 K K (Mix G NoYellow NoOrange R) ->
       pref_left A lvl.
-Arguments Pref_left {A lvl len nlvl K G R}.
+Arguments Pref_left {A lvl len K G R}.
 
 Inductive pref_right (A : Type) (lvl : nat) : Type :=
-  | Pref_right {len nlvl K G R} :
+  | Pref_right {len K G R} :
       packet A lvl len preferred_right K ->
-      triple A nlvl 0 K K (Mix G NoYellow NoOrange R) ->
-      nlvl = len + lvl ->
+      triple A (len + lvl) 0 K K (Mix G NoYellow NoOrange R) ->
       pref_right A lvl.
-Arguments Pref_right {A lvl len nlvl K G R}.
+Arguments Pref_right {A lvl len K G R}.
 
 Definition buffer_12 (A : Type) (lvl : nat) : Type := stored_triple A lvl * vector (stored_triple A lvl) 1.
 
@@ -403,10 +401,10 @@ Equations triple_seq {A lvl len K1 K2 C} :
 triple_seq t := triple_front_seq t ++ triple_rear_seq t.
 
 Equations pref_left_seq {A lvl} : pref_left A lvl -> list A :=
-pref_left_seq (Pref_left pkt t eq_refl) := packet_front_seq pkt ++ triple_seq t ++ packet_rear_seq pkt.
+pref_left_seq (Pref_left pkt t) := packet_front_seq pkt ++ triple_seq t ++ packet_rear_seq pkt.
 
 Equations pref_right_seq {A lvl} : pref_right A lvl -> list A :=
-pref_right_seq (Pref_right pkt t eq_refl) := packet_front_seq pkt ++ triple_seq t ++ packet_rear_seq pkt.
+pref_right_seq (Pref_right pkt t) := packet_front_seq pkt ++ triple_seq t ++ packet_rear_seq pkt.
 
 Equations buffer_12_seq {A lvl} : buffer_12 A lvl -> list A :=
 buffer_12_seq (x, v) := stored_triple_seq x ++ concat (map stored_triple_seq (vector_seq v)).
@@ -892,11 +890,11 @@ inject_vector cd (V6 a1 a2 a3 a4 a5 a6) with inject_cdeque cd a1 => {
 Equations to_pref_left {A lvl C} (cd : non_empty_cdeque A lvl C) : 
   { pl : pref_left A lvl | pref_left_seq pl = ne_cdeque_seq cd } :=
 to_pref_left (Only_path (Children natur adopt eq_refl)) := 
-  ? Pref_left (Only_child natur) adopt eq_refl;
+  ? Pref_left (Only_child natur) adopt;
 to_pref_left (Pair_green (Children natur adopt eq_refl) pr) := 
-  ? Pref_left (Left_child natur pr) adopt eq_refl;
+  ? Pref_left (Left_child natur pr) adopt;
 to_pref_left (Pair_red (Children natur adopt eq_refl) pr) := 
-  ? Pref_left (Left_child natur pr) adopt eq_refl.
+  ? Pref_left (Left_child natur pr) adopt.
 
 Equations to_pref_right {A lvl len nlvl K} 
   (pkt : packet A lvl len preferred_left K)
@@ -904,9 +902,9 @@ Equations to_pref_right {A lvl len nlvl K}
   nlvl = len + lvl -> 
   { pr : pref_right A lvl | 
     pref_right_seq pr = packet_front_seq pkt ++ triple_seq t ++ packet_rear_seq pkt } :=
-to_pref_right (Only_child t1) t2 eq_refl:= ? Pref_right (Only_child t1) t2 eq_refl;
+to_pref_right (Only_child t1) t2 eq_refl:= ? Pref_right (Only_child t1) t2;
 to_pref_right (Left_child t1 (Children natur adopt eq_refl)) t2 eq_refl := 
-  ? Pref_right (Right_child (Children t1 t2 eq_refl) natur) adopt eq_refl.
+  ? Pref_right (Right_child (Children t1 t2 eq_refl) natur) adopt.
 
 Equations no_pref {A lvl len nlvl K}
   (pkt : packet A lvl len preferred_right K)
@@ -1307,12 +1305,12 @@ pop_green_left (Children Hole (Small p s SLeft) eq_refl)
     | ? inr p2 := ? (x, AnyColor (Children Hole (Small p2 s SLeft) eq_refl)) } };
 pop_green_left (Children Hole (Green p cd s BLeft) eq_refl)
   with buffer.pop p => { | ? (x, p1) with to_pref_left cd => {
-    | ? Pref_left pkt t eq_refl := 
-      ? (x, AnyColor (Children (Yellow p1 pkt s BLeft) t _)) } };
+    | ? Pref_left pkt t :=
+      ? (x, AnyColor (Children (Yellow p1 pkt s BLeft) t (comp_eq _))) } };
 pop_green_left (Children (Yellow p pkt s BLeft) t eq_refl) 
   with buffer.pop p => { | ? (x, p1) with to_pref_right pkt t _ => {
-    | ? Pref_right pkt' t' eq_refl := 
-      ? (x, AnyColor (Children (Orange p1 pkt' s BLeft) t' _)) } };
+    | ? Pref_right pkt' t' :=
+      ? (x, AnyColor (Children (Orange p1 pkt' s BLeft) t' (comp_eq _))) } };
 pop_green_left (Children (Orange p pkt s BLeft) t eq_refl)
   with buffer.pop p => { | ? (x, p1) with no_pref pkt t _ => {
     | ? cd := ? (x, AnyColor (Children Hole (Red p1 cd s BLeft) eq_refl)) } }.
@@ -1331,12 +1329,12 @@ eject_green_right (Children Hole (Small p s SRight) eq_refl)
     | ? inr s2 := ? (AnyColor (Children Hole (Small p s2 SRight) eq_refl), x) } };
 eject_green_right (Children Hole (Green p cd s BRight) eq_refl)
   with buffer.eject s => { | ? (s1, x) with to_pref_left cd => {
-    | ? Pref_left pkt t eq_refl := 
-      ? (AnyColor (Children (Yellow p pkt s1 BRight) t _), x) } };
+    | ? Pref_left pkt t :=
+      ? (AnyColor (Children (Yellow p pkt s1 BRight) t (comp_eq _)), x) } };
 eject_green_right (Children (Yellow p pkt s BRight) t eq_refl)
   with buffer.eject s => { | ? (s1, x) with to_pref_right pkt t _ => {
-    | ? Pref_right pkt' t' eq_refl := 
-      ? (AnyColor (Children (Orange p pkt' s1 BRight) t' _), x) } };
+    | ? Pref_right pkt' t' :=
+      ? (AnyColor (Children (Orange p pkt' s1 BRight) t' (comp_eq _)), x) } };
 eject_green_right (Children (Orange p pkt s BRight) t eq_refl)
   with buffer.eject s => { | ? (s1, x) with no_pref pkt t _ => {
     | ? cd := ? (AnyColor (Children Hole (Red p cd s1 BRight) eq_refl), x) } }.
@@ -1355,12 +1353,12 @@ pop_green (Only_path (Children Hole (Small p s SOnly) eq_refl))
     ? (x, Sd (NonEmpty (Only_path (Children Hole (Small p2 s SOnly) eq_refl)))) } };
 pop_green (Only_path (Children Hole (Green p cd s BOnly) eq_refl))
   with buffer.pop p => { | ? (x, p1) with to_pref_left cd => {
-    | ? Pref_left pkt t eq_refl :=
-    ? (x, Sd (NonEmpty (Only_path (Children (Yellow p1 pkt s BOnly) t _)))) } };
+    | ? Pref_left pkt t :=
+    ? (x, Sd (NonEmpty (Only_path (Children (Yellow p1 pkt s BOnly) t (comp_eq _))))) } };
 pop_green (Only_path (Children (Yellow p pkt s BOnly) t eq_refl))
   with buffer.pop p => { | ? (x, p1) with to_pref_right pkt t _ => {
-    | ? Pref_right pkt' t' eq_refl :=
-    ? (x, Sd (NonEmpty (Only_path (Children (Orange p1 pkt' s BOnly) t' _)))) } };
+    | ? Pref_right pkt' t' :=
+    ? (x, Sd (NonEmpty (Only_path (Children (Orange p1 pkt' s BOnly) t' (comp_eq _))))) } };
 pop_green (Only_path (Children (Orange p pkt s BOnly) t eq_refl))
   with buffer.pop p => { | ? (x, p1) with no_pref pkt t _ => 
     | ? cd := 
@@ -1384,12 +1382,12 @@ eject_green (Only_path (Children Hole (Small p s SOnly) eq_refl))
     ? (Sd (NonEmpty (Only_path (Children Hole (Small p2 s SOnly) eq_refl))), x) } };
 eject_green (Only_path (Children Hole (Green p cd s BOnly) eq_refl))
   with buffer.eject s => { | ? (s1, x) with to_pref_left cd => {
-    | ? Pref_left pkt t eq_refl :=
-    ? (Sd (NonEmpty (Only_path (Children (Yellow p pkt s1 BOnly) t _))), x) } };
+    | ? Pref_left pkt t :=
+    ? (Sd (NonEmpty (Only_path (Children (Yellow p pkt s1 BOnly) t (comp_eq _)))), x) } };
 eject_green (Only_path (Children (Yellow p pkt s BOnly) t eq_refl))
   with buffer.eject s => { | ? (s1, x) with to_pref_right pkt t _ => {
-    | ? Pref_right pkt' t' eq_refl := 
-    ? (Sd (NonEmpty (Only_path (Children (Orange p pkt' s1 BOnly) t' _))), x) } };
+    | ? Pref_right pkt' t' :=
+    ? (Sd (NonEmpty (Only_path (Children (Orange p pkt' s1 BOnly) t' (comp_eq _)))), x) } };
 eject_green (Only_path (Children (Orange p pkt s BOnly) t eq_refl)) 
   with buffer.eject s => { | ? (s1, x) with no_pref pkt t _ => {
     | ? cd := 
@@ -1433,15 +1431,15 @@ unsandwich_green (Only_path (Children Hole (Small p s SOnly) eq_refl))
         ? Sandwich x1 (Sd (NonEmpty only)) x2 } } } };
 unsandwich_green (Only_path (Children Hole (Green p cd s BOnly) eq_refl))
   with buffer.pop p => { | ? (x1, p1) with buffer.eject s => { 
-    | ? (s1, x2) with to_pref_left cd => { | ? Pref_left pkt t eq_refl := 
+    | ? (s1, x2) with to_pref_left cd => { | ? Pref_left pkt t :=
     (* If we remove eq_refl, equations fail with "Constructor is applied to too 
        many arguments", when in fact it is the opposite. *)
-      let only := Only_path (Children (Yellow p1 pkt s1 BOnly) t _) in 
+      let only := Only_path (Children (Yellow p1 pkt s1 BOnly) t (comp_eq _)) in
       ? Sandwich x1 (Sd (NonEmpty only)) x2 } } };
 unsandwich_green (Only_path (Children (Yellow p pkt s BOnly) t eq_refl))
   with buffer.pop p => { | ? (x1, p1) with buffer.eject s => {
-    | ? (s1, x2) with to_pref_right pkt t _ => { | ? Pref_right pkt' t' eq_refl := 
-      let only := Only_path (Children (Orange p1 pkt' s1 BOnly) t' _) in 
+    | ? (s1, x2) with to_pref_right pkt t _ => { | ? Pref_right pkt' t' :=
+      let only := Only_path (Children (Orange p1 pkt' s1 BOnly) t' (comp_eq _)) in
       ? Sandwich x1 (Sd (NonEmpty only)) x2 } } };
 unsandwich_green (Only_path (Children (Orange p pkt s BOnly) t eq_refl))
   with buffer.pop p => { | ? (x1, p1) with buffer.eject s => {

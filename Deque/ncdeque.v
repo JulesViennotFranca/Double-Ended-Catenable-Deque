@@ -7,6 +7,22 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
+(* Helper definition that we use to ensure that our functions fully reduce when
+   evaluated in Coq.
+
+   [comp_eq eq] converts an equality proof [eq] that may contain opaque terms
+   (e.g. defined with Qed) into an equality proof that reduces for sure (it
+   directly computes whether the two integers are equal). (We thank Guillaume
+   Melquiond for this trick.) *)
+Definition comp_eq {n1 n2: nat} (eq: n1 = n2): n1 = n2.
+Proof.
+  destruct (Nat.eq_dec n1 n2) as [e|ne].
+  - clear eq. destruct e. exact eq_refl.
+  - exfalso. apply ne, eq.
+Defined.
+(* [Print comp_eq] can be used to check that [comp_eq] does not uses its [eq]
+   argument in the first case. *)
+
 (* Pas besoin de gérer des power2 lvl en vrai;
    Utiliser égalités dans les arguments des fonctions pour simplifier les preuves. *)
 
@@ -615,7 +631,7 @@ buffer_push x (B2 a b) := ? Small (B3 x a b);
 buffer_push x (B3 a b c) := ? Small (B4 x a b c);
 buffer_push x (B4 a b c d) := ? Small (B5 x a b c d);
 buffer_push x (B5 a b c d e) := 
-  ? Big (Triple (B3 x a b) Hole (B3 c d e) PCGreen) (Small B0) eq_refl _ CCGreen. 
+  ? Big (Triple (B3 x a b) Hole (B3 c d e) PCGreen) (Small B0) eq_refl (comp_eq _) CCGreen.
 
 (* Injecting on a buffer. *)
 
@@ -628,7 +644,7 @@ buffer_inject (B2 a b) x := ? Small (B3 a b x);
 buffer_inject (B3 a b c) x := ? Small (B4 a b c x);
 buffer_inject (B4 a b c d) x := ? Small (B5 a b c d x);
 buffer_inject (B5 a b c d e) x := 
-  ? Big (Triple (B3 a b c) Hole (B3 d e x) PCGreen) (Small B0) eq_refl _ CCGreen.
+  ? Big (Triple (B3 a b c) Hole (B3 d e x) PCGreen) (Small B0) eq_refl (comp_eq _) CCGreen.
 
 (* Poping from a buffer. *)
   
@@ -761,9 +777,9 @@ buffer_halve (B5 a b c d e) := ? (Some a, Any (B2 (prodS b c) (prodS d e))).
 
 (* When [size1 = size2], translates a buffer of size1 to a buffer of size2. *)
 
-Equations buffer_translate {A lvl size1 size2 C} (b : buffer A lvl size1 C) :
-    size1 = size2 -> { b' : buffer A lvl size2 C | buffer_seq b' = buffer_seq b } :=
-buffer_translate b eq_refl := ? b.
+Equations buffer_translate {A lvl size1 size2 C} (b : buffer A lvl size1 C) (eq: size1 = size2) :
+  { b' : buffer A lvl size2 C | buffer_seq b' = buffer_seq b } :=
+buffer_translate b eq with comp_eq eq => { | eq_refl => ? b }.
 
 (* A new tactic is introduced. It destructs every option and buffer in the 
    hypothesis. It is used to prove equality on sizes, by destructing options 
@@ -804,7 +820,6 @@ green_prefix_concat buf1 buf2 with prefix_decompose buf1 => {
   | ? Overflow buf ab with buffer_translate buf _, green_push ab buf2 => {
     | ? buf', ? suffix with buffer_translate suffix _ => {
       | ? suffix' := ? (buf', Yellowish suffix') } } }.
-Next Obligation. Qed.
 
 (* Takes a green (n+1)-buffer and any n-buffer, and rearranges elements 
    contained in the two buffers to return a yellow (n+1)-buffer and a green 
@@ -827,7 +842,6 @@ green_suffix_concat buf1 buf2 with suffix_decompose buf2 => {
   | ? Overflow buf ab with green_inject buf1 ab, buffer_translate buf _ => {
     | ? prefix, ? buf' with buffer_translate prefix _ => {
       | ? prefix' := ? (Yellowish prefix', buf') } } }.
-Next Obligation. Qed.
 
 (* Takes any n-buffer and a yellow (n+1)-buffer, and rearranges elements 
    contained in the two buffers to return a green n-buffer and any (n+1)-buffer. 
@@ -850,7 +864,6 @@ yellow_prefix_concat buf1 (Yellowish buf2) with prefix_decompose buf1 => {
   | ? Overflow buf ab with buffer_translate buf _, yellow_push ab (Yellowish buf2) => {
     | ? buf', ? Any suffix with buffer_translate suffix _ => {
       | ? suffix' := ? (buf', Any suffix') } } }.
-Next Obligation. Qed.
 
 (* Takes a yellow (n+1)-buffer and any n-buffer, and rearranges elements 
    contained in the two buffers to return any (n+1)-buffer and a green n-buffer. 
@@ -873,7 +886,6 @@ yellow_suffix_concat (Yellowish buf1) buf2 with suffix_decompose buf2 => {
   | ? Overflow buf ab with yellow_inject (Yellowish buf1) ab, buffer_translate buf _ => {
     | ? Any prefix, ? buf' with buffer_translate prefix _ => {
       | ? prefix' := ? (Any prefix', buf') } } }.
-Next Obligation. Qed.
 
 (* Creates a green colored deque from three options, two of level n and one of 
    level n+1. *)
@@ -897,9 +909,9 @@ cdeque_of_opt3 (Some a) (Some (prodS b c)) (Some d) := ? Small (B4 a b c d).
 (* When [size1 = size2], translates a colored deque of size1 to a colored 
    deque of size2. *)
 
-Equations cdeque_translate {A lvl size1 size2 C} (cd : cdeque A lvl size1 C) :
-    size1 = size2 -> { cd' : cdeque A lvl size2 C | cdeque_seq cd' = cdeque_seq cd } :=
-cdeque_translate cd eq_refl := ? cd.
+Equations cdeque_translate {A lvl size1 size2 C} (cd : cdeque A lvl size1 C) (eq: size1 = size2) :
+  { cd' : cdeque A lvl size2 C | cdeque_seq cd' = cdeque_seq cd } :=
+cdeque_translate cd eq with comp_eq eq => { | eq_refl := ? cd }.
 
 (* A new tactic [destruct_prod] is introduced. It destructs all elements of 
    higher level into elements of lower levels. *)
@@ -973,44 +985,44 @@ make_small prefix1 buf suffix1
     | ? Alone opt2 with cdeque_of_opt3 p1 opt2 s1 => { | ? cd := ? cd };
     | ? Sandwich ab rest cd with prefix23 p1 ab, suffix23 cd s1 => {
       | ? prefix, ? suffix :=
-      ? Big (Triple prefix Hole suffix PCGreen) (Small rest) eq_refl _ CCGreen } };
+      ? Big (Triple prefix Hole suffix PCGreen) (Small rest) eq_refl (comp_eq _) CCGreen } };
   | ? Underflow None, ? Ok s1 with buffer_pop buf => {
     | ? None with cdeque_translate (Small s1) _ => { | ? cd := ? cd };
     | ? Some (prodS c d, Any rest) :=
-      ? Big (Triple (B2 c d) Hole s1 PCGreen) (Small rest) eq_refl _ CCGreen };
+      ? Big (Triple (B2 c d) Hole s1 PCGreen) (Small rest) eq_refl (comp_eq _) CCGreen };
   | ? Underflow (Some a), ? Ok s1 with buffer_pop buf => {
     | ? None with buffer_push a s1 => {
       | ? cd with cdeque_translate cd _ => { | ? cd' := ? cd' } };
     | ? Some (prodS c d, Any rest) :=
-      ? Big (Triple (B3 a c d) Hole s1 PCGreen) (Small rest) eq_refl _ CCGreen };
+      ? Big (Triple (B3 a c d) Hole s1 PCGreen) (Small rest) eq_refl (comp_eq _) CCGreen };
   | ? Underflow opt, ? Overflow s1 ab with suffix_rot buf ab => {
     | ? (p', rest) with prefix23 opt p' => {
       | ? prefix => 
-        ? Big (Triple prefix Hole s1 PCGreen) (Small rest) eq_refl _ CCGreen } };
+        ? Big (Triple prefix Hole s1 PCGreen) (Small rest) eq_refl (comp_eq _) CCGreen } };
   | ? Ok p1, ? Underflow None with buffer_eject buf => {
     | ? None with cdeque_translate (Small p1) _ => { | ? cd := ? cd };
     | ? Some (Any rest, prodS c d) :=
-        ? Big (Triple p1 Hole (B2 c d) PCGreen) (Small rest) eq_refl _ CCGreen };
+        ? Big (Triple p1 Hole (B2 c d) PCGreen) (Small rest) eq_refl (comp_eq _) CCGreen };
   | ? Ok p1, ? Underflow (Some a) with buffer_eject buf => {
   | ? None with buffer_inject p1 a => {
       | ? cd with cdeque_translate cd _ => { | ? cd' := ? cd' } };
   | ? Some (Any rest, prodS c d) :=
-      ? Big (Triple p1 Hole (B3 c d a) PCGreen) (Small rest) eq_refl _ CCGreen };
+      ? Big (Triple p1 Hole (B3 c d a) PCGreen) (Small rest) eq_refl (comp_eq _) CCGreen };
   | ? Ok p1, ? Ok s1 :=
-    ? Big (Triple p1 Hole s1 PCGreen) (Small buf) eq_refl _ CCGreen;
+    ? Big (Triple p1 Hole s1 PCGreen) (Small buf) eq_refl (comp_eq _) CCGreen;
   | ? Ok p1, ? Overflow (size := size3') s1 ab with buffer_inject buf ab => {
-    | ? cd := ? Big (Triple p1 Hole s1 PCGreen) cd eq_refl _ CCGreen };
+    | ? cd := ? Big (Triple p1 Hole s1 PCGreen) cd eq_refl (comp_eq _) CCGreen };
   | ? Overflow p1 ab, ? Underflow opt with prefix_rot ab buf => {
     | ? (rest, p') with suffix23 p' opt => {
       | ? suffix => 
-        ? Big (Triple p1 Hole suffix PCGreen) (Small rest) eq_refl _ CCGreen } };
+        ? Big (Triple p1 Hole suffix PCGreen) (Small rest) eq_refl (comp_eq _) CCGreen } };
   | ? Overflow p1 ab, ? Ok s1 with buffer_push ab buf => {
-    | ? cd := ? Big (Triple p1 Hole s1 PCGreen) cd eq_refl _ CCGreen };
+    | ? cd := ? Big (Triple p1 Hole s1 PCGreen) cd eq_refl (comp_eq _) CCGreen };
   | ? Overflow p1 ab, ? Overflow s1 cd with buffer_halve buf => {
     | ? (x, Any rest) with suffix12 ab x => {
       | ? prefix => ? 
         Big (Triple p1 (Triple prefix Hole (B1 cd) PCYellow) s1 PCGreen) 
-            (Small rest) eq_refl _ CCGreen } } }.
+            (Small rest) eq_refl (comp_eq _) CCGreen } } }.
 Next Obligation.
   to_size e1; destruct_opt_buff; simpl in e1; rewrite Nat.add_0_r in e1;
   absurd_power2_eq.
@@ -1063,14 +1075,14 @@ green_of_red
          yellow_suffix_concat (Yellowish s2) s1 => {
       | ? (p1', Any p2'), ? (Any s2', s1') :=
         ? Big (Triple p1' Hole s1' PCGreen) 
-              (Big (Triple p2' child s2' PCRed) cd _  eq_refl CCRed) _ _ CCGreen };
+              (Big (Triple p2' child s2' PCRed) cd (comp_eq _) eq_refl CCRed) (comp_eq _) (comp_eq _) CCGreen };
 green_of_red 
   (Big (Triple p1 Hole s1 PCRed) 
        (Big (Triple p2 child s2 PCGreen) 
             cd eq_refl eq_refl CCGreen) eq_refl eq_refl CCRed)
   with green_prefix_concat p1 p2, green_suffix_concat s2 s1 => {
     | ? (p1', Yellowish p2'), ? (Yellowish s2', s1') :=
-    ? Big (Triple p1' (Triple p2' child s2' PCYellow) s1' PCGreen) cd _ _ CCGreen }.
+    ? Big (Triple p1' (Triple p2' child s2' PCYellow) s1' PCGreen) cd (comp_eq _) (comp_eq _) CCGreen }.
 Next Obligation.
   dependent destruction p1; dependent destruction s1;
   (match goal with 
@@ -1109,9 +1121,9 @@ Equations ensure_green {A lvl size G R}
   (cd : cdeque A lvl size (Mix G NoYellow R)) :
   { cd' : cdeque A lvl size green | cdeque_seq cd' = cdeque_seq cd } :=
 ensure_green (Small buf) := ? Small buf;
-ensure_green (Big x cd eq_refl eq_refl CCGreen) := ? Big x cd _ eq_refl CCGreen;
+ensure_green (Big x cd eq_refl eq_refl CCGreen) := ? Big x cd (comp_eq _) eq_refl CCGreen;
 ensure_green (Big x cd eq_refl eq_refl CCRed) := 
-  green_of_red (Big x cd _ eq_refl CCRed).
+  green_of_red (Big x cd (comp_eq _) eq_refl CCRed).
 
 (* Takes a yellow packet, as a prefix buffer, a child packet and a suffix 
    buffer, and a green or red cdeque. Returns a deque starting with this packet 
@@ -1129,7 +1141,7 @@ Equations make_yellow {A len size1 pktsize size2 cdsize} {G1 Y1 Y2 G3 Y3 G4 R4}
                    packet_rear_seq p ++
                    buffer_seq buf2 } :=
 make_yellow p1 child s1 cd with ensure_green cd => {
-  | ? cd' => ? T (Big (Triple p1 child s1 PCYellow) cd' _ eq_refl CCYellow) }.
+  | ? cd' => ? T (Big (Triple p1 child s1 PCYellow) cd' (comp_eq _) eq_refl CCYellow) }.
 
 (* Takes a red packet, as a prefix buffer, a child packet and a suffix
    buffer, and a green cdeque. Returns the green version of the colored deque 
@@ -1147,14 +1159,14 @@ Equations make_red {A len size1 pktsize size2 cdsize} {C1 Y2 C3}
                   packet_rear_seq p ++
                   buffer_seq buf2 } :=
 make_red p1 child s1 cd 
-  with green_of_red (Big (Triple p1 child s1 PCRed) cd _ eq_refl CCRed) => {
+  with green_of_red (Big (Triple p1 child s1 PCRed) cd (comp_eq _) eq_refl CCRed) => {
     | ? cd' => ? T cd' }.
 
 (* When [size1 = size2], translates a deque of size1 to a deque of size2. *)
 
-Equations deque_translate {A size1 size2} (d : deque A size1) :
-    size1 = size2 -> { d' : deque A size2 | deque_seq d' = deque_seq d } :=
-deque_translate d eq_refl := ? d.
+Equations deque_translate {A size1 size2} (d : deque A size1) (eq: size1 = size2) :
+  { d' : deque A size2 | deque_seq d' = deque_seq d } :=
+deque_translate d eq with comp_eq eq => { | eq_refl := ? d }.
 
 #[local] Obligation Tactic :=
   try first [ 
