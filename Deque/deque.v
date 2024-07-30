@@ -12,34 +12,39 @@ From Deque Require Import buffer.
 
 (* Types *)
 
+(*  When a yellow or an orange triple has two children, a preferred child must 
+    be specified. This is done using the [preferred_child] type that function 
+    as a flag on packets (that are defined later). *)
+
 Inductive preferred_child : Type :=
-  | Preferred : bool -> bool -> preferred_child.
+  | Preferred_left
+  | Preferred_right.
 
-Notation preferred_left := (Preferred true false).
-Notation preferred_right := (Preferred false true).
-
-Derive NoConfusion for preferred_child.
+(*  In the following, only, left and right triples are grouped under one type
+    [triple]. To differentiate between the three kinds of triples, a new type 
+    [kind] is introduced and used as a flag on the more general [triple] type. *)
 
 Inductive kind : Type := Only | Left | Right.
 
-(* Here, [green_hue], [yellow_hue], [orange_hue] and [red_hue] will be utilized 
-   to generate the colors essential for our program. They function as boolean 
-   variables, indicating whether or not a specific hue is present in our color. *)
+(*  Here, [green_hue], [yellow_hue], [orange_hue] and [red_hue] will be utilized 
+    to generate the colors essential for our program. They function as boolean 
+    variables, indicating whether or not a specific hue is present in our color. *)
 
 Inductive green_hue  : Type := SomeGreen  | NoGreen.
 Inductive yellow_hue : Type := SomeYellow | NoYellow.
 Inductive orange_hue : Type := SomeOrange | NoOrange.
 Inductive red_hue    : Type := SomeRed    | NoRed.
 
-(* Colors are generated through the constructor [Mix], which accepts amount 
-   of each hue as arguments. *)
+(*  Colors are generated through the constructor [Mix], which accepts amount 
+    of each hue as arguments. *)
 
 Inductive color : Type :=
   | Mix : green_hue -> yellow_hue -> orange_hue -> red_hue -> color.
 
-(* In order for [Equations] to work on hues and colors, instances of 
-   [NoConfusion] are added to these types. *)
+(*  In order for [Equations] to work on preferred children, hues and colors, 
+    instances of [NoConfusion] are added to these types. *)
 
+Derive NoConfusion for preferred_child.
 Derive NoConfusion for kind.
 Derive NoConfusion for green_hue.
 Derive NoConfusion for yellow_hue.
@@ -47,28 +52,66 @@ Derive NoConfusion for orange_hue.
 Derive NoConfusion for red_hue.
 Derive NoConfusion for color.
 
-(* Some basic colors that we'll need. *)
+(*  Some basic colors that we'll need. *)
 
-Notation green := (Mix SomeGreen NoYellow NoOrange NoRed).
-Notation yellow := (Mix NoGreen SomeYellow NoOrange NoRed).
-Notation yellorange := (Mix NoGreen SomeYellow SomeOrange NoRed).
-Notation orange := (Mix NoGreen NoYellow SomeOrange NoRed).
-Notation red := (Mix NoGreen NoYellow NoOrange SomeRed).
+Notation green      := (Mix SomeGreen  NoYellow   NoOrange   NoRed).
+Notation yellow     := (Mix  NoGreen  SomeYellow  NoOrange   NoRed).
+Notation yellorange := (Mix  NoGreen  SomeYellow SomeOrange  NoRed).
+Notation orange     := (Mix  NoGreen   NoYellow  SomeOrange  NoRed).
+Notation red        := (Mix  NoGreen   NoYellow   NoOrange  SomeRed).
 
-(* Types for general prefix and suffix, they are simply aliases for buffer.t. *)
+(*  Types for general prefix and suffix, they are simply aliases for buffer.t. *)
 
 Definition prefix' := buffer.t.
 Definition suffix' := buffer.t.
 
-Inductive small_triple_size : nat -> nat -> kind -> Type :=
-  | SOnly {q : nat} : small_triple_size (S q) 0 Only
-  | SLeft {q : nat} : small_triple_size (5 + q) 2 Left
-  | SRight {q : nat} : small_triple_size 2 (5 + q) Right.
+(*  When the child of a triple is empty, different constrains apply on the 
+    prefix and suffix sizes according to the kind (only, left or right) of the
+    triple.  
+    
+    The type [small_triple_sizes] represents those constrains. There is a 
+    constructor for each specific kind, which indicates what rules the sizes 
+    must follow.
+    
+    For example, [small_triple_sizes Only qp qs] means that there exists a 
+    natural number q such that qp = S q and qs = 0. *)
 
-Inductive big_triple_size : nat -> nat -> nat -> kind -> Type :=
-  | BOnly {p qp qs : nat} : big_triple_size p (p + qp) (p + qs) Only
-  | BLeft {p q : nat} : big_triple_size p (p + q) 2 Left
-  | BRight {p q : nat} : big_triple_size p 2 (p + q) Right.
+Inductive small_triple_sizes : kind -> nat -> nat -> Type :=
+  | Only_small_sizes  {q : nat} : small_triple_sizes Only   (S q)     0
+  | Left_small_sizes  {q : nat} : small_triple_sizes Left  (5 + q)    2
+  | Right_small_sizes {q : nat} : small_triple_sizes Right    2    (5 + q).
+
+(*  Similarly, when the child of a triple is not empty, new constrains apply on
+    the prefix and suffix sizes according to the kind of the triple. 
+
+    The type [big_triple_sizes] represents those constrains. It functions as 
+    [small_triple_sizes], but we add a parameter, an offset that appears in 
+    sizes constrains.
+
+    For example, [big_triple_sizes offset Left qp qs] means that there exists a
+    natural number q such that qp = offset + q and qs = 2. *)
+
+Inductive big_triple_sizes (o : nat) : kind -> nat -> nat -> Type :=
+  | Only_big_sizes {qp qs : nat} : big_triple_sizes o Only  (o + qp) (o + qs)
+  | Left_big_sizes     {q : nat} : big_triple_sizes o Left  (o + q)     2
+  | Right_big_sizes    {q : nat} : big_triple_sizes o Right    2     (o + q).
+Arguments Only_big_sizes  {o qp qs}.
+Arguments Left_big_sizes  {o q}.
+Arguments Right_big_sizes {o q}.
+
+(*  The mutually recursive definition of stored triples, other triples, packets,
+    paths, non empty colored deques and colored deques. We call them structures 
+    as they serve to store elements. 
+    
+    All those structures are parametrized with a base type [A]. It is the type 
+    of elements that a structure holds. It means that a [struct A ...] can be 
+    translated to a [list A]. 
+
+    To put it simply, elements contained in our differents structure are 
+    triples over triples over triples ... over the base type. We would like 
+
+    To satisfy Rocq's positivity condition on types, we need to add a level 
+    parameter to all of our types.  *)
 
 Inductive stored_triple (A : Type) : nat -> Type :=
   | ST_ground : A -> stored_triple A 0
@@ -81,51 +124,56 @@ Inductive stored_triple (A : Type) : nat -> Type :=
       suffix' (stored_triple A lvl) (3 + qs) -> 
       stored_triple A (S lvl)
 
+(*  A triple represents only, left and right triples. *)
+
 with triple (A : Type) : nat -> nat -> bool -> kind -> kind -> color -> Type :=
   | Hole {lvl : nat} {K : kind} : 
       triple A lvl 0 true K K yellorange
   | Small {lvl qp qs : nat} {K : kind} : 
       prefix' (stored_triple A lvl) qp -> 
       suffix' (stored_triple A lvl) qs ->
-      small_triple_size qp qs K ->
+      small_triple_sizes K qp qs ->
       triple A lvl 0 false K K green
   | Green {lvl qp qs : nat} {K : kind} {G R} :
       prefix' (stored_triple A lvl) qp ->
       non_empty_cdeque A (S lvl) (Mix G NoYellow NoOrange R) ->
       suffix' (stored_triple A lvl) qs ->
-      big_triple_size 8 qp qs K ->
+      big_triple_sizes 8 K qp qs ->
       triple A lvl 0 false K K green
   | Yellow {lvl len qp qs : nat} {K1 K2 : kind} :
       prefix' (stored_triple A lvl) qp ->
-      packet A (S lvl) len preferred_left K2 ->
+      packet A (S lvl) len Preferred_left K2 ->
       suffix' (stored_triple A lvl) qs ->
-      big_triple_size 7 qp qs K1 ->
+      big_triple_sizes 7 K1 qp qs ->
       triple A lvl (S len) false K1 K2 yellow
   | Orange {lvl len qp qs : nat} {K1 K2 : kind} :
       prefix' (stored_triple A lvl) qp ->
-      packet A (S lvl) len preferred_right K2 ->
+      packet A (S lvl) len Preferred_right K2 ->
       suffix' (stored_triple A lvl) qs ->
-      big_triple_size 6 qp qs K1 ->
+      big_triple_sizes 6 K1 qp qs ->
       triple A lvl (S len) false K1 K2 orange
   | Red {lvl qp qs : nat} {K : kind} :
       prefix' (stored_triple A lvl) qp ->
       non_empty_cdeque A (S lvl) green ->
       suffix' (stored_triple A lvl) qs ->
-      big_triple_size 5 qp qs K ->
+      big_triple_sizes 5 K qp qs ->
       triple A lvl 0 false K K red
 
+(*  A packet helps us choose the right triple to continue with when we follow a
+    preferred chain. *)
+
 with packet (A : Type) : nat -> nat -> preferred_child -> kind -> Type :=
-  | Only_child {lvl len : nat} {is_hole : bool} {K : kind} {Y O} {left right : bool} :
+  | Only_child {lvl len : nat} {is_hole : bool} {K : kind} {Y O} {pref : preferred_child} :
       triple A lvl len is_hole Only K (Mix NoGreen Y O NoRed) ->
-      packet A lvl len (Preferred left right) K
+      packet A lvl len pref K
   | Left_child {lvl len : nat} {is_hole : bool} {K : kind} {Y O C} :
       triple A lvl len is_hole Left K (Mix NoGreen Y O NoRed) ->
       path A lvl Right C ->
-      packet A lvl len preferred_left K
+      packet A lvl len Preferred_left K
   | Right_child {lvl len : nat} {is_hole : bool} {K : kind} {Y O} :
       path A lvl Left green ->
       triple A lvl len is_hole Right K (Mix NoGreen Y O NoRed) ->
-      packet A lvl len preferred_right K
+      packet A lvl len Preferred_right K
 
 with path (A : Type) : nat -> kind -> color -> Type := 
   | Children {lvl len nlvl : nat} {is_hole : bool} {K1 K2 : kind} {G Y O R} :
@@ -164,7 +212,7 @@ Arguments Yellow {A lvl len qp qs K1 K2}.
 Arguments Orange {A lvl len qp qs K1 K2}.
 Arguments Red {A lvl qp qs K}.
 
-Arguments Only_child {A lvl len is_hole K Y O left right}.
+Arguments Only_child {A lvl len is_hole K Y O pref}.
 Arguments Left_child {A lvl len is_hole K Y O C}.
 Arguments Right_child {A lvl len is_hole K Y O}.
 
@@ -189,7 +237,7 @@ Definition right_triple (A : Type) (lvl len : nat) (is_hole : bool) :=
 
 Inductive pref_left (A : Type) (lvl : nat) : Type :=
   | Pref_left {len nlvl K G R} : 
-      packet A lvl len preferred_left K ->
+      packet A lvl len Preferred_left K ->
       triple A nlvl 0 false K K (Mix G NoYellow NoOrange R) ->
       nlvl = len + lvl ->
       pref_left A lvl.
@@ -197,7 +245,7 @@ Arguments Pref_left {A lvl len nlvl K G R}.
 
 Inductive pref_right (A : Type) (lvl : nat) : Type :=
   | Pref_right {len nlvl K G R} :
-      packet A lvl len preferred_right K ->
+      packet A lvl len Preferred_right K ->
       triple A nlvl 0 false K K (Mix G NoYellow NoOrange R) ->
       nlvl = len + lvl ->
       pref_right A lvl.
@@ -502,13 +550,13 @@ Proof. reflexivity. Qed.
 
 Lemma triple_front_small [A lvl qp qs K] 
   (p : prefix A lvl qp) (s : suffix A lvl qs) 
-  (ss : small_triple_size qp qs K) :
+  (ss : small_triple_sizes K qp qs) :
   triple_front_seq (Small p s ss) = buffer_seq p.
 Proof. cbn; apply correct_path_buffer_seq. Qed.
   
 Lemma triple_rear_small [A lvl qp qs K] 
   (p : prefix A lvl qp) (s : suffix A lvl qs) 
-  (ss : small_triple_size qp qs K) :
+  (ss : small_triple_sizes K qp qs) :
   triple_rear_seq (Small p s ss) = buffer_seq s.
 Proof. cbn; apply correct_path_buffer_seq. Qed.
 
@@ -516,7 +564,7 @@ Lemma triple_front_green [A lvl qp qs K G R]
   (p : prefix A lvl qp) 
   (cd : non_empty_cdeque A (S lvl) (Mix G NoYellow NoOrange R)) 
   (s : suffix A lvl qs)
-  (bs : big_triple_size 8 qp qs K) :
+  (bs : big_triple_sizes 8 K qp qs) :
   triple_front_seq (Green p cd s bs) = buffer_seq p ++ ne_cdeque_seq cd.
 Proof. 
   cbn; apply div_app2. 
@@ -528,15 +576,15 @@ Lemma triple_rear_green [A lvl qp qs K G R]
   (p : prefix A lvl qp) 
   (cd : non_empty_cdeque A (S lvl) (Mix G NoYellow NoOrange R)) 
   (s : suffix A lvl qs)
-  (bs : big_triple_size 8 qp qs K) :
+  (bs : big_triple_sizes 8 K qp qs) :
   triple_rear_seq (Green p cd s bs) = buffer_seq s.
 Proof. cbn; apply correct_path_buffer_seq. Qed.
 
 Lemma triple_front_yellow [A lvl len qp qs K1 K2] 
   (p : prefix A lvl qp)
-  (pkt : packet A (S lvl) len preferred_left K2)
+  (pkt : packet A (S lvl) len Preferred_left K2)
   (s : suffix A lvl qs)
-  (bs : big_triple_size 7 qp qs K1) :
+  (bs : big_triple_sizes 7 K1 qp qs) :
   triple_front_seq (Yellow p pkt s bs) = buffer_seq p ++ packet_front_seq pkt.
 Proof. 
   cbn; apply div_app2.
@@ -546,9 +594,9 @@ Qed.
 
 Lemma triple_rear_yellow [A lvl len qp qs K1 K2] 
   (p : prefix A lvl qp)
-  (pkt : packet A (S lvl) len preferred_left K2)
+  (pkt : packet A (S lvl) len Preferred_left K2)
   (s : suffix A lvl qs)
-  (bs : big_triple_size 7 qp qs K1) :
+  (bs : big_triple_sizes 7 K1 qp qs) :
   triple_rear_seq (Yellow p pkt s bs) = packet_rear_seq pkt ++ buffer_seq s.
 Proof. 
   cbn; apply div_app2.
@@ -558,9 +606,9 @@ Qed.
 
 Lemma triple_front_orange [A lvl len qp qs K1 K2] 
   (p : prefix A lvl qp)
-  (pkt : packet A (S lvl) len preferred_right K2)
+  (pkt : packet A (S lvl) len Preferred_right K2)
   (s : suffix A lvl qs)
-  (bs : big_triple_size 6 qp qs K1) :
+  (bs : big_triple_sizes 6 K1 qp qs) :
   triple_front_seq (Orange p pkt s bs) = buffer_seq p ++ packet_front_seq pkt.
 Proof. 
   cbn; apply div_app2.
@@ -570,9 +618,9 @@ Qed.
 
 Lemma triple_rear_orange [A lvl len qp qs K1 K2] 
   (p : prefix A lvl qp)
-  (pkt : packet A (S lvl) len preferred_right K2)
+  (pkt : packet A (S lvl) len Preferred_right K2)
   (s : suffix A lvl qs)
-  (bs : big_triple_size 6 qp qs K1) :
+  (bs : big_triple_sizes 6 K1 qp qs) :
   triple_rear_seq (Orange p pkt s bs) = packet_rear_seq pkt ++ buffer_seq s.
 Proof. 
   cbn; apply div_app2.
@@ -584,7 +632,7 @@ Lemma triple_front_red [A lvl qp qs K]
   (p : prefix A lvl qp) 
   (cd : non_empty_cdeque A (S lvl) green) 
   (s : suffix A lvl qs)
-  (bs : big_triple_size 5 qp qs K) :
+  (bs : big_triple_sizes 5 K qp qs) :
   triple_front_seq (Red p cd s bs) = buffer_seq p ++ ne_cdeque_seq cd.
 Proof. 
   cbn; apply div_app2.
@@ -596,7 +644,7 @@ Lemma triple_rear_red [A lvl qp qs K]
   (p : prefix A lvl qp) 
   (cd : non_empty_cdeque A (S lvl) green) 
   (s : suffix A lvl qs)
-  (bs : big_triple_size 5 qp qs K) :
+  (bs : big_triple_sizes 5 K qp qs) :
   triple_rear_seq (Red p cd s bs) = buffer_seq s.
 Proof. cbn; apply correct_path_buffer_seq. Qed.
       
@@ -621,22 +669,6 @@ Opaque path_seq.
 Opaque stored_triple_seq.
 Opaque triple_front_seq.
 Opaque triple_rear_seq.
-
-(* Lemmas *)
-
-Lemma empty_prefix [A lvl] (p : prefix A lvl 0) : buffer_seq p = [].
-Proof.
-  unfold buffer_seq; unfold prefix, prefix' in p.
-  pose buffer.empty_buffer as H; rewrite H.
-  reflexivity.
-Qed.
-
-Lemma empty_suffix [A lvl] (s : suffix A lvl 0) : buffer_seq s = [].
-Proof. 
-  unfold buffer_seq; unfold suffix, suffix' in s. 
-  pose buffer.empty_buffer as H; rewrite H.
-  reflexivity.
-Qed.
 
 #[export] Hint Rewrite empty_buffer : rlist.
 
@@ -682,31 +714,31 @@ Equations push_only_triple {A lvl len K C}
   (x : stored_triple A lvl) 
   (t : only_triple A lvl len false K C) :
   { t' : only_triple A lvl len false K C | push_seq_equality x t t' } :=
-push_only_triple x (Small p s SOnly) with buffer.push x p => {
-  | ? p' := ? Small p' s SOnly };
-push_only_triple x (Green p cd s BOnly) with buffer.push x p => {
-  | ? p' := ? Green p' cd s BOnly };
-push_only_triple x (Yellow p pkt s BOnly) with buffer.push x p => {
-  | ? p' := ? Yellow p' pkt s BOnly };
-push_only_triple x (Orange p pkt s BOnly) with buffer.push x p => {
-  | ? p' := ? Orange p' pkt s BOnly };
-push_only_triple x (Red p cd s BOnly) with buffer.push x p => {
-  | ? p' := ? Red p' cd s BOnly }.
+push_only_triple x (Small p s Only_small_sizes) with buffer.push x p => {
+  | ? p' := ? Small p' s Only_small_sizes };
+push_only_triple x (Green p cd s Only_big_sizes) with buffer.push x p => {
+  | ? p' := ? Green p' cd s Only_big_sizes };
+push_only_triple x (Yellow p pkt s Only_big_sizes) with buffer.push x p => {
+  | ? p' := ? Yellow p' pkt s Only_big_sizes };
+push_only_triple x (Orange p pkt s Only_big_sizes) with buffer.push x p => {
+  | ? p' := ? Orange p' pkt s Only_big_sizes };
+push_only_triple x (Red p cd s Only_big_sizes) with buffer.push x p => {
+  | ? p' := ? Red p' cd s Only_big_sizes }.
 
 Equations inject_only_triple {A lvl len K C}
   (t : only_triple A lvl len false K C)
   (x : stored_triple A lvl) :
   { t' : only_triple A lvl len false K C | inject_seq_equality t x t' } :=
-inject_only_triple (Small p s SOnly) x with buffer.inject p x => {
-  | ? p' := ? Small p' s SOnly };
-inject_only_triple (Green p cd s BOnly) x with buffer.inject s x => {
-  | ? s' := ? Green p cd s' BOnly };
-inject_only_triple (Yellow p pkt s BOnly) x with buffer.inject s x => {
-  | ? s' := ? Yellow p pkt s' BOnly };
-inject_only_triple (Orange p pkt s BOnly) x with buffer.inject s x => {
-  | ? s' := ? Orange p pkt s' BOnly };
-inject_only_triple (Red p cd s BOnly) x with buffer.inject s x => {
-  | ? s' := ? Red p cd s' BOnly }.
+inject_only_triple (Small p s Only_small_sizes) x with buffer.inject p x => {
+  | ? p' := ? Small p' s Only_small_sizes };
+inject_only_triple (Green p cd s Only_big_sizes) x with buffer.inject s x => {
+  | ? s' := ? Green p cd s' Only_big_sizes };
+inject_only_triple (Yellow p pkt s Only_big_sizes) x with buffer.inject s x => {
+  | ? s' := ? Yellow p pkt s' Only_big_sizes };
+inject_only_triple (Orange p pkt s Only_big_sizes) x with buffer.inject s x => {
+  | ? s' := ? Orange p pkt s' Only_big_sizes };
+inject_only_triple (Red p cd s Only_big_sizes) x with buffer.inject s x => {
+  | ? s' := ? Red p cd s' Only_big_sizes }.
 
 Equations push_only_path {A lvl C} 
   (x : stored_triple A lvl) 
@@ -730,31 +762,31 @@ Equations push_left_triple {A lvl len K C}
   (x : stored_triple A lvl)
   (t : left_triple A lvl len false K C) :
   { t' : left_triple A lvl len false K C | push_seq_equality x t t' } :=
-push_left_triple x (Small p s SLeft) with buffer.push x p => {
-  | ? p' := ? Small p' s SLeft };
-push_left_triple x (Green p cd s BLeft) with buffer.push x p => {
-  | ? p' := ? Green p' cd s BLeft };
-push_left_triple x (Yellow p pkt s BLeft) with buffer.push x p => {
-  | ? p' := ? Yellow p' pkt s BLeft };
-push_left_triple x (Orange p pkt s BLeft) with buffer.push x p => {
-  | ? p' := ? Orange p' pkt s BLeft };
-push_left_triple x (Red p cd s BLeft) with buffer.push x p => {
-  | ? p' := ? Red p' cd s BLeft }.
+push_left_triple x (Small p s Left_small_sizes) with buffer.push x p => {
+  | ? p' := ? Small p' s Left_small_sizes };
+push_left_triple x (Green p cd s Left_big_sizes) with buffer.push x p => {
+  | ? p' := ? Green p' cd s Left_big_sizes };
+push_left_triple x (Yellow p pkt s Left_big_sizes) with buffer.push x p => {
+  | ? p' := ? Yellow p' pkt s Left_big_sizes };
+push_left_triple x (Orange p pkt s Left_big_sizes) with buffer.push x p => {
+  | ? p' := ? Orange p' pkt s Left_big_sizes };
+push_left_triple x (Red p cd s Left_big_sizes) with buffer.push x p => {
+  | ? p' := ? Red p' cd s Left_big_sizes }.
 
 Equations inject_right_triple {A lvl len K C} 
   (t : right_triple A lvl len false K C) 
   (x : stored_triple A lvl) :
   { t' : right_triple A lvl len false K C | inject_seq_equality t x t' } :=
-inject_right_triple (Small p s SRight) x with buffer.inject s x => {
-  | ? s' := ? Small p s' SRight };
-inject_right_triple (Green p cd s BRight) x with buffer.inject s x => {
-  | ? s' := ? Green p cd s' BRight };
-inject_right_triple (Yellow p pkt s BRight) x with buffer.inject s x => {
-  | ? s' := ? Yellow p pkt s' BRight };
-inject_right_triple (Orange p pkt s BRight) x with buffer.inject s x => {
-  | ? s' := ? Orange p pkt s' BRight };
-inject_right_triple (Red p cd s BRight) x with buffer.inject s x => {
-  | ? s' := ? Red p cd s' BRight }.
+inject_right_triple (Small p s Right_small_sizes) x with buffer.inject s x => {
+  | ? s' := ? Small p s' Right_small_sizes };
+inject_right_triple (Green p cd s Right_big_sizes) x with buffer.inject s x => {
+  | ? s' := ? Green p cd s' Right_big_sizes };
+inject_right_triple (Yellow p pkt s Right_big_sizes) x with buffer.inject s x => {
+  | ? s' := ? Yellow p pkt s' Right_big_sizes };
+inject_right_triple (Orange p pkt s Right_big_sizes) x with buffer.inject s x => {
+  | ? s' := ? Orange p pkt s' Right_big_sizes };
+inject_right_triple (Red p cd s Right_big_sizes) x with buffer.inject s x => {
+  | ? s' := ? Red p cd s' Right_big_sizes }.
 
 Equations push_left_path {A lvl C} 
   (x : stored_triple A lvl)
@@ -798,7 +830,7 @@ inject_ne_cdeque (Pair_red pl pr) x with inject_right_path pr x => {
 
 Equations single_triple {A lvl} (x : stored_triple A lvl) :
   {t : triple A lvl 0 false Only Only green | triple_seq t = stored_triple_seq x } :=
-single_triple x with buffer.single x, buffer.empty => { | ? p, ? s := ? Small p s SOnly }.
+single_triple x with buffer.single x, buffer.empty => { | ? p, ? s := ? Small p s Only_small_sizes }.
 
 Equations only_single {A lvl} (x : stored_triple A lvl) :
   {cd : non_empty_cdeque A lvl green | ne_cdeque_seq cd = stored_triple_seq x } :=
@@ -907,7 +939,7 @@ to_pref_left (Pair_red (Children natur adopt eq_refl) pr) :=
   ? Pref_left (Left_child natur pr) adopt eq_refl.
 
 Equations to_pref_right {A lvl len nlvl K} 
-  (pkt : packet A lvl len preferred_left K)
+  (pkt : packet A lvl len Preferred_left K)
   (t : triple A nlvl 0 false K K green) :
   nlvl = len + lvl -> 
   { pr : pref_right A lvl | 
@@ -917,7 +949,7 @@ to_pref_right (Left_child t1 (Children natur adopt eq_refl)) t2 eq_refl :=
   ? Pref_right (Right_child (Children t1 t2 eq_refl) natur) adopt eq_refl.
 
 Equations no_pref {A lvl len nlvl K}
-  (pkt : packet A lvl len preferred_right K)
+  (pkt : packet A lvl len Preferred_right K)
   (t : triple A nlvl 0 false K K green) :
   nlvl = len + lvl ->
   { cd : non_empty_cdeque A lvl green | 
@@ -1028,34 +1060,34 @@ Equations extract_stored_left {A lvl C}
   (p : path A lvl Left C) (b : buffer_12 A lvl) :
   { '(s, x) : suffix A lvl 2 * stored_triple A (S lvl) | 
     buffer_seq s ++ stored_triple_seq x = path_seq p ++ buffer_12_seq b } :=
-extract_stored_left (Children Hole (Small p s SLeft) eq_refl) b
+extract_stored_left (Children Hole (Small p s Left_small_sizes) eq_refl) b
   with stored_left p Empty s b => { | ? (s', x) := ? (s', x) };
-extract_stored_left (Children Hole (Green p cd s BLeft) eq_refl) b 
+extract_stored_left (Children Hole (Green p cd s Left_big_sizes) eq_refl) b 
   with stored_left p (NonEmpty cd) s b => { | ? (s', x) := ? (s', x) };
-extract_stored_left (Children (Yellow p pkt s BLeft) t eq_refl) b
+extract_stored_left (Children (Yellow p pkt s Left_big_sizes) t eq_refl) b
   with make_child pkt t _ => {
     | ? Sd cd with stored_left p cd s b => { | ? (s', x) := ? (s', x) } };
-extract_stored_left (Children (Orange p pkt s BLeft) t eq_refl) b
+extract_stored_left (Children (Orange p pkt s Left_big_sizes) t eq_refl) b
   with make_child pkt t _ => {
     | ? Sd cd with stored_left p cd s b => { | ? (s', x) := ? (s', x) } };
-extract_stored_left (Children Hole (Red p cd s BLeft) eq_refl) b
+extract_stored_left (Children Hole (Red p cd s Left_big_sizes) eq_refl) b
   with stored_left p (NonEmpty cd) s b => { | ? (s', x) := ? (s', x) }.
 
 Equations extract_stored_right {A lvl C}
   (b : buffer_12 A lvl) (p : path A lvl Right C) :
   { '(x, s) : stored_triple A (S lvl) * suffix A lvl 2 | 
     stored_triple_seq x ++ buffer_seq s = buffer_12_seq b ++ path_seq p } :=
-extract_stored_right b (Children Hole (Small p s SRight) eq_refl)
+extract_stored_right b (Children Hole (Small p s Right_small_sizes) eq_refl)
   with stored_right b p Empty s => { | ? (x, s') := ? (x, s') };
-extract_stored_right b (Children Hole (Green p cd s BRight) eq_refl) 
+extract_stored_right b (Children Hole (Green p cd s Right_big_sizes) eq_refl) 
   with stored_right b p (NonEmpty cd) s => { | ? (x, s') := ? (x, s') };
-extract_stored_right b (Children (Yellow p pkt s BRight) t eq_refl)
+extract_stored_right b (Children (Yellow p pkt s Right_big_sizes) t eq_refl)
   with make_child pkt t _ => {
     | ? Sd cd with stored_right b p cd s => { | ? (x, s') := ? (x, s') } };
-extract_stored_right b (Children (Orange p pkt s BRight) t eq_refl)
+extract_stored_right b (Children (Orange p pkt s Right_big_sizes) t eq_refl)
   with make_child pkt t _ => {
     | ? Sd cd with stored_right b p cd s => { | ? (x, s') := ? (x, s') } };
-extract_stored_right b (Children Hole (Red p cd s BRight) eq_refl)
+extract_stored_right b (Children Hole (Red p cd s Right_big_sizes) eq_refl)
   with stored_right b p (NonEmpty cd) s => { | ? (x, s') := ? (x, s') }.
 
 #[local] Obligation Tactic :=
@@ -1075,27 +1107,27 @@ extract_stored_right b (Children Hole (Red p cd s BRight) eq_refl)
 Equations left_of_pair {A lvl C1 C2}
   (pl : path A lvl Left C1) (pr : path A lvl Right C2) :
   { p : path A lvl Left C1 | path_seq p = path_seq pl ++ path_seq pr } :=
-left_of_pair (Children Hole (Small p s SLeft) eq_refl) pr 
+left_of_pair (Children Hole (Small p s Left_small_sizes) eq_refl) pr 
   with buffer.two s => { | ? (x1, x2) with buffer.inject p x1 => {
     | ? p' with extract_stored_right (x2, V0) pr => {
       | ? (stored, s') with single_triple stored => {
-        | ? t := ? Children (Orange p' (Only_child Hole) s' BLeft) t eq_refl } } } };
-left_of_pair (Children Hole (Green p cd s BLeft) eq_refl) pr
+        | ? t := ? Children (Orange p' (Only_child Hole) s' Left_big_sizes) t eq_refl } } } };
+left_of_pair (Children Hole (Green p cd s Left_big_sizes) eq_refl) pr
   with buffer.two s => { | ? (x1, x2) with extract_stored_right (x1, V1 x2) pr => {
     | ? (stored, s') with inject_ne_cdeque cd stored => {
-      | ? cd' := ? Children Hole (Green p cd' s' BLeft) eq_refl } } };
-left_of_pair (Children (Yellow p pkt s BLeft) t eq_refl) pr 
+      | ? cd' := ? Children Hole (Green p cd' s' Left_big_sizes) eq_refl } } };
+left_of_pair (Children (Yellow p pkt s Left_big_sizes) t eq_refl) pr 
   with buffer.two s => { | ? (x1, x2) with extract_stored_right (x1, V1 x2) pr => {
     | ? (stored, s') with inject_child pkt t stored _ => {
-      | ? (pkt', t') := ? Children (Yellow p pkt' s' BLeft) t' eq_refl } } };
-left_of_pair (Children (Orange p pkt s BLeft) t eq_refl) pr
+      | ? (pkt', t') := ? Children (Yellow p pkt' s' Left_big_sizes) t' eq_refl } } };
+left_of_pair (Children (Orange p pkt s Left_big_sizes) t eq_refl) pr
   with buffer.two s => { | ? (x1, x2) with extract_stored_right (x1, V1 x2) pr => {
     | ? (stored, s') with inject_child pkt t stored _ => {
-      | ? (pkt', t') := ? Children (Orange p pkt' s' BLeft) t' eq_refl } } };
-left_of_pair (Children Hole (Red p cd s BLeft) eq_refl) pr 
+      | ? (pkt', t') := ? Children (Orange p pkt' s' Left_big_sizes) t' eq_refl } } };
+left_of_pair (Children Hole (Red p cd s Left_big_sizes) eq_refl) pr 
   with buffer.two s => { | ? (x1, x2) with extract_stored_right (x1, V1 x2) pr => {
     | ? (stored, s') with inject_ne_cdeque cd stored => {
-      | ? cd' := ? Children Hole (Red p cd' s' BLeft) eq_refl } } }.
+      | ? cd' := ? Children Hole (Red p cd' s' Left_big_sizes) eq_refl } } }.
 Next Obligation. Qed.
 Next Obligation.
   aac_rewrite y1; rewrite <-y; hauto db:rlist.
@@ -1107,27 +1139,27 @@ Qed.
 Equations right_of_pair {A lvl C1 C2} 
   (pl : path A lvl Left C1) (pr : path A lvl Right C2) :
   { p : path A lvl Right C2 | path_seq p = path_seq pl ++ path_seq pr } :=
-right_of_pair pl (Children Hole (Small p s SRight) eq_refl) 
+right_of_pair pl (Children Hole (Small p s Right_small_sizes) eq_refl) 
   with buffer.two p => { | ? (x1, x2) with buffer.push x2 s => {
     | ? s' with extract_stored_left pl (x1, V0) => {
       | ? (p', stored) with single_triple stored => {
-        | ? t := ? Children (Orange p' (Only_child Hole) s' BRight) t eq_refl } } } };
-right_of_pair pl (Children Hole (Green p cd s BRight) eq_refl)
+        | ? t := ? Children (Orange p' (Only_child Hole) s' Right_big_sizes) t eq_refl } } } };
+right_of_pair pl (Children Hole (Green p cd s Right_big_sizes) eq_refl)
   with buffer.two p => { | ? (x1, x2) with extract_stored_left pl (x1, V1 x2) => {
     | ? (p', stored) with push_ne_cdeque stored cd => {
-      | ? cd' := ? Children Hole (Green p' cd' s BRight) eq_refl } } };
-right_of_pair pl (Children (Yellow p pkt s BRight) t eq_refl)
+      | ? cd' := ? Children Hole (Green p' cd' s Right_big_sizes) eq_refl } } };
+right_of_pair pl (Children (Yellow p pkt s Right_big_sizes) t eq_refl)
   with buffer.two p => { | ? (x1, x2) with extract_stored_left pl (x1, V1 x2) => {
     | ? (p', stored) with push_child stored pkt t _ => {
-      | ? (pkt', t') := ? Children (Yellow p' pkt' s BRight) t' eq_refl } } };
-right_of_pair pl (Children (Orange p pkt s BRight) t eq_refl)
+      | ? (pkt', t') := ? Children (Yellow p' pkt' s Right_big_sizes) t' eq_refl } } };
+right_of_pair pl (Children (Orange p pkt s Right_big_sizes) t eq_refl)
   with buffer.two p => { | ? (x1, x2) with extract_stored_left pl (x1, V1 x2) => {
     | ? (p', stored) with push_child stored pkt t _ => {
-      | ? (pkt', t') := ? Children (Orange p' pkt' s BRight) t' eq_refl } } };
-right_of_pair pl (Children Hole (Red p cd s BRight) eq_refl)
+      | ? (pkt', t') := ? Children (Orange p' pkt' s Right_big_sizes) t' eq_refl } } };
+right_of_pair pl (Children Hole (Red p cd s Right_big_sizes) eq_refl)
   with buffer.two p => { | ? (x1, x2) with extract_stored_left pl (x1, V1 x2) => {
     | ? (p', stored) with push_ne_cdeque stored cd => {
-      | ? cd' := ? Children Hole (Red p' cd' s BRight) eq_refl } } }.
+      | ? cd' := ? Children Hole (Red p' cd' s Right_big_sizes) eq_refl } } }.
 Next Obligation.
   aac_rewrite e0; aac_rewrite y0; hauto db:rlist.
 Qed.
@@ -1146,27 +1178,27 @@ Qed.
 
 Equations left_of_only {A lvl C} (p : path A lvl Only C) :
   { p' : path_attempt A lvl Left C | path_attempt_seq p' = path_seq p } :=
-left_of_only (Children Hole (Small p _ SOnly) eq_refl) 
+left_of_only (Children Hole (Small p _ Only_small_sizes) eq_refl) 
   with buffer.has5p2 p => {
     | ? inl v := ? ZeroSix v;
     | ? inr (p', x1, x2) with buffer.pair x1 x2 => {
-      | ? s := ? Ok (Children Hole (Small p' s SLeft) eq_refl) } };
-left_of_only (Children Hole (Green p cd s BOnly) eq_refl) 
+      | ? s := ? Ok (Children Hole (Small p' s Left_small_sizes) eq_refl) } };
+left_of_only (Children Hole (Green p cd s Only_big_sizes) eq_refl) 
   with buffer.eject2 s => { | ? (s1, x1, x2) with buffer.pair x1 x2 => {
     | ? s' with inject_ne_cdeque cd (ST_small s1) => {
-      | ? cd' := ? Ok (Children Hole (Green p cd' s' BLeft) eq_refl) } } };
-left_of_only (Children (Yellow p pkt s BOnly) t eq_refl) 
+      | ? cd' := ? Ok (Children Hole (Green p cd' s' Left_big_sizes) eq_refl) } } };
+left_of_only (Children (Yellow p pkt s Only_big_sizes) t eq_refl) 
   with buffer.eject2 s => { | ? (s1, x1, x2) with buffer.pair x1 x2 => {
     | ? s' with inject_child pkt t (ST_small s1) _ => {
-      | ? (pkt', t') := ? Ok (Children (Yellow p pkt' s' BLeft) t' eq_refl) } } };
-left_of_only (Children (Orange p pkt s BOnly) t eq_refl)
+      | ? (pkt', t') := ? Ok (Children (Yellow p pkt' s' Left_big_sizes) t' eq_refl) } } };
+left_of_only (Children (Orange p pkt s Only_big_sizes) t eq_refl)
   with buffer.eject2 s => { | ? (s1, x1, x2) with buffer.pair x1 x2 => {
     | ? s' with inject_child pkt t (ST_small s1) _ => {
-      | ? (pkt', t') := ? Ok (Children (Orange p pkt' s' BLeft) t' eq_refl) } } };
-left_of_only (Children Hole (Red p cd s BOnly) eq_refl)
+      | ? (pkt', t') := ? Ok (Children (Orange p pkt' s' Left_big_sizes) t' eq_refl) } } };
+left_of_only (Children Hole (Red p cd s Only_big_sizes) eq_refl)
   with buffer.eject2 s => { | ? (s1, x1, x2) with buffer.pair x1 x2 => {
     | ? s' with inject_ne_cdeque cd (ST_small s1) => {
-      | ? cd' := ? Ok (Children Hole (Red p cd' s' BLeft) eq_refl) } } }.
+      | ? cd' := ? Ok (Children Hole (Red p cd' s' Left_big_sizes) eq_refl) } } }.
 Next Obligation.
   aac_rewrite y0; hauto db:rlist.
 Qed.
@@ -1176,27 +1208,27 @@ Qed.
 
 Equations right_of_only {A lvl C} (p : path A lvl Only C) :
   { p' : path_attempt A lvl Right C | path_attempt_seq p' = path_seq p } :=
-right_of_only (Children Hole (Small p _ SOnly) eq_refl) 
+right_of_only (Children Hole (Small p _ Only_small_sizes) eq_refl) 
   with buffer.has2p5 p => {
     | ? inl v := ? ZeroSix v;
     | ? inr (x1, x2, s') with buffer.pair x1 x2 => {
-      | ? p' := ? Ok (Children Hole (Small p' s' SRight) eq_refl) } };
-right_of_only (Children Hole (Green p cd s BOnly) eq_refl) 
+      | ? p' := ? Ok (Children Hole (Small p' s' Right_small_sizes) eq_refl) } };
+right_of_only (Children Hole (Green p cd s Only_big_sizes) eq_refl) 
   with buffer.pop2 p => { | ? (x1, x2, p1) with buffer.pair x1 x2 => {
     | ? p' with push_ne_cdeque (ST_small p1) cd => {
-      | ? cd' := ? Ok (Children Hole (Green p' cd' s BRight) eq_refl) } } };
-right_of_only (Children (Yellow p pkt s BOnly) t eq_refl)
+      | ? cd' := ? Ok (Children Hole (Green p' cd' s Right_big_sizes) eq_refl) } } };
+right_of_only (Children (Yellow p pkt s Only_big_sizes) t eq_refl)
   with buffer.pop2 p => { | ? (x1, x2, p1) with buffer.pair x1 x2 => {
     | ? p' with push_child (ST_small p1) pkt t _ => {
-      | ? (pkt', t') := ? Ok (Children (Yellow p' pkt' s BRight) t' eq_refl) } } };
-right_of_only (Children (Orange p pkt s BOnly) t eq_refl) 
+      | ? (pkt', t') := ? Ok (Children (Yellow p' pkt' s Right_big_sizes) t' eq_refl) } } };
+right_of_only (Children (Orange p pkt s Only_big_sizes) t eq_refl) 
   with buffer.pop2 p => { | ? (x1, x2, p1) with buffer.pair x1 x2 => {
     | ? p' with push_child (ST_small p1) pkt t _ => {
-      | ? (pkt', t') := ? Ok (Children (Orange p' pkt' s BRight) t' eq_refl) } } };
-right_of_only (Children Hole (Red p cd s BOnly) eq_refl)
+      | ? (pkt', t') := ? Ok (Children (Orange p' pkt' s Right_big_sizes) t' eq_refl) } } };
+right_of_only (Children Hole (Red p cd s Only_big_sizes) eq_refl)
   with buffer.pop2 p => { | ? (x1, x2, p1) with buffer.pair x1 x2 => {
     | ? p' with push_ne_cdeque (ST_small p1) cd => {
-      | ? cd' := ? Ok (Children Hole (Red p' cd' s BRight) eq_refl) } } }.
+      | ? cd' := ? Ok (Children Hole (Red p' cd' s Right_big_sizes) eq_refl) } } }.
 Next Obligation.
   aac_rewrite y0; hauto db:rlist.
 Qed.
@@ -1271,27 +1303,27 @@ Equations semi_of_left {A lvl C}
     sdeque_seq sd = path_seq p ++ stored_triple_seq x1 ++ stored_triple_seq x2 ++ 
                                   stored_triple_seq x3 ++ stored_triple_seq x4 ++ 
                                   stored_triple_seq x5 ++ stored_triple_seq x6 } :=
-semi_of_left (Children Hole (Small p s SLeft) eq_refl) x1 x2 x3 x4 x5 x6 
+semi_of_left (Children Hole (Small p s Left_small_sizes) eq_refl) x1 x2 x3 x4 x5 x6 
   with buffer.two s => { | ? (y1, y2) with buffer.inject2 p y1 y2 => {
     | ? p1 with buffer.inject6 p1 x1 x2 x3 x4 x5 x6, buffer.empty => {
       | ? p2, ? s2 := 
-      ? Sd (NonEmpty (Only_path (Children Hole (Small p2 s2 SOnly) eq_refl))) } } };
-semi_of_left (Children Hole (Green p cd s BLeft) eq_refl) x1 x2 x3 x4 x5 x6 
+      ? Sd (NonEmpty (Only_path (Children Hole (Small p2 s2 Only_small_sizes) eq_refl))) } } };
+semi_of_left (Children Hole (Green p cd s Left_big_sizes) eq_refl) x1 x2 x3 x4 x5 x6 
   with buffer.inject6 s x1 x2 x3 x4 x5 x6 => {
     | ? s' := 
-    ? Sd (NonEmpty (Only_path (Children Hole (Green p cd s' BOnly) eq_refl))) };
-semi_of_left (Children (Yellow p pkt s BLeft) t eq_refl) x1 x2 x3 x4 x5 x6 
+    ? Sd (NonEmpty (Only_path (Children Hole (Green p cd s' Only_big_sizes) eq_refl))) };
+semi_of_left (Children (Yellow p pkt s Left_big_sizes) t eq_refl) x1 x2 x3 x4 x5 x6 
   with buffer.inject6 s x1 x2 x3 x4 x5 x6 => {
     | ? s' := 
-    ? Sd (NonEmpty (Only_path (Children (Yellow p pkt s' BOnly) t eq_refl))) };
-semi_of_left (Children (Orange p pkt s BLeft) t eq_refl) x1 x2 x3 x4 x5 x6
+    ? Sd (NonEmpty (Only_path (Children (Yellow p pkt s' Only_big_sizes) t eq_refl))) };
+semi_of_left (Children (Orange p pkt s Left_big_sizes) t eq_refl) x1 x2 x3 x4 x5 x6
   with buffer.inject6 s x1 x2 x3 x4 x5 x6 => {
     | ? s' :=
-    ? Sd (NonEmpty (Only_path (Children (Orange p pkt s' BOnly) t eq_refl))) };
-semi_of_left (Children Hole (Red p cd s BLeft) eq_refl) x1 x2 x3 x4 x5 x6
+    ? Sd (NonEmpty (Only_path (Children (Orange p pkt s' Only_big_sizes) t eq_refl))) };
+semi_of_left (Children Hole (Red p cd s Left_big_sizes) eq_refl) x1 x2 x3 x4 x5 x6
   with buffer.inject6 s x1 x2 x3 x4 x5 x6 => {
     | ? s' := 
-    ? Sd (NonEmpty (Only_path (Children Hole (Red p cd s' BOnly) eq_refl))) }.
+    ? Sd (NonEmpty (Only_path (Children Hole (Red p cd s' Only_big_sizes) eq_refl))) }.
 Next Obligation. 
   rewrite <-y; hauto db:rlist.
 Qed.
@@ -1303,47 +1335,47 @@ Equations semi_of_right {A lvl C}
     sdeque_seq sd = stored_triple_seq x1 ++ stored_triple_seq x2 ++
                     stored_triple_seq x3 ++ stored_triple_seq x4 ++
                     stored_triple_seq x5 ++ stored_triple_seq x6 ++ path_seq p } :=
-semi_of_right x1 x2 x3 x4 x5 x6 (Children Hole (Small p s SRight) eq_refl) 
+semi_of_right x1 x2 x3 x4 x5 x6 (Children Hole (Small p s Right_small_sizes) eq_refl) 
   with buffer.two p => { | ? (y1, y2) with buffer.push2 y1 y2 s => {
     | ? s1 with buffer.push6 x1 x2 x3 x4 x5 x6 s1, buffer.empty => {
       | ? p2, ? s2 := 
-      ? Sd (NonEmpty (Only_path (Children Hole (Small p2 s2 SOnly) eq_refl))) } } };
-semi_of_right x1 x2 x3 x4 x5 x6 (Children Hole (Green p cd s BRight) eq_refl)
+      ? Sd (NonEmpty (Only_path (Children Hole (Small p2 s2 Only_small_sizes) eq_refl))) } } };
+semi_of_right x1 x2 x3 x4 x5 x6 (Children Hole (Green p cd s Right_big_sizes) eq_refl)
   with buffer.push6 x1 x2 x3 x4 x5 x6 p => {
     | ? p' :=
-    ? Sd (NonEmpty (Only_path (Children Hole (Green p' cd s BOnly) eq_refl))) };
-semi_of_right x1 x2 x3 x4 x5 x6 (Children (Yellow p pkt s BRight) t eq_refl) 
+    ? Sd (NonEmpty (Only_path (Children Hole (Green p' cd s Only_big_sizes) eq_refl))) };
+semi_of_right x1 x2 x3 x4 x5 x6 (Children (Yellow p pkt s Right_big_sizes) t eq_refl) 
   with buffer.push6 x1 x2 x3 x4 x5 x6 p => {
     | ? p' :=
-    ? Sd (NonEmpty (Only_path (Children (Yellow p' pkt s BOnly) t eq_refl))) };
-semi_of_right x1 x2 x3 x4 x5 x6 (Children (Orange p pkt s BRight) t eq_refl)
+    ? Sd (NonEmpty (Only_path (Children (Yellow p' pkt s Only_big_sizes) t eq_refl))) };
+semi_of_right x1 x2 x3 x4 x5 x6 (Children (Orange p pkt s Right_big_sizes) t eq_refl)
   with buffer.push6 x1 x2 x3 x4 x5 x6 p => {
     | ? p' :=
-    ? Sd (NonEmpty (Only_path (Children (Orange p' pkt s BOnly) t eq_refl))) };
-semi_of_right x1 x2 x3 x4 x5 x6 (Children Hole (Red p cd s BRight) eq_refl)
+    ? Sd (NonEmpty (Only_path (Children (Orange p' pkt s Only_big_sizes) t eq_refl))) };
+semi_of_right x1 x2 x3 x4 x5 x6 (Children Hole (Red p cd s Right_big_sizes) eq_refl)
   with buffer.push6 x1 x2 x3 x4 x5 x6 p => {
     | ? p' := 
-    ? Sd (NonEmpty (Only_path (Children Hole (Red p' cd s BOnly) eq_refl))) }.
+    ? Sd (NonEmpty (Only_path (Children Hole (Red p' cd s Only_big_sizes) eq_refl))) }.
 
 Equations pop_green_left {A lvl} (p : path A lvl Left green) :
   { '(x, p') : stored_triple A lvl * path_uncolored A lvl Left | 
     stored_triple_seq x ++ path_uncolored_seq p' = path_seq p } :=
-pop_green_left (Children Hole (Small p s SLeft) eq_refl) 
+pop_green_left (Children Hole (Small p s Left_small_sizes) eq_refl) 
   with buffer.pop p => { | ? (x, p1) with buffer.has5 p1 => {
     | ? inl (x1, x2, x3, x4) with buffer.two s => { | ? (x5, x6) := 
       ? (x, Six x1 x2 x3 x4 x5 x6) };
-    | ? inr p2 := ? (x, AnyColor (Children Hole (Small p2 s SLeft) eq_refl)) } };
-pop_green_left (Children Hole (Green p cd s BLeft) eq_refl)
+    | ? inr p2 := ? (x, AnyColor (Children Hole (Small p2 s Left_small_sizes) eq_refl)) } };
+pop_green_left (Children Hole (Green p cd s Left_big_sizes) eq_refl)
   with buffer.pop p => { | ? (x, p1) with to_pref_left cd => {
     | ? Pref_left pkt t eq_refl := 
-      ? (x, AnyColor (Children (Yellow p1 pkt s BLeft) t _)) } };
-pop_green_left (Children (Yellow p pkt s BLeft) t eq_refl) 
+      ? (x, AnyColor (Children (Yellow p1 pkt s Left_big_sizes) t _)) } };
+pop_green_left (Children (Yellow p pkt s Left_big_sizes) t eq_refl) 
   with buffer.pop p => { | ? (x, p1) with to_pref_right pkt t _ => {
     | ? Pref_right pkt' t' eq_refl := 
-      ? (x, AnyColor (Children (Orange p1 pkt' s BLeft) t' _)) } };
-pop_green_left (Children (Orange p pkt s BLeft) t eq_refl)
+      ? (x, AnyColor (Children (Orange p1 pkt' s Left_big_sizes) t' _)) } };
+pop_green_left (Children (Orange p pkt s Left_big_sizes) t eq_refl)
   with buffer.pop p => { | ? (x, p1) with no_pref pkt t _ => {
-    | ? cd := ? (x, AnyColor (Children Hole (Red p1 cd s BLeft) eq_refl)) } }.
+    | ? cd := ? (x, AnyColor (Children Hole (Red p1 cd s Left_big_sizes) eq_refl)) } }.
 Next Obligation. Qed.
 Next Obligation. 
   aac_rewrite e; hauto db:rlist.
@@ -1352,22 +1384,22 @@ Qed.
 Equations eject_green_right {A lvl} (p : path A lvl Right green) :
   { '(p', x) : path_uncolored A lvl Right * stored_triple A lvl |
     path_uncolored_seq p' ++ stored_triple_seq x = path_seq p } :=
-eject_green_right (Children Hole (Small p s SRight) eq_refl)
+eject_green_right (Children Hole (Small p s Right_small_sizes) eq_refl)
   with buffer.eject s => { | ? (s1, x) with buffer.has5 s1 => {
     | ? inl (x3, x4, x5, x6) with buffer.two p => { | ? (x1, x2) := 
       ? (Six x1 x2 x3 x4 x5 x6, x) };
-    | ? inr s2 := ? (AnyColor (Children Hole (Small p s2 SRight) eq_refl), x) } };
-eject_green_right (Children Hole (Green p cd s BRight) eq_refl)
+    | ? inr s2 := ? (AnyColor (Children Hole (Small p s2 Right_small_sizes) eq_refl), x) } };
+eject_green_right (Children Hole (Green p cd s Right_big_sizes) eq_refl)
   with buffer.eject s => { | ? (s1, x) with to_pref_left cd => {
     | ? Pref_left pkt t eq_refl := 
-      ? (AnyColor (Children (Yellow p pkt s1 BRight) t _), x) } };
-eject_green_right (Children (Yellow p pkt s BRight) t eq_refl)
+      ? (AnyColor (Children (Yellow p pkt s1 Right_big_sizes) t _), x) } };
+eject_green_right (Children (Yellow p pkt s Right_big_sizes) t eq_refl)
   with buffer.eject s => { | ? (s1, x) with to_pref_right pkt t _ => {
     | ? Pref_right pkt' t' eq_refl := 
-      ? (AnyColor (Children (Orange p pkt' s1 BRight) t' _), x) } };
-eject_green_right (Children (Orange p pkt s BRight) t eq_refl)
+      ? (AnyColor (Children (Orange p pkt' s1 Right_big_sizes) t' _), x) } };
+eject_green_right (Children (Orange p pkt s Right_big_sizes) t eq_refl)
   with buffer.eject s => { | ? (s1, x) with no_pref pkt t _ => {
-    | ? cd := ? (AnyColor (Children Hole (Red p cd s1 BRight) eq_refl), x) } }.
+    | ? cd := ? (AnyColor (Children Hole (Red p cd s1 Right_big_sizes) eq_refl), x) } }.
 Next Obligation. Qed.
 Next Obligation.
   aac_rewrite e; hauto db:rlist.
@@ -1376,23 +1408,23 @@ Qed.
 Equations pop_green {A lvl} (cd : non_empty_cdeque A lvl green) :
   { '(x, sd) : stored_triple A lvl * sdeque A lvl | 
     stored_triple_seq x ++ sdeque_seq sd = ne_cdeque_seq cd } :=
-pop_green (Only_path (Children Hole (Small p s SOnly) eq_refl)) 
+pop_green (Only_path (Children Hole (Small p s Only_small_sizes) eq_refl)) 
   with buffer.pop p => { | ? (x, p1) with buffer.has1 p1 => {
     | ? None := ? (x, Sd Empty);
     | ? Some p2 := 
-    ? (x, Sd (NonEmpty (Only_path (Children Hole (Small p2 s SOnly) eq_refl)))) } };
-pop_green (Only_path (Children Hole (Green p cd s BOnly) eq_refl))
+    ? (x, Sd (NonEmpty (Only_path (Children Hole (Small p2 s Only_small_sizes) eq_refl)))) } };
+pop_green (Only_path (Children Hole (Green p cd s Only_big_sizes) eq_refl))
   with buffer.pop p => { | ? (x, p1) with to_pref_left cd => {
     | ? Pref_left pkt t eq_refl :=
-    ? (x, Sd (NonEmpty (Only_path (Children (Yellow p1 pkt s BOnly) t _)))) } };
-pop_green (Only_path (Children (Yellow p pkt s BOnly) t eq_refl))
+    ? (x, Sd (NonEmpty (Only_path (Children (Yellow p1 pkt s Only_big_sizes) t _)))) } };
+pop_green (Only_path (Children (Yellow p pkt s Only_big_sizes) t eq_refl))
   with buffer.pop p => { | ? (x, p1) with to_pref_right pkt t _ => {
     | ? Pref_right pkt' t' eq_refl :=
-    ? (x, Sd (NonEmpty (Only_path (Children (Orange p1 pkt' s BOnly) t' _)))) } };
-pop_green (Only_path (Children (Orange p pkt s BOnly) t eq_refl))
+    ? (x, Sd (NonEmpty (Only_path (Children (Orange p1 pkt' s Only_big_sizes) t' _)))) } };
+pop_green (Only_path (Children (Orange p pkt s Only_big_sizes) t eq_refl))
   with buffer.pop p => { | ? (x, p1) with no_pref pkt t _ => 
     | ? cd := 
-    ? (x, Sd (NonEmpty (Only_path (Children Hole (Red p1 cd s BOnly) eq_refl)))) };
+    ? (x, Sd (NonEmpty (Only_path (Children Hole (Red p1 cd s Only_big_sizes) eq_refl)))) };
 pop_green (Pair_green pl pr) with pop_green_left pl => {
   | ? (x, Six x1 x2 x3 x4 x5 x6) with semi_of_right x1 x2 x3 x4 x5 x6 pr => {
     | ? sd := ? (x, sd) };
@@ -1405,23 +1437,23 @@ Qed.
 Equations eject_green {A lvl} (cd : non_empty_cdeque A lvl green) :
   { '(sd, x) : sdeque A lvl * stored_triple A lvl | 
     sdeque_seq sd ++ stored_triple_seq x = ne_cdeque_seq cd } :=
-eject_green (Only_path (Children Hole (Small p s SOnly) eq_refl)) 
+eject_green (Only_path (Children Hole (Small p s Only_small_sizes) eq_refl)) 
   with buffer.eject p => { | ? (p1, x) with buffer.has1 p1 => {
     | ? None := ? (Sd Empty, x);
     | ? Some p2 := 
-    ? (Sd (NonEmpty (Only_path (Children Hole (Small p2 s SOnly) eq_refl))), x) } };
-eject_green (Only_path (Children Hole (Green p cd s BOnly) eq_refl))
+    ? (Sd (NonEmpty (Only_path (Children Hole (Small p2 s Only_small_sizes) eq_refl))), x) } };
+eject_green (Only_path (Children Hole (Green p cd s Only_big_sizes) eq_refl))
   with buffer.eject s => { | ? (s1, x) with to_pref_left cd => {
     | ? Pref_left pkt t eq_refl :=
-    ? (Sd (NonEmpty (Only_path (Children (Yellow p pkt s1 BOnly) t _))), x) } };
-eject_green (Only_path (Children (Yellow p pkt s BOnly) t eq_refl))
+    ? (Sd (NonEmpty (Only_path (Children (Yellow p pkt s1 Only_big_sizes) t _))), x) } };
+eject_green (Only_path (Children (Yellow p pkt s Only_big_sizes) t eq_refl))
   with buffer.eject s => { | ? (s1, x) with to_pref_right pkt t _ => {
     | ? Pref_right pkt' t' eq_refl := 
-    ? (Sd (NonEmpty (Only_path (Children (Orange p pkt' s1 BOnly) t' _))), x) } };
-eject_green (Only_path (Children (Orange p pkt s BOnly) t eq_refl)) 
+    ? (Sd (NonEmpty (Only_path (Children (Orange p pkt' s1 Only_big_sizes) t' _))), x) } };
+eject_green (Only_path (Children (Orange p pkt s Only_big_sizes) t eq_refl)) 
   with buffer.eject s => { | ? (s1, x) with no_pref pkt t _ => {
     | ? cd := 
-    ? (Sd (NonEmpty (Only_path (Children Hole (Red p cd s1 BOnly) eq_refl))), x) } };
+    ? (Sd (NonEmpty (Only_path (Children Hole (Red p cd s1 Only_big_sizes) eq_refl))), x) } };
 eject_green (Pair_green pl pr) with eject_green_right pr => {
   | ? (Six x1 x2 x3 x4 x5 x6, x) with semi_of_left pl x1 x2 x3 x4 x5 x6 => {
     | ? sd := ? (sd, x) };
@@ -1451,30 +1483,30 @@ eject_stored cd with eject_green cd => {
 
 Equations unsandwich_green {A lvl} (cd : non_empty_cdeque A lvl green) :
   { s : sandwich A lvl | sandwich_seq s = ne_cdeque_seq cd } :=
-unsandwich_green (Only_path (Children Hole (Small p s SOnly) eq_refl)) 
+unsandwich_green (Only_path (Children Hole (Small p s Only_small_sizes) eq_refl)) 
   with buffer.pop p => { | ? (x1, p1) with buffer.has1 p1 => {
     | ? None := ? Alone x1;
     | ? Some p2 with buffer.eject p2 => { | ? (p3, x2) with buffer.has1 p3 => {
       | ? None := ? Sandwich x1 (Sd Empty) x2;
       | ? Some p4 := 
-        let only := Only_path (Children Hole (Small p4 s SOnly) eq_refl) in 
+        let only := Only_path (Children Hole (Small p4 s Only_small_sizes) eq_refl) in 
         ? Sandwich x1 (Sd (NonEmpty only)) x2 } } } };
-unsandwich_green (Only_path (Children Hole (Green p cd s BOnly) eq_refl))
+unsandwich_green (Only_path (Children Hole (Green p cd s Only_big_sizes) eq_refl))
   with buffer.pop p => { | ? (x1, p1) with buffer.eject s => { 
     | ? (s1, x2) with to_pref_left cd => { | ? Pref_left pkt t eq_refl := 
     (* If we remove eq_refl, equations fail with "Constructor is applied to too 
        many arguments", when in fact it is the opposite. *)
-      let only := Only_path (Children (Yellow p1 pkt s1 BOnly) t _) in 
+      let only := Only_path (Children (Yellow p1 pkt s1 Only_big_sizes) t _) in 
       ? Sandwich x1 (Sd (NonEmpty only)) x2 } } };
-unsandwich_green (Only_path (Children (Yellow p pkt s BOnly) t eq_refl))
+unsandwich_green (Only_path (Children (Yellow p pkt s Only_big_sizes) t eq_refl))
   with buffer.pop p => { | ? (x1, p1) with buffer.eject s => {
     | ? (s1, x2) with to_pref_right pkt t _ => { | ? Pref_right pkt' t' eq_refl := 
-      let only := Only_path (Children (Orange p1 pkt' s1 BOnly) t' _) in 
+      let only := Only_path (Children (Orange p1 pkt' s1 Only_big_sizes) t' _) in 
       ? Sandwich x1 (Sd (NonEmpty only)) x2 } } };
-unsandwich_green (Only_path (Children (Orange p pkt s BOnly) t eq_refl))
+unsandwich_green (Only_path (Children (Orange p pkt s Only_big_sizes) t eq_refl))
   with buffer.pop p => { | ? (x1, p1) with buffer.eject s => {
     | ? (s1, x2) with no_pref pkt t _ => { | ? cd := 
-      let only := Only_path (Children Hole (Red p1 cd s1 BOnly) eq_refl) in
+      let only := Only_path (Children Hole (Red p1 cd s1 Only_big_sizes) eq_refl) in
       ? Sandwich x1 (Sd (NonEmpty only)) x2 } } };
 unsandwich_green (Pair_green pl pr) with pop_green_left pl => {
   | ? (x1, Six x2 x3 x4 x5 x6 x7) with eject_green_right pr => {
@@ -1482,7 +1514,7 @@ unsandwich_green (Pair_green pl pr) with pop_green_left pl => {
       | ? b with buffer.push6 x8 x9 x10 x11 x12 x13 b => {
         | ? b1 with buffer.push6 x2 x3 x4 x5 x6 x7 b1 => {
           | ? b2 := 
-            let only := Only_path (Children Hole (Small b2 b SOnly) eq_refl) in
+            let only := Only_path (Children Hole (Small b2 b Only_small_sizes) eq_refl) in
             ? Sandwich x1 (Sd (NonEmpty only)) x14 } } };
     | ? (AnyColor pr1, x8) with semi_of_right x2 x3 x4 x5 x6 x7 pr1 => {
       | ? sd := ? Sandwich x1 sd x8 } };
@@ -1532,10 +1564,10 @@ only_small p s with buffer.has3p8 s => {
   | ? inl (x1, x2, x3, x4, x5, x6, x7, x8, v) 
     with buffer.inject8 p x1 x2 x3 x4 x5 x6 x7 x8 => {
       | ? p1 with buffer.inject_vector p1 v, buffer.empty => {
-          | ? p2, ? s2 := ? Small p2 s2 SOnly } };
+          | ? p2, ? s2 := ? Small p2 s2 Only_small_sizes } };
   | ? inr (x1, x2, x3, s1) with buffer.triple x1 x2 x3 => {
     | ? b with only_single (ST_small b) => {
-      | ? cd := ? Green p cd s1 BOnly } } }.
+      | ? cd := ? Green p cd s1 Only_big_sizes } } }.
 
 Equations only_green {A lvl qp qs} 
   (p : prefix A lvl (8 + qp))
@@ -1544,7 +1576,7 @@ Equations only_green {A lvl qp qs}
   { t : triple A lvl 0 false Only Only green | 
     triple_seq t = buffer_seq p ++ sdeque_seq sd ++ buffer_seq s } :=
 only_green p (Sd Empty) s with only_small p s => { | ? t := ? t };
-only_green p (Sd (NonEmpty cd)) s := ? Green p cd s BOnly.
+only_green p (Sd (NonEmpty cd)) s := ? Green p cd s Only_big_sizes.
 
 #[local] Obligation Tactic := 
   cbn; intros; autorewrite with rlist;
@@ -1558,12 +1590,12 @@ only_green p (Sd (NonEmpty cd)) s := ? Green p cd s BOnly.
 
 Equations green_of_red_only {A lvl} (t : triple A lvl 0 false Only Only red) :
   { t' : triple A lvl 0 false Only Only green | triple_seq t' = triple_seq t } :=
-green_of_red_only (Red p cd s BOnly) with buffer.has8 p, buffer.has8 s => {
+green_of_red_only (Red p cd s Only_big_sizes) with buffer.has8 p, buffer.has8 s => {
   | ? inl (x1, x2, x3, x4, x5, vp), ? inl (y1, y2, y3, y4, y5, vs) 
     with unsandwich_stored cd => {
       | ? Unstored_alone center with buffer.push5_vector x1 x2 x3 x4 x5 vp center => {
         | ? center1 with buffer.inject5_vector center1 y1 y2 y3 y4 y5 vs, buffer.empty => {
-            | ? center2, ? empty := ? Small center2 empty SOnly } };
+            | ? center2, ? empty := ? Small center2 empty Only_small_sizes } };
       | ? Unstored_sandwich p1 sd s1 
         with buffer.push5_vector x1 x2 x3 x4 x5 vp p1 => {
           | ? p2 with buffer.inject5_vector s1 y1 y2 y3 y4 y5 vs => {
@@ -1574,7 +1606,7 @@ green_of_red_only (Red p cd s BOnly) with buffer.has8 p, buffer.has8 s => {
   | ? inr p1, ? inl (y1, y2, y3, y4, y5, vs) with eject_stored cd => {
     | ? Unstored s1 sd with buffer.inject5_vector s1 y1 y2 y3 y4 y5 vs => {
       | ? s2 with only_green p1 sd s2 => { | ? t := ? t } } };
-  | ? inr p1, ? inr s1 := ? Green p1 cd s1 BOnly }.
+  | ? inr p1, ? inr s1 := ? Green p1 cd s1 Only_big_sizes }.
 Next Obligation. Qed.
 Next Obligation. Qed.
 Next Obligation. Qed.
@@ -1582,23 +1614,23 @@ Next Obligation. Qed.
 
 Equations green_of_red_left {A lvl} (t : triple A lvl 0 false Left Left red) :
   { t' : triple A lvl 0 false Left Left green | triple_seq t' = triple_seq t } :=
-green_of_red_left (Red p cd s BLeft) with buffer.has8 p => {
+green_of_red_left (Red p cd s Left_big_sizes) with buffer.has8 p => {
   | ? inl (x1, x2, x3, x4, x5, vp) with pop_stored cd => {
     | ? Unstored p1 (Sd cd1) with buffer.push5_vector x1 x2 x3 x4 x5 vp p1 => {
       | ? p2 with cd1 => {
-        | Empty := ? Small p2 s SLeft; 
-        | NonEmpty cd1' := ? Green p2 cd1' s BLeft } } };
-  | ? inr p1 := ? Green p1 cd s BLeft }.
+        | Empty := ? Small p2 s Left_small_sizes; 
+        | NonEmpty cd1' := ? Green p2 cd1' s Left_big_sizes } } };
+  | ? inr p1 := ? Green p1 cd s Left_big_sizes }.
 
 Equations green_of_red_right {A lvl} (t : triple A lvl 0 false Right Right red) :
   { t' : triple A lvl 0 false Right Right green | triple_seq t' = triple_seq t } :=
-green_of_red_right (Red p cd s BRight) with buffer.has8 s => {
+green_of_red_right (Red p cd s Right_big_sizes) with buffer.has8 s => {
   | ? inl (y1, y2, y3, y4, y5, vs) with eject_stored cd => {
     | ? Unstored s1 (Sd cd1) with buffer.inject5_vector s1 y1 y2 y3 y4 y5 vs => {
       | ? s2 with cd1 => {
-        | Empty := ? Small p s2 SRight;
-        | NonEmpty cd1' := ? Green p cd1' s2 BRight } } };
-  | ? inr s1 := ? Green p cd s1 BRight }.
+        | Empty := ? Small p s2 Right_small_sizes;
+        | NonEmpty cd1' := ? Green p cd1' s2 Right_big_sizes } } };
+  | ? inr s1 := ? Green p cd s1 Right_big_sizes }.
 Next Obligation. Qed.
 Next Obligation. Qed.
 

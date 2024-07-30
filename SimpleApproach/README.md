@@ -78,9 +78,12 @@ let rec ensure_green : type c. c t -> [`green] t = function
   | Null -> Null
   | Zero t -> Zero t
   | One t -> One (ensure_green t)
-  | Two Null -> Zero (One Null)      (* 2     => 01    *)
-  | Two (Zero t) -> Zero (One t)     (* 20... => 01... *)
-  | Two (One t) -> Zero (Two t)      (* 21... => 02... *)
+  (* 2     => 01    *)
+  | Two Null -> Zero (One Null)      
+  (* 20... => 01... *)
+  | Two (Zero t) -> Zero (One t)     
+  (* 21... => 02... *)
+  | Two (One t) -> Zero (Two t)      
 ```
 
 Now a function for adding 1.
@@ -88,8 +91,10 @@ Now a function for adding 1.
 ```ml
 let succ : [`green] t -> [`green] t = function
   | Null -> One Null
-  | Zero t -> One (ensure_green t)   (* Not constant cost *)
-  | One t -> ensure_green (Two t)    (* Constant cost *)
+  (* Not constant cost *)
+  | Zero t -> One (ensure_green t)   
+  (* Constant cost *)
+  | One t -> ensure_green (Two t)    
 ```
 
 We do not have yet a O(1) cost when adding 1, there are still some cases when we must go through lists of ones:

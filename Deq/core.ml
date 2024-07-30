@@ -48,7 +48,7 @@ type ('a, 'color) cdeque =
       * ('b, [< `green | `red]) cdeque
      -> ('a, [`green ]) cdeque
 
-  (* Colored deque starting with a yellow packet. It must be followed by a green packet 
+  (* Colored deque starting with a yellow packet. It must be followed by a green packet
      in order to be regular. *)
   | Y : ('a, 'b, [`yellow]) packet
       * ('b, [`green]) cdeque
@@ -62,6 +62,9 @@ type ('a, 'color) cdeque =
 
 (** A type for deques. *)
 type 'a deque = T : ('a, [< `green | `yellow]) cdeque -> 'a deque
+
+(** The empty deque. *)
+let dempty = T (Small B0)
 
 (** Pushes an element onto a buffer, and returns a green cdeque. *)
 let buffer_push : type a c. a -> (a, c) buffer -> (a, [`green]) cdeque
@@ -88,7 +91,7 @@ let buffer_inject : type a c. (a, c) buffer -> a -> (a, [`green]) cdeque
       G (Green (B3 (a, b, c), HOLE, B3 (d, e, x)), Small B0)
 
 (** Pops an element from a buffer, when there is no elements in the buffer, an
-    error is raised. Otherwise, it returns the removed element and the new 
+    error is raised. Otherwise, it returns the removed element and the new
     buffer. *)
 let buffer_pop_unsafe : type a c. (a, c) buffer -> a * a any_buffer
 = function
@@ -99,7 +102,7 @@ let buffer_pop_unsafe : type a c. (a, c) buffer -> a * a any_buffer
   | B4 (a, b, c, d) -> a, Any (B3 (b, c, d))
   | B5 (a, b, c, d, e) -> a, Any (B4 (b, c, d, e))
 
-(** Pops an element from a buffer, if the buffer is empty, it returns [None], 
+(** Pops an element from a buffer, if the buffer is empty, it returns [None],
     otherwise, it returns an option containing the removed element and the new
     buffer. *)
 let buffer_pop : type a c. (a, c) buffer -> (a * a any_buffer) option
@@ -108,18 +111,18 @@ let buffer_pop : type a c. (a, c) buffer -> (a * a any_buffer) option
   | buf -> Some (buffer_pop_unsafe buf)
 
 (** Ejects an element from a buffer, when there is no elements in the buffer, an
-   error is raised. Otherwise, it returns the new buffer and the removed 
+   error is raised. Otherwise, it returns the new buffer and the removed
    element. *)
 let buffer_eject_unsafe : type a c. (a, c) buffer -> a any_buffer * a
 = function
   | B0 -> assert false
-  | B1 a -> Any B0, a 
+  | B1 a -> Any B0, a
   | B2 (a, b) -> Any (B1 a), b
-  | B3 (a, b, c) -> Any (B2 (a, b)), c 
+  | B3 (a, b, c) -> Any (B2 (a, b)), c
   | B4 (a, b, c, d) -> Any (B3 (a, b, c)), d
   | B5 (a, b, c, d, e) -> Any (B4 (a, b, c, d)), e
 
-(** Ejects an element from a buffer, if the buffer is empty, it returns [None], 
+(** Ejects an element from a buffer, if the buffer is empty, it returns [None],
     otherwise, it returns an option containing the removed element and the new
     buffer. *)
 let buffer_eject : type a c. (a, c) buffer -> (a any_buffer * a) option
@@ -150,7 +153,7 @@ let green_pop : type a. (a, [`green]) buffer -> a * a yellow_buffer
   | B2 (a, b)    -> a, Yellowish (B1 b)
   | B3 (a, b, c) -> a, Yellowish (B2 (b, c))
 
-(** Ejects an element from a green buffer, returns the new yellow buffer and 
+(** Ejects an element from a green buffer, returns the new yellow buffer and
     the removed element. *)
 let green_eject : type a. (a, [`green]) buffer -> a yellow_buffer * a
 = function
@@ -175,7 +178,7 @@ let yellow_inject : type a. a yellow_buffer -> a -> a any_buffer
   | B3 (a, b, c) -> Any (B4 (a, b, c, x))
   | B4 (a, b, c, d) -> Any (B5 (a, b, c, d, x))
 
-(** Pops an element from a yellow buffer, returns the removed element and the 
+(** Pops an element from a yellow buffer, returns the removed element and the
     new buffer. *)
 let yellow_pop : type a. a yellow_buffer -> a * a any_buffer
 = fun (Yellowish buf) ->
@@ -185,7 +188,7 @@ let yellow_pop : type a. a yellow_buffer -> a * a any_buffer
   | B3 (a, b, c)    -> a, Any (B2 (b, c))
   | B4 (a, b, c, d) -> a, Any (B3 (b, c, d))
 
-(** Ejects an element from a yellow buffer, returns the new buffer and the 
+(** Ejects an element from a yellow buffer, returns the new buffer and the
     removed element. *)
 let yellow_eject : type a. a yellow_buffer -> a any_buffer * a
 = fun (Yellowish buf) ->
@@ -230,8 +233,8 @@ let suffix12 x opt = match opt with
   | None   -> B1 x
   | Some y -> B2 (x, y)
 
-(** Type ['a decompose] helps us describe a 'a buffer. A buffer with 0 or 1 
-    elements is considered [Underflow], it cannot be green unless we add 
+(** Type ['a decompose] helps us describe a 'a buffer. A buffer with 0 or 1
+    elements is considered [Underflow], it cannot be green unless we add
     elements. If the buffer is green, it's [Ok]. And if the buffer has 4 or 5
     elements, the buffer [Overflow], we can make it green by removing a pair. *)
 type 'a decompose =
@@ -239,14 +242,14 @@ type 'a decompose =
   | Ok        : ('a, [`green]) buffer -> 'a decompose
   | Overflow  : ('a, [`green]) buffer * ('a * 'a) -> 'a decompose
 
-(** Returns the decomposed version of a buffer. Here, it is a prefix 
-    decomposition: when the buffer is overflowed, elements at the end are 
+(** Returns the decomposed version of a buffer. Here, it is a prefix
+    decomposition: when the buffer is overflowed, elements at the end are
     removed. *)
 let prefix_decompose : type a c. (a, c) buffer -> a decompose
 = function
   (* No element, the buffer is underflowed. *)
   | B0   -> Underflow None
-  (* One element, the buffer is underflowed. We keep track of the single 
+  (* One element, the buffer is underflowed. We keep track of the single
      element as an option type. *)
   | B1 x -> Underflow (Some x)
   (* The buffer is green, it's ok. *)
@@ -263,7 +266,7 @@ let suffix_decompose : type a c. (a, c) buffer -> a decompose
 = function
   (* No element, the buffer is underflowed. *)
   | B0   -> Underflow None
-  (* One element, the buffer is underflowed. We keep track of the single 
+  (* One element, the buffer is underflowed. We keep track of the single
      element as an option type. *)
   | B1 x -> Underflow (Some x)
   (* The buffer is green, it's ok. *)
@@ -275,8 +278,8 @@ let suffix_decompose : type a c. (a, c) buffer -> a decompose
 
 
 (** Type ['a sandwich] helps us to represent a 'a buffer. If a buffer contains
-    0 or 1 element, then it is considered alone and can be represented by an 
-    option type. If it has more elements, we can represent our buffer by a 
+    0 or 1 element, then it is considered alone and can be represented by an
+    option type. If it has more elements, we can represent our buffer by a
     smaller one sandwiched between two elements. *)
 type 'a sandwich =
   | Alone : 'a option -> 'a sandwich
@@ -292,8 +295,8 @@ let buffer_unsandwich : type a c. (a, c) buffer -> a sandwich
   | B4 (a, b, c, d) -> Sandwich (a, B2 (b, c), d)
   | B5 (a, b, c, d, e) -> Sandwich (a, B3 (b, c, d), e)
 
-(** Translates a 'a buffer to a 'a * 'a buffer. A additional option type is 
-    returned to handle cases where the buffer contains an odd number of 
+(** Translates a 'a buffer to a 'a * 'a buffer. A additional option type is
+    returned to handle cases where the buffer contains an odd number of
     elements. *)
 let buffer_halve : type a c. (a, c) buffer -> a option * (a * a) any_buffer
 = function
@@ -304,7 +307,7 @@ let buffer_halve : type a c. (a, c) buffer -> a option * (a * a) any_buffer
   | B4 (a, b, c, d)    -> None,   Any (B2 ((a, b), (c, d)))
   | B5 (a, b, c, d, e) -> Some a, Any (B2 ((b, c), (d, e)))
 
-(** Takes any 'a buffer and a green ('a * 'a) one, and rearranges elements 
+(** Takes any 'a buffer and a green ('a * 'a) one, and rearranges elements
     contained in the two buffers to return one green 'a buffer and a yellow
     ('a * 'a) buffer. The order of elements is preserved. *)
 let green_prefix_concat
@@ -321,12 +324,12 @@ let green_prefix_concat
   | Underflow opt ->
       let ab, buf2 = green_pop buf2 in
       prefix23 opt ab, buf2
-  (* If the first buffer has to much elements, we simply push them onto the 
+  (* If the first buffer has to much elements, we simply push them onto the
      second one. *)
   | Overflow (buf1, ab) ->
       buf1, green_push ab buf2
 
-(** Takes a ('a * 'a) green buffer and any 'a one, and rearranges elements 
+(** Takes a ('a * 'a) green buffer and any 'a one, and rearranges elements
     contained in the two buffers to return one ('a * 'a) yellow buffer and one
     green 'a buffer. The order of elements is preserved. *)
 let green_suffix_concat
@@ -343,7 +346,7 @@ let green_suffix_concat
   | Overflow (buf2, ab) ->
       green_inject buf1 ab, buf2
 
-(** Takes any 'a buffer and a yellow ('a * 'a) one, and rearranges elements 
+(** Takes any 'a buffer and a yellow ('a * 'a) one, and rearranges elements
     contained in the two buffers to return one green 'a buffer and any ('a * 'a)
     buffer. The order of elements is preserved. *)
 let prefix_concat buf1 buf2 =
@@ -357,7 +360,7 @@ let prefix_concat buf1 buf2 =
   | Underflow opt ->
       let ab, buf2 = yellow_pop buf2 in
       prefix23 opt ab, buf2
-  (* If the first buffer has to much elements, we simply push them onto the 
+  (* If the first buffer has to much elements, we simply push them onto the
      second one. *)
   | Overflow (buf1, ab) ->
       buf1, yellow_push ab buf2
@@ -378,7 +381,7 @@ let suffix_concat buf1 buf2 =
       yellow_inject buf1 ab, buf2
 
 (** Takes a prefix buffer, a following buffer (when the next level is composed
-    of only one buffer), and a suffix buffer. It allows to rearrange all 
+    of only one buffer), and a suffix buffer. It allows to rearrange all
     elements contained in those buffers into a green cdeque. *)
 let make_small
 = fun prefix1 buf suffix1 ->
@@ -391,15 +394,15 @@ let make_small
   (* Only the prefix is green. *)
   | Ok p1, Underflow opt ->
       begin match buffer_eject buf, opt with
-      (* The suffix and the following buffer are empty. We can return a cdeque 
+      (* The suffix and the following buffer are empty. We can return a cdeque
          containing only the prefix. *)
       | None, None   -> Small p1
       (* If the suffix contains one element and the following buffer is empty.
-         We simply inject this element in p1. In practice, this case never 
-         occurs as we call the function on a red buffer. If the prefix is green, 
+         We simply inject this element in p1. In practice, this case never
+         occurs as we call the function on a red buffer. If the prefix is green,
          the suffix must be red, as it is underflowed it is empty. *)
       | None, Some x -> buffer_inject p1 x
-      (* If the following buffer is not empty, we can eject elements from it 
+      (* If the following buffer is not empty, we can eject elements from it
          and push them onto our suffix. *)
       | Some (Any rest, cd), _ ->
           G (Green (p1, HOLE, suffix23 cd opt), Small rest)
@@ -417,12 +420,12 @@ let make_small
   (* Both the prefix and the suffix are underflowed. *)
   | Underflow p1, Underflow s1 ->
       begin match buffer_unsandwich buf with
-      (* If the following buffer has enough elements to be sandwich, we can 
+      (* If the following buffer has enough elements to be sandwich, we can
          use the sandwiching elements and inject/push them onto our prefix/
          suffix. *)
       | Sandwich (ab, rest, cd) ->
           G (Green (prefix23 p1 ab, HOLE, suffix23 cd s1), Small rest)
-      (* We don't have enough elements in our following buffer, we have to 
+      (* We don't have enough elements in our following buffer, we have to
          treat our result case by case. It correspond to the "No-Buffer Case"
          from Kaplan and Tarjan's paper. *)
       | Alone opt ->
@@ -438,7 +441,7 @@ let make_small
           end
       end
 
-  (* If we have an overflowing prefix and a good suffix, we can simply push its 
+  (* If we have an overflowing prefix and a good suffix, we can simply push its
      excess elements onto the following buffer. *)
   | Overflow (p1, ab), Ok s1 ->
       let buf = buffer_push ab buf in
@@ -449,7 +452,7 @@ let make_small
       let buf = buffer_inject buf ab in
       G (Green (p1, HOLE, s1), buf)
 
-  (* If the prefix is underflowing and the suffix overflowing, we add the 
+  (* If the prefix is underflowing and the suffix overflowing, we add the
      suffix's excess elements to the following buffer, and retrieve its first
     pair. This pair can be added to the prefix to make it green. *)
   | Underflow opt, Overflow (s1, ab) ->
@@ -461,7 +464,7 @@ let make_small
       let center, cd = prefix_rot ab buf in
       G (Green (p1, HOLE, suffix23 cd opt), Small center)
 
-  (* If both the prefix and the suffix are overflowing, a new level is added, 
+  (* If both the prefix and the suffix are overflowing, a new level is added,
      all excess elements can be stored in a yellow packet. *)
   | Overflow (p1, ab), Overflow (s1, cd) ->
       let x, Any rest = buffer_halve buf in
@@ -488,7 +491,7 @@ let green_of_red
       let Yellowish s2, s1 = green_suffix_concat s2 s1 in
       G (Green (p1, Yellow (p2, child, s2), s1), cdeque)
 
-(** Type [not_yellow] serves as a predicate on types: if we have a 
+(** Type [not_yellow] serves as a predicate on types: if we have a
     [c not_yellow], then [c] is not [`yellow]. *)
 type _ not_yellow = Not_yellow: [< `green | `red] not_yellow
 
@@ -502,20 +505,20 @@ let ensure_green
   | G (x, k) -> G (x, k)
   | R (x, k) -> green_of_red (R (x, k))
 
-(** Takes a yellow packet, [p1], [child], [s1], and a cdeque [cdeque]. Returns 
-    a deque starting with this packet and followed by the green version of 
+(** Takes a yellow packet, [p1], [child], [s1], and a cdeque [cdeque]. Returns
+    a deque starting with this packet and followed by the green version of
     [cdeque]. *)
 let yellow p1 child s1 cdeque =
   T (Y (Yellow (p1, child, s1), ensure_green Not_yellow cdeque))
 
-(** Takes a red packet, [p1], [child], [s1], and a green cdeque [cdeque]. 
-    Returns the green version of the cdeque made of the red packet followed by 
+(** Takes a red packet, [p1], [child], [s1], and a green cdeque [cdeque].
+    Returns the green version of the cdeque made of the red packet followed by
     the green cdeque. *)
 let red p1 child s1 cdeque =
   T (green_of_red (R (Red (p1, child, s1), cdeque)))
 
 (** Pushes an element on a deque. *)
-let push x (T t) = match t with
+let dpush x (T t) = match t with
   | Small buf -> T (buffer_push x buf)
   | G (Green (p1, child, s1), cdeque) ->
       let Yellowish p1 = green_push x p1 in
@@ -525,7 +528,7 @@ let push x (T t) = match t with
       red p1 child s1 cdeque
 
 (** Injects an element on a deque. *)
-let inject (T t) x = match t with
+let dinject (T t) x = match t with
   | Small buf -> T (buffer_inject buf x)
   | G (Green (p1, child, s1), cdeque) ->
       let Yellowish s1 = green_inject s1 x in
@@ -534,9 +537,9 @@ let inject (T t) x = match t with
       let Any s1 = yellow_inject (Yellowish s1) x in
       red p1 child s1 cdeque
 
-(** Pops an element from a deque. If the deque is empty, an error is raised. 
+(** Pops an element from a deque. If the deque is empty, an error is raised.
     Otherwise, it returns the removed element and the new deque. *)
-let pop_unsafe (T t) = match t with
+let dpop_unsafe (T t) = match t with
   | Small buf ->
       let x, Any buf = buffer_pop_unsafe buf in
       x, T (Small buf)
@@ -547,9 +550,24 @@ let pop_unsafe (T t) = match t with
       let x, Any p1 = yellow_pop (Yellowish p1) in
       x, red p1 child s1 cdeque
 
+(** Pops an element from a deque. If the deque is empty, it returns [None], if
+    not, it returns the removed element and the remaining deque. *)
+let dpop (T t) = match t with
+  | Small buf ->
+    begin match buffer_pop buf with
+    | None -> None
+    | Some (x, Any buf) -> Some (x, T (Small buf))
+    end
+  | G (Green (p1, child, s1), chain) ->
+    let x, Yellowish p1 = green_pop p1 in
+    Some (x, yellow p1 child s1 chain)
+  | Y (Yellow (p1, child, s1), chain) ->
+    let x, Any p1 = yellow_pop (Yellowish p1) in
+    Some (x, red p1 child s1 chain)
+
 (** Ejects an element from a deque. If the deque is empty, an error is raised.
     Otherwise, it returns the new deque and the removed elements. *)
-let eject_unsafe (T t) = match t with
+let deject_unsafe (T t) = match t with
   | Small buf ->
       let Any buf, x = buffer_eject_unsafe buf in
       T (Small buf), x
@@ -560,8 +578,23 @@ let eject_unsafe (T t) = match t with
       let Any s1, x = yellow_eject (Yellowish s1) in
       red p1 child s1 cdeque, x
 
+(** Ejects an element from a deque. If the deque is empty, it returns [None], if
+    not, it returns the remaining deque and the removed element. *)
+let deject (T t) = match t with
+  | Small buf ->
+    begin match buffer_eject buf with
+    | None -> None
+    | Some (Any buf, x) -> Some (T (Small buf), x)
+    end
+  | G (Green (p1, child, s1), chain) ->
+    let Yellowish s1, x = green_eject s1 in
+    Some (yellow p1 child s1 chain, x)
+  | Y (Yellow (p1, child, s1), chain) ->
+    let Any s1, x = yellow_eject (Yellowish s1) in
+    Some (red p1 child s1 chain, x)
+
 (** Types for deque stored with they length. A negative length means the deque
-    should be read the other way around. This enables us to write a reverse 
+    should be read the other way around. This enables us to write a reverse
     function in constant time. *)
 type 'a t = { length : int ; s : 'a deque }
 
@@ -580,24 +613,24 @@ let rev t = { t with length = - t.length }
 (** Pushes an element on a t. *)
 let push x { length = n ; s } =
   if n >= 0
-  then { length = n + 1 ; s = push x s }
-  else { length = n - 1 ; s = inject s x }
+  then { length = n + 1 ; s = dpush x s }
+  else { length = n - 1 ; s = dinject s x }
 
 (** Injects an element on a t. *)
 and inject { length = n ; s } x =
   if n >= 0
-  then { length = n + 1 ; s = inject s x }
-  else { length = n - 1 ; s = push x s }
+  then { length = n + 1 ; s = dinject s x }
+  else { length = n - 1 ; s = dpush x s }
 
 (** Pops an element from a t. *)
 let pop { length = n ; s } =
   match n with
   | 0 -> None
   | _ when n >= 0 ->
-    let x, s = pop_unsafe s in
+    let x, s = dpop_unsafe s in
     Some (x, { length = n - 1 ; s })
   | _ ->
-    let s, x = eject_unsafe s in
+    let s, x = deject_unsafe s in
     Some (x, { length = n + 1 ; s })
 
 (** Ejects an element from a t. *)
@@ -605,10 +638,10 @@ let eject { length = n ; s } =
   match n with
   | 0 -> None
   | _ when n >= 0 ->
-      let s, x = eject_unsafe s in
+      let s, x = deject_unsafe s in
       Some ({ length = n - 1 ; s }, x)
   | _ ->
-      let x, s = pop_unsafe s in
+      let x, s = dpop_unsafe s in
       Some ({ length = n + 1 ; s }, x)
 
 (** Tests if a t is to be read backward or not. *)

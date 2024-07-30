@@ -974,7 +974,7 @@ let extract_stored_left
   | Children (Hole, Left_green (p2, d2, s2)) -> stored_left p2 (NonEmpty d2) s2 s1
   | Children (Hole, Left_red   (p2, d2, s2)) -> stored_left p2 (NonEmpty d2) s2 s1
 
-(** Takes a buffer_12 and a right path and makes a stored triple and a prefix 
+(** Takes a buffer_12 and a right path and makes a stored triple and a suffix 
     of 2 elements out of them. *)
 let extract_stored_right
 : type a c.
@@ -1122,6 +1122,7 @@ let left_of_only
           let s1 = Buffer.pair x y in
           Ok (Children (Hole, Left_small (p1, s1)))
       end
+
 (** Takes a only path and makes a rigth path_attempt of the same color. *)
 let right_of_only
 : type a c.  (a, c, only) path -> (a, c, right) path_attempt

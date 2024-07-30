@@ -467,10 +467,10 @@ Lemma path_children [A lvl nlvl len K1 K2 G Y O R]
   (e : nlvl = len + lvl) :
   path_seq (Children natur adopt e) = 
     triple_front_seq natur ++ triple_seq adopt ++ triple_rear_seq natur.
-Proof. subst; simp triple_seq; autorewrite with rlist; reflexivity. Qed.
+Proof. subst; simp triple_seq; autorewrite with rlist. reflexivity. Qed.
 
 Lemma stored_triple_ground [A] (a : A) : stored_triple_seq (ST_ground a) = [a].
-Proof. simpl; reflexivity. Qed.
+Proof. reflexivity. Qed.
 
 Lemma stored_triple_small [A lvl q] (p : prefix A lvl (3 + q)) : 
   stored_triple_seq (ST_small p) = buffer_seq p.
@@ -483,7 +483,7 @@ Lemma stored_triple_triple [A lvl qp qs C]
   stored_triple_seq (ST_triple p cd s) = 
     buffer_seq p ++ cdeque_seq cd ++ buffer_seq s.
 Proof.
-  simpl stored_triple_seq;
+  simpl stored_triple_seq.
   (* Separate prefix, child and suffix cases. *)
   repeat apply div_app2;
 (* Handle the simple child case. *)
@@ -504,13 +504,13 @@ Lemma triple_front_small [A lvl qp qs K]
   (p : prefix A lvl qp) (s : suffix A lvl qs) 
   (ss : small_triple_size qp qs K) :
   triple_front_seq (Small p s ss) = buffer_seq p.
-Proof. cbn; apply correct_path_buffer_seq. Qed.
+Proof. cbn. apply correct_path_buffer_seq. Qed.
   
 Lemma triple_rear_small [A lvl qp qs K] 
   (p : prefix A lvl qp) (s : suffix A lvl qs) 
   (ss : small_triple_size qp qs K) :
   triple_rear_seq (Small p s ss) = buffer_seq s.
-Proof. cbn; apply correct_path_buffer_seq. Qed.
+Proof. cbn. apply correct_path_buffer_seq. Qed.
 
 Lemma triple_front_green [A lvl qp qs K G R] 
   (p : prefix A lvl qp) 
@@ -530,7 +530,7 @@ Lemma triple_rear_green [A lvl qp qs K G R]
   (s : suffix A lvl qs)
   (bs : big_triple_size 8 qp qs K) :
   triple_rear_seq (Green p cd s bs) = buffer_seq s.
-Proof. cbn; apply correct_path_buffer_seq. Qed.
+Proof. cbn. apply correct_path_buffer_seq. Qed.
 
 Lemma triple_front_yellow [A lvl len qp qs K1 K2] 
   (p : prefix A lvl qp)
@@ -598,7 +598,7 @@ Lemma triple_rear_red [A lvl qp qs K]
   (s : suffix A lvl qs)
   (bs : big_triple_size 5 qp qs K) :
   triple_rear_seq (Red p cd s bs) = buffer_seq s.
-Proof. cbn; apply correct_path_buffer_seq. Qed.
+Proof. cbn. apply correct_path_buffer_seq. Qed.
       
 #[export] Hint Rewrite path_children : rlist.
 #[export] Hint Rewrite stored_triple_ground : rlist.
