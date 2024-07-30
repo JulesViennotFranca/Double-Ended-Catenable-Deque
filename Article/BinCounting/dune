@@ -1,0 +1,6 @@
+(library
+ (name binCounting))
+
+(coq.theory
+ (name BinCounting)
+ (theories Equations))

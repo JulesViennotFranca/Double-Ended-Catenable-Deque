@@ -1,0 +1,3 @@
+(executable
+ (name benchmark)
+ (libraries Unix deque deq sdeque cdeque))

@@ -1,0 +1,7 @@
+(library
+ (name cdeque)
+ (libraries sdeque))
+
+(coq.theory
+ (name Cdeque)
+ (theories Equations Hammer AAC_tactics Deque))

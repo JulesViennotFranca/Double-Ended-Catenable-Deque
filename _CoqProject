@@ -1,2 +1,5 @@
 -Q _build/default/Deq Deq
 -Q _build/default/Deque Deque
+-Q _build/default/BinCounting BinCounting
+-Q _build/default/Sdeque Sdeque
+-Q _build/default/Cdeque Cdeque

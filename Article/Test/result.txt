@@ -1,0 +1,2648 @@
+❯ dune exec -- ./Article/Test/benchmark.exe
+-- List -------------------
+     make 10m w push : 0.267956 s
+         empty w pop : 0.027160 s
+
+-- Struct1 ----------------
+     make 10m w push : 0.606075 s
+         empty w pop : 0.253013 s
+
+-- Deq --------------------
+     make 10m w push : 0.586740 s
+         empty w pop : 0.243554 s
+
+-- Struct3 ----------------
+     make 10m w push : 0.637585 s
+         empty w pop : 0.507964 s
+
+-- Deque ------------------
+     make 10m w push : 0.639209 s
+         empty w pop : 0.463403 s
+
+-- Concatenation ----------
+size: 0
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000000 s
+               deque : 0.000000 s
+concat :
+                list : 0.000003 s
+             struct3 : 0.000005 s
+               deque : 0.000004 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000001 s
+               deque : 0.000001 s
+size: 1
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000000 s
+               deque : 0.000001 s
+concat :
+                list : 0.000003 s
+             struct3 : 0.000028 s
+               deque : 0.000027 s
+empty w eject :
+                list : 0.000000 s
+              struct : 0.000001 s
+               deque : 0.000000 s
+size: 2
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000000 s
+               deque : 0.000000 s
+concat :
+                list : 0.000006 s
+             struct3 : 0.000042 s
+               deque : 0.000044 s
+empty w eject :
+                list : 0.000000 s
+              struct : 0.000001 s
+               deque : 0.000000 s
+size: 3
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000000 s
+               deque : 0.000000 s
+concat :
+                list : 0.000005 s
+             struct3 : 0.000059 s
+               deque : 0.000063 s
+empty w eject :
+                list : 0.000000 s
+              struct : 0.000002 s
+               deque : 0.000000 s
+size: 4
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000001 s
+               deque : 0.000000 s
+concat :
+                list : 0.000008 s
+             struct3 : 0.000093 s
+               deque : 0.000102 s
+empty w eject :
+                list : 0.000000 s
+              struct : 0.000001 s
+               deque : 0.000001 s
+size: 5
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000000 s
+               deque : 0.000000 s
+concat :
+                list : 0.000009 s
+             struct3 : 0.000125 s
+               deque : 0.000142 s
+empty w eject :
+                list : 0.000000 s
+              struct : 0.000002 s
+               deque : 0.000000 s
+size: 6
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000000 s
+               deque : 0.000000 s
+concat :
+                list : 0.000010 s
+             struct3 : 0.000165 s
+               deque : 0.000191 s
+empty w eject :
+                list : 0.000000 s
+              struct : 0.000011 s
+               deque : 0.000000 s
+size: 7
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000000 s
+               deque : 0.000000 s
+concat :
+                list : 0.000012 s
+             struct3 : 0.000249 s
+               deque : 0.000223 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000001 s
+               deque : 0.000000 s
+size: 8
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000000 s
+               deque : 0.000000 s
+concat :
+                list : 0.000013 s
+             struct3 : 0.000240 s
+               deque : 0.000234 s
+empty w eject :
+                list : 0.000000 s
+              struct : 0.000001 s
+               deque : 0.000000 s
+size: 9
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000000 s
+               deque : 0.000001 s
+concat :
+                list : 0.000014 s
+             struct3 : 0.000271 s
+               deque : 0.000269 s
+empty w eject :
+                list : 0.000000 s
+              struct : 0.000001 s
+               deque : 0.000001 s
+size: 10
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000000 s
+               deque : 0.000001 s
+concat :
+                list : 0.000015 s
+             struct3 : 0.000273 s
+               deque : 0.000266 s
+empty w eject :
+                list : 0.000000 s
+              struct : 0.000013 s
+               deque : 0.000001 s
+size: 11
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000000 s
+               deque : 0.000000 s
+concat :
+                list : 0.000016 s
+             struct3 : 0.000285 s
+               deque : 0.000288 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000001 s
+               deque : 0.000000 s
+size: 12
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000001 s
+               deque : 0.000000 s
+concat :
+                list : 0.000019 s
+             struct3 : 0.000296 s
+               deque : 0.000275 s
+empty w eject :
+                list : 0.000000 s
+              struct : 0.000004 s
+               deque : 0.000001 s
+size: 13
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000000 s
+               deque : 0.000000 s
+concat :
+                list : 0.000020 s
+             struct3 : 0.000304 s
+               deque : 0.000302 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000001 s
+               deque : 0.000001 s
+size: 14
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000000 s
+               deque : 0.000001 s
+concat :
+                list : 0.000022 s
+             struct3 : 0.000289 s
+               deque : 0.000284 s
+empty w eject :
+                list : 0.000000 s
+              struct : 0.000002 s
+               deque : 0.000000 s
+size: 15
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000000 s
+               deque : 0.000000 s
+concat :
+                list : 0.000023 s
+             struct3 : 0.000283 s
+               deque : 0.000293 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000008 s
+               deque : 0.000001 s
+size: 16
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000000 s
+               deque : 0.000001 s
+concat :
+                list : 0.000022 s
+             struct3 : 0.000287 s
+               deque : 0.000276 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000002 s
+               deque : 0.000001 s
+size: 17
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000001 s
+               deque : 0.000000 s
+concat :
+                list : 0.000027 s
+             struct3 : 0.000341 s
+               deque : 0.000320 s
+empty w eject :
+                list : 0.000000 s
+              struct : 0.000002 s
+               deque : 0.000001 s
+size: 18
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000000 s
+               deque : 0.000001 s
+concat :
+                list : 0.000026 s
+             struct3 : 0.000335 s
+               deque : 0.000315 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000003 s
+               deque : 0.000002 s
+size: 19
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000028 s
+             struct3 : 0.000359 s
+               deque : 0.000351 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000002 s
+               deque : 0.000001 s
+size: 20
+make size w inject :
+                list : 0.000000 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000029 s
+             struct3 : 0.000386 s
+               deque : 0.000341 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000003 s
+               deque : 0.000002 s
+size: 21
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000001 s
+               deque : 0.000000 s
+concat :
+                list : 0.000033 s
+             struct3 : 0.000403 s
+               deque : 0.000368 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000002 s
+               deque : 0.000001 s
+size: 22
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000001 s
+               deque : 0.000000 s
+concat :
+                list : 0.000034 s
+             struct3 : 0.000409 s
+               deque : 0.000373 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000002 s
+               deque : 0.000001 s
+size: 23
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000000 s
+               deque : 0.000001 s
+concat :
+                list : 0.000034 s
+             struct3 : 0.000377 s
+               deque : 0.000347 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000012 s
+               deque : 0.000002 s
+size: 24
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000001 s
+               deque : 0.000000 s
+concat :
+                list : 0.000035 s
+             struct3 : 0.000387 s
+               deque : 0.000346 s
+empty w eject :
+                list : 0.000002 s
+              struct : 0.000012 s
+               deque : 0.000002 s
+size: 25
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000035 s
+             struct3 : 0.000421 s
+               deque : 0.000388 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000038 s
+               deque : 0.000001 s
+size: 26
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000000 s
+               deque : 0.000001 s
+concat :
+                list : 0.000037 s
+             struct3 : 0.000397 s
+               deque : 0.000345 s
+empty w eject :
+                list : 0.000001 s
+              struct : 0.000014 s
+               deque : 0.000001 s
+size: 27
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000001 s
+               deque : 0.000000 s
+concat :
+                list : 0.000039 s
+             struct3 : 0.000368 s
+               deque : 0.000348 s
+empty w eject :
+                list : 0.000002 s
+              struct : 0.000003 s
+               deque : 0.000003 s
+size: 28
+make size w inject :
+                list : 0.000002 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000046 s
+             struct3 : 0.000388 s
+               deque : 0.000349 s
+empty w eject :
+                list : 0.000002 s
+              struct : 0.000004 s
+               deque : 0.000001 s
+size: 29
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000085 s
+             struct3 : 0.000414 s
+               deque : 0.000390 s
+empty w eject :
+                list : 0.000002 s
+              struct : 0.000011 s
+               deque : 0.000002 s
+size: 30
+make size w inject :
+                list : 0.000002 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000046 s
+             struct3 : 0.000424 s
+               deque : 0.000358 s
+empty w eject :
+                list : 0.000002 s
+              struct : 0.000011 s
+               deque : 0.000002 s
+size: 31
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000053 s
+             struct3 : 0.000357 s
+               deque : 0.000343 s
+empty w eject :
+                list : 0.000003 s
+              struct : 0.000003 s
+               deque : 0.000002 s
+size: 32
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000048 s
+             struct3 : 0.000382 s
+               deque : 0.000350 s
+empty w eject :
+                list : 0.000002 s
+              struct : 0.000023 s
+               deque : 0.000002 s
+size: 33
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000049 s
+             struct3 : 0.000416 s
+               deque : 0.000376 s
+empty w eject :
+                list : 0.000004 s
+              struct : 0.000004 s
+               deque : 0.000002 s
+size: 34
+make size w inject :
+                list : 0.000001 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000050 s
+             struct3 : 0.000395 s
+               deque : 0.000364 s
+empty w eject :
+                list : 0.000006 s
+              struct : 0.000009 s
+               deque : 0.000002 s
+size: 35
+make size w inject :
+                list : 0.000002 s
+             struct3 : 0.000000 s
+               deque : 0.000001 s
+concat :
+                list : 0.000052 s
+             struct3 : 0.000364 s
+               deque : 0.000346 s
+empty w eject :
+                list : 0.000005 s
+              struct : 0.000004 s
+               deque : 0.000002 s
+size: 36
+make size w inject :
+                list : 0.000003 s
+             struct3 : 0.000001 s
+               deque : 0.000002 s
+concat :
+                list : 0.000055 s
+             struct3 : 0.000387 s
+               deque : 0.000345 s
+empty w eject :
+                list : 0.000004 s
+              struct : 0.000003 s
+               deque : 0.000002 s
+size: 37
+make size w inject :
+                list : 0.000003 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000058 s
+             struct3 : 0.000423 s
+               deque : 0.000373 s
+empty w eject :
+                list : 0.000005 s
+              struct : 0.000003 s
+               deque : 0.000003 s
+size: 38
+make size w inject :
+                list : 0.000003 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000060 s
+             struct3 : 0.000387 s
+               deque : 0.000357 s
+empty w eject :
+                list : 0.000004 s
+              struct : 0.000011 s
+               deque : 0.000003 s
+size: 39
+make size w inject :
+                list : 0.000003 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000059 s
+             struct3 : 0.000362 s
+               deque : 0.000366 s
+empty w eject :
+                list : 0.000005 s
+              struct : 0.000004 s
+               deque : 0.000002 s
+size: 40
+make size w inject :
+                list : 0.000004 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000061 s
+             struct3 : 0.000391 s
+               deque : 0.000352 s
+empty w eject :
+                list : 0.000006 s
+              struct : 0.000006 s
+               deque : 0.000002 s
+size: 41
+make size w inject :
+                list : 0.000004 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000064 s
+             struct3 : 0.000434 s
+               deque : 0.000393 s
+empty w eject :
+                list : 0.000004 s
+              struct : 0.000004 s
+               deque : 0.000002 s
+size: 42
+make size w inject :
+                list : 0.000004 s
+             struct3 : 0.000002 s
+               deque : 0.000001 s
+concat :
+                list : 0.000065 s
+             struct3 : 0.000398 s
+               deque : 0.000368 s
+empty w eject :
+                list : 0.000004 s
+              struct : 0.000004 s
+               deque : 0.000003 s
+size: 43
+make size w inject :
+                list : 0.000005 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000068 s
+             struct3 : 0.000363 s
+               deque : 0.000359 s
+empty w eject :
+                list : 0.000008 s
+              struct : 0.000011 s
+               deque : 0.000002 s
+size: 44
+make size w inject :
+                list : 0.000004 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000068 s
+             struct3 : 0.000388 s
+               deque : 0.000376 s
+empty w eject :
+                list : 0.000004 s
+              struct : 0.000004 s
+               deque : 0.000002 s
+size: 45
+make size w inject :
+                list : 0.000005 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000071 s
+             struct3 : 0.000438 s
+               deque : 0.000395 s
+empty w eject :
+                list : 0.000004 s
+              struct : 0.000007 s
+               deque : 0.000003 s
+size: 46
+make size w inject :
+                list : 0.000005 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000280 s
+             struct3 : 0.000431 s
+               deque : 0.000391 s
+empty w eject :
+                list : 0.000004 s
+              struct : 0.000004 s
+               deque : 0.000003 s
+size: 47
+make size w inject :
+                list : 0.000006 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000103 s
+             struct3 : 0.000391 s
+               deque : 0.000393 s
+empty w eject :
+                list : 0.000005 s
+              struct : 0.000005 s
+               deque : 0.000003 s
+size: 48
+make size w inject :
+                list : 0.000007 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000075 s
+             struct3 : 0.000416 s
+               deque : 0.000398 s
+empty w eject :
+                list : 0.000005 s
+              struct : 0.000006 s
+               deque : 0.000003 s
+size: 49
+make size w inject :
+                list : 0.000007 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000314 s
+             struct3 : 0.000475 s
+               deque : 0.000411 s
+empty w eject :
+                list : 0.000004 s
+              struct : 0.000004 s
+               deque : 0.000003 s
+size: 50
+make size w inject :
+                list : 0.000002 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000342 s
+             struct3 : 0.000438 s
+               deque : 0.000404 s
+empty w eject :
+                list : 0.000005 s
+              struct : 0.000005 s
+               deque : 0.000004 s
+size: 51
+make size w inject :
+                list : 0.000004 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000320 s
+             struct3 : 0.000415 s
+               deque : 0.000377 s
+empty w eject :
+                list : 0.000006 s
+              struct : 0.000007 s
+               deque : 0.000003 s
+size: 52
+make size w inject :
+                list : 0.000007 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000302 s
+             struct3 : 0.000438 s
+               deque : 0.000397 s
+empty w eject :
+                list : 0.000012 s
+              struct : 0.000018 s
+               deque : 0.000003 s
+size: 53
+make size w inject :
+                list : 0.000007 s
+             struct3 : 0.000001 s
+               deque : 0.000001 s
+concat :
+                list : 0.000327 s
+             struct3 : 0.000448 s
+               deque : 0.000384 s
+empty w eject :
+                list : 0.000009 s
+              struct : 0.000004 s
+               deque : 0.000004 s
+size: 54
+make size w inject :
+                list : 0.000007 s
+             struct3 : 0.000001 s
+               deque : 0.000002 s
+concat :
+                list : 0.000305 s
+             struct3 : 0.000454 s
+               deque : 0.000382 s
+empty w eject :
+                list : 0.000011 s
+              struct : 0.000006 s
+               deque : 0.000003 s
+size: 55
+make size w inject :
+                list : 0.000007 s
+             struct3 : 0.000002 s
+               deque : 0.000001 s
+concat :
+                list : 0.000325 s
+             struct3 : 0.000387 s
+               deque : 0.000373 s
+empty w eject :
+                list : 0.000011 s
+              struct : 0.000005 s
+               deque : 0.000003 s
+size: 56
+make size w inject :
+                list : 0.000007 s
+             struct3 : 0.000002 s
+               deque : 0.000001 s
+concat :
+                list : 0.000323 s
+             struct3 : 0.000412 s
+               deque : 0.000381 s
+empty w eject :
+                list : 0.000011 s
+              struct : 0.000005 s
+               deque : 0.000003 s
+size: 57
+make size w inject :
+                list : 0.000008 s
+             struct3 : 0.000001 s
+               deque : 0.000002 s
+concat :
+                list : 0.000318 s
+             struct3 : 0.000456 s
+               deque : 0.000412 s
+empty w eject :
+                list : 0.000010 s
+              struct : 0.000005 s
+               deque : 0.000003 s
+size: 58
+make size w inject :
+                list : 0.000009 s
+             struct3 : 0.000001 s
+               deque : 0.000002 s
+concat :
+                list : 0.000314 s
+             struct3 : 0.000453 s
+               deque : 0.000393 s
+empty w eject :
+                list : 0.000011 s
+              struct : 0.000007 s
+               deque : 0.000002 s
+size: 59
+make size w inject :
+                list : 0.000009 s
+             struct3 : 0.000001 s
+               deque : 0.000004 s
+concat :
+                list : 0.000337 s
+             struct3 : 0.000424 s
+               deque : 0.000382 s
+empty w eject :
+                list : 0.000015 s
+              struct : 0.000005 s
+               deque : 0.000003 s
+size: 60
+make size w inject :
+                list : 0.000009 s
+             struct3 : 0.000002 s
+               deque : 0.000001 s
+concat :
+                list : 0.000315 s
+             struct3 : 0.000440 s
+               deque : 0.000388 s
+empty w eject :
+                list : 0.000012 s
+              struct : 0.000005 s
+               deque : 0.000003 s
+size: 61
+make size w inject :
+                list : 0.000010 s
+             struct3 : 0.000002 s
+               deque : 0.000001 s
+concat :
+                list : 0.000335 s
+             struct3 : 0.000436 s
+               deque : 0.000386 s
+empty w eject :
+                list : 0.000013 s
+              struct : 0.000006 s
+               deque : 0.000003 s
+size: 62
+make size w inject :
+                list : 0.000010 s
+             struct3 : 0.000001 s
+               deque : 0.000002 s
+concat :
+                list : 0.000321 s
+             struct3 : 0.000426 s
+               deque : 0.000383 s
+empty w eject :
+                list : 0.000013 s
+              struct : 0.000004 s
+               deque : 0.000004 s
+size: 63
+make size w inject :
+                list : 0.000011 s
+             struct3 : 0.000001 s
+               deque : 0.000002 s
+concat :
+                list : 0.000321 s
+             struct3 : 0.000396 s
+               deque : 0.000376 s
+empty w eject :
+                list : 0.000018 s
+              struct : 0.000005 s
+               deque : 0.000003 s
+size: 64
+make size w inject :
+                list : 0.000011 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000318 s
+             struct3 : 0.000447 s
+               deque : 0.000388 s
+empty w eject :
+                list : 0.000018 s
+              struct : 0.000006 s
+               deque : 0.000003 s
+size: 65
+make size w inject :
+                list : 0.000010 s
+             struct3 : 0.000001 s
+               deque : 0.000002 s
+concat :
+                list : 0.000332 s
+             struct3 : 0.000452 s
+               deque : 0.000412 s
+empty w eject :
+                list : 0.000018 s
+              struct : 0.000004 s
+               deque : 0.000004 s
+size: 66
+make size w inject :
+                list : 0.000011 s
+             struct3 : 0.000001 s
+               deque : 0.000002 s
+concat :
+                list : 0.000432 s
+             struct3 : 0.000431 s
+               deque : 0.000398 s
+empty w eject :
+                list : 0.000016 s
+              struct : 0.000005 s
+               deque : 0.000004 s
+size: 67
+make size w inject :
+                list : 0.000011 s
+             struct3 : 0.000001 s
+               deque : 0.000002 s
+concat :
+                list : 0.000388 s
+             struct3 : 0.000407 s
+               deque : 0.000374 s
+empty w eject :
+                list : 0.000021 s
+              struct : 0.000004 s
+               deque : 0.000003 s
+size: 68
+make size w inject :
+                list : 0.000012 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000423 s
+             struct3 : 0.000425 s
+               deque : 0.000386 s
+empty w eject :
+                list : 0.000022 s
+              struct : 0.000005 s
+               deque : 0.000004 s
+size: 69
+make size w inject :
+                list : 0.000012 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000391 s
+             struct3 : 0.000435 s
+               deque : 0.000387 s
+empty w eject :
+                list : 0.000021 s
+              struct : 0.000010 s
+               deque : 0.000004 s
+size: 70
+make size w inject :
+                list : 0.000014 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000386 s
+             struct3 : 0.000431 s
+               deque : 0.000389 s
+empty w eject :
+                list : 0.000018 s
+              struct : 0.000006 s
+               deque : 0.000004 s
+size: 71
+make size w inject :
+                list : 0.000013 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000352 s
+             struct3 : 0.000399 s
+               deque : 0.000385 s
+empty w eject :
+                list : 0.000017 s
+              struct : 0.000005 s
+               deque : 0.000004 s
+size: 72
+make size w inject :
+                list : 0.000014 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000377 s
+             struct3 : 0.000418 s
+               deque : 0.000380 s
+empty w eject :
+                list : 0.000023 s
+              struct : 0.000005 s
+               deque : 0.000004 s
+size: 73
+make size w inject :
+                list : 0.000013 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000333 s
+             struct3 : 0.000472 s
+               deque : 0.000423 s
+empty w eject :
+                list : 0.000022 s
+              struct : 0.000004 s
+               deque : 0.000004 s
+size: 74
+make size w inject :
+                list : 0.000014 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000401 s
+             struct3 : 0.000480 s
+               deque : 0.000406 s
+empty w eject :
+                list : 0.000018 s
+              struct : 0.000005 s
+               deque : 0.000003 s
+size: 75
+make size w inject :
+                list : 0.000015 s
+             struct3 : 0.000001 s
+               deque : 0.000002 s
+concat :
+                list : 0.000403 s
+             struct3 : 0.000404 s
+               deque : 0.000373 s
+empty w eject :
+                list : 0.000018 s
+              struct : 0.000005 s
+               deque : 0.000003 s
+size: 76
+make size w inject :
+                list : 0.000014 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000464 s
+             struct3 : 0.000428 s
+               deque : 0.000396 s
+empty w eject :
+                list : 0.000022 s
+              struct : 0.000005 s
+               deque : 0.000004 s
+size: 77
+make size w inject :
+                list : 0.000015 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000459 s
+             struct3 : 0.000431 s
+               deque : 0.000384 s
+empty w eject :
+                list : 0.000026 s
+              struct : 0.000006 s
+               deque : 0.000004 s
+size: 78
+make size w inject :
+                list : 0.000015 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000439 s
+             struct3 : 0.000435 s
+               deque : 0.000379 s
+empty w eject :
+                list : 0.000023 s
+              struct : 0.000007 s
+               deque : 0.000004 s
+size: 79
+make size w inject :
+                list : 0.000017 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000479 s
+             struct3 : 0.000395 s
+               deque : 0.000378 s
+empty w eject :
+                list : 0.000023 s
+              struct : 0.000005 s
+               deque : 0.000004 s
+size: 80
+make size w inject :
+                list : 0.000018 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000494 s
+             struct3 : 0.000419 s
+               deque : 0.000384 s
+empty w eject :
+                list : 0.000024 s
+              struct : 0.000004 s
+               deque : 0.000004 s
+size: 81
+make size w inject :
+                list : 0.000016 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000463 s
+             struct3 : 0.000455 s
+               deque : 0.000410 s
+empty w eject :
+                list : 0.000029 s
+              struct : 0.000005 s
+               deque : 0.000004 s
+size: 82
+make size w inject :
+                list : 0.000017 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000373 s
+             struct3 : 0.000443 s
+               deque : 0.000387 s
+empty w eject :
+                list : 0.000024 s
+              struct : 0.000005 s
+               deque : 0.000003 s
+size: 83
+make size w inject :
+                list : 0.000017 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000411 s
+             struct3 : 0.000409 s
+               deque : 0.000377 s
+empty w eject :
+                list : 0.000031 s
+              struct : 0.000005 s
+               deque : 0.000004 s
+size: 84
+make size w inject :
+                list : 0.000020 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000509 s
+             struct3 : 0.000432 s
+               deque : 0.000390 s
+empty w eject :
+                list : 0.000030 s
+              struct : 0.000005 s
+               deque : 0.000004 s
+size: 85
+make size w inject :
+                list : 0.000017 s
+             struct3 : 0.000002 s
+               deque : 0.000003 s
+concat :
+                list : 0.000534 s
+             struct3 : 0.000433 s
+               deque : 0.000386 s
+empty w eject :
+                list : 0.000031 s
+              struct : 0.000005 s
+               deque : 0.000009 s
+size: 86
+make size w inject :
+                list : 0.000018 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000538 s
+             struct3 : 0.000429 s
+               deque : 0.000391 s
+empty w eject :
+                list : 0.000029 s
+              struct : 0.000007 s
+               deque : 0.000004 s
+size: 87
+make size w inject :
+                list : 0.000018 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000389 s
+             struct3 : 0.000400 s
+               deque : 0.000376 s
+empty w eject :
+                list : 0.000033 s
+              struct : 0.000006 s
+               deque : 0.000005 s
+size: 88
+make size w inject :
+                list : 0.000028 s
+             struct3 : 0.000002 s
+               deque : 0.000003 s
+concat :
+                list : 0.000509 s
+             struct3 : 0.000414 s
+               deque : 0.000388 s
+empty w eject :
+                list : 0.000029 s
+              struct : 0.000006 s
+               deque : 0.000004 s
+size: 89
+make size w inject :
+                list : 0.000023 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000518 s
+             struct3 : 0.000459 s
+               deque : 0.000412 s
+empty w eject :
+                list : 0.000034 s
+              struct : 0.000007 s
+               deque : 0.000006 s
+size: 90
+make size w inject :
+                list : 0.000025 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000456 s
+             struct3 : 0.000444 s
+               deque : 0.000386 s
+empty w eject :
+                list : 0.000033 s
+              struct : 0.000006 s
+               deque : 0.000006 s
+size: 91
+make size w inject :
+                list : 0.000025 s
+             struct3 : 0.000002 s
+               deque : 0.000002 s
+concat :
+                list : 0.000560 s
+             struct3 : 0.000409 s
+               deque : 0.000374 s
+empty w eject :
+                list : 0.000036 s
+              struct : 0.000008 s
+               deque : 0.000006 s
+size: 92
+make size w inject :
+                list : 0.000027 s
+             struct3 : 0.000002 s
+               deque : 0.000003 s
+concat :
+                list : 0.000552 s
+             struct3 : 0.000456 s
+               deque : 0.000411 s
+empty w eject :
+                list : 0.000036 s
+              struct : 0.000007 s
+               deque : 0.000006 s
+size: 93
+make size w inject :
+                list : 0.000032 s
+             struct3 : 0.000003 s
+               deque : 0.000003 s
+concat :
+                list : 0.000413 s
+             struct3 : 0.000434 s
+               deque : 0.000383 s
+empty w eject :
+                list : 0.000029 s
+              struct : 0.000006 s
+               deque : 0.000005 s
+size: 94
+make size w inject :
+                list : 0.000025 s
+             struct3 : 0.000003 s
+               deque : 0.000003 s
+concat :
+                list : 0.000580 s
+             struct3 : 0.000455 s
+               deque : 0.000386 s
+empty w eject :
+                list : 0.000031 s
+              struct : 0.000007 s
+               deque : 0.000006 s
+size: 95
+make size w inject :
+                list : 0.000032 s
+             struct3 : 0.000003 s
+               deque : 0.000003 s
+concat :
+                list : 0.000594 s
+             struct3 : 0.000399 s
+               deque : 0.000386 s
+empty w eject :
+                list : 0.000052 s
+              struct : 0.000007 s
+               deque : 0.000006 s
+size: 96
+make size w inject :
+                list : 0.000029 s
+             struct3 : 0.000003 s
+               deque : 0.000004 s
+concat :
+                list : 0.000610 s
+             struct3 : 0.000415 s
+               deque : 0.000391 s
+empty w eject :
+                list : 0.000033 s
+              struct : 0.000007 s
+               deque : 0.000006 s
+size: 97
+make size w inject :
+                list : 0.000034 s
+             struct3 : 0.000003 s
+               deque : 0.000003 s
+concat :
+                list : 0.000617 s
+             struct3 : 0.000464 s
+               deque : 0.000415 s
+empty w eject :
+                list : 0.000030 s
+              struct : 0.000010 s
+               deque : 0.000005 s
+size: 98
+make size w inject :
+                list : 0.000025 s
+             struct3 : 0.000003 s
+               deque : 0.000003 s
+concat :
+                list : 0.000630 s
+             struct3 : 0.000444 s
+               deque : 0.000394 s
+empty w eject :
+                list : 0.000038 s
+              struct : 0.000007 s
+               deque : 0.000006 s
+size: 99
+make size w inject :
+                list : 0.000034 s
+             struct3 : 0.000003 s
+               deque : 0.000004 s
+concat :
+                list : 0.000611 s
+             struct3 : 0.000414 s
+               deque : 0.000382 s
+empty w eject :
+                list : 0.000041 s
+              struct : 0.000007 s
+               deque : 0.000007 s
+size: 100
+make size w inject :
+                list : 0.000030 s
+             struct3 : 0.000003 s
+               deque : 0.000003 s
+concat :
+                list : 0.000605 s
+             struct3 : 0.000448 s
+               deque : 0.000393 s
+empty w eject :
+                list : 0.000040 s
+              struct : 0.000009 s
+               deque : 0.000006 s
+size: 101
+make size w inject :
+                list : 0.000033 s
+             struct3 : 0.000003 s
+               deque : 0.000004 s
+concat :
+                list : 0.000635 s
+             struct3 : 0.000444 s
+               deque : 0.000387 s
+empty w eject :
+                list : 0.000042 s
+              struct : 0.000008 s
+               deque : 0.000008 s
+size: 102
+make size w inject :
+                list : 0.000034 s
+             struct3 : 0.000003 s
+               deque : 0.000004 s
+concat :
+                list : 0.000626 s
+             struct3 : 0.000451 s
+               deque : 0.000402 s
+empty w eject :
+                list : 0.000038 s
+              struct : 0.000008 s
+               deque : 0.000007 s
+size: 103
+make size w inject :
+                list : 0.000038 s
+             struct3 : 0.000003 s
+               deque : 0.000004 s
+concat :
+                list : 0.000665 s
+             struct3 : 0.000407 s
+               deque : 0.000384 s
+empty w eject :
+                list : 0.000041 s
+              struct : 0.000008 s
+               deque : 0.000007 s
+size: 104
+make size w inject :
+                list : 0.000032 s
+             struct3 : 0.000002 s
+               deque : 0.000003 s
+concat :
+                list : 0.000626 s
+             struct3 : 0.000423 s
+               deque : 0.000397 s
+empty w eject :
+                list : 0.000046 s
+              struct : 0.000008 s
+               deque : 0.000007 s
+size: 105
+make size w inject :
+                list : 0.000034 s
+             struct3 : 0.000004 s
+               deque : 0.000003 s
+concat :
+                list : 0.000634 s
+             struct3 : 0.000469 s
+               deque : 0.000420 s
+empty w eject :
+                list : 0.000045 s
+              struct : 0.000008 s
+               deque : 0.000007 s
+size: 106
+make size w inject :
+                list : 0.000036 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000630 s
+             struct3 : 0.000463 s
+               deque : 0.000421 s
+empty w eject :
+                list : 0.000045 s
+              struct : 0.000010 s
+               deque : 0.000007 s
+size: 107
+make size w inject :
+                list : 0.000040 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000641 s
+             struct3 : 0.000445 s
+               deque : 0.000415 s
+empty w eject :
+                list : 0.000047 s
+              struct : 0.000010 s
+               deque : 0.000008 s
+size: 108
+make size w inject :
+                list : 0.000036 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000640 s
+             struct3 : 0.000494 s
+               deque : 0.000418 s
+empty w eject :
+                list : 0.000044 s
+              struct : 0.000021 s
+               deque : 0.000007 s
+size: 109
+make size w inject :
+                list : 0.000030 s
+             struct3 : 0.000003 s
+               deque : 0.000003 s
+concat :
+                list : 0.000631 s
+             struct3 : 0.000450 s
+               deque : 0.000406 s
+empty w eject :
+                list : 0.000049 s
+              struct : 0.000008 s
+               deque : 0.000008 s
+size: 110
+make size w inject :
+                list : 0.000038 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000640 s
+             struct3 : 0.000456 s
+               deque : 0.000406 s
+empty w eject :
+                list : 0.000046 s
+              struct : 0.000008 s
+               deque : 0.000007 s
+size: 111
+make size w inject :
+                list : 0.000038 s
+             struct3 : 0.000005 s
+               deque : 0.000004 s
+concat :
+                list : 0.000634 s
+             struct3 : 0.000434 s
+               deque : 0.000403 s
+empty w eject :
+                list : 0.000042 s
+              struct : 0.000009 s
+               deque : 0.000007 s
+size: 112
+make size w inject :
+                list : 0.000037 s
+             struct3 : 0.000003 s
+               deque : 0.000003 s
+concat :
+                list : 0.000625 s
+             struct3 : 0.000479 s
+               deque : 0.000440 s
+empty w eject :
+                list : 0.000051 s
+              struct : 0.000008 s
+               deque : 0.000009 s
+size: 113
+make size w inject :
+                list : 0.000039 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000635 s
+             struct3 : 0.000464 s
+               deque : 0.000418 s
+empty w eject :
+                list : 0.000050 s
+              struct : 0.000009 s
+               deque : 0.000007 s
+size: 114
+make size w inject :
+                list : 0.000034 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000636 s
+             struct3 : 0.000453 s
+               deque : 0.000393 s
+empty w eject :
+                list : 0.000050 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 115
+make size w inject :
+                list : 0.000036 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000637 s
+             struct3 : 0.000412 s
+               deque : 0.000387 s
+empty w eject :
+                list : 0.000054 s
+              struct : 0.000008 s
+               deque : 0.000007 s
+size: 116
+make size w inject :
+                list : 0.000036 s
+             struct3 : 0.000004 s
+               deque : 0.000005 s
+concat :
+                list : 0.000708 s
+             struct3 : 0.000446 s
+               deque : 0.000393 s
+empty w eject :
+                list : 0.000049 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 117
+make size w inject :
+                list : 0.000042 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000690 s
+             struct3 : 0.000432 s
+               deque : 0.000395 s
+empty w eject :
+                list : 0.000056 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 118
+make size w inject :
+                list : 0.000037 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000739 s
+             struct3 : 0.000449 s
+               deque : 0.000391 s
+empty w eject :
+                list : 0.000056 s
+              struct : 0.000009 s
+               deque : 0.000007 s
+size: 119
+make size w inject :
+                list : 0.000039 s
+             struct3 : 0.000004 s
+               deque : 0.000005 s
+concat :
+                list : 0.000742 s
+             struct3 : 0.000408 s
+               deque : 0.000385 s
+empty w eject :
+                list : 0.000050 s
+              struct : 0.000009 s
+               deque : 0.000007 s
+size: 120
+make size w inject :
+                list : 0.000043 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000687 s
+             struct3 : 0.000425 s
+               deque : 0.000394 s
+empty w eject :
+                list : 0.000052 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 121
+make size w inject :
+                list : 0.000038 s
+             struct3 : 0.000004 s
+               deque : 0.000005 s
+concat :
+                list : 0.000794 s
+             struct3 : 0.000459 s
+               deque : 0.000416 s
+empty w eject :
+                list : 0.000053 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 122
+make size w inject :
+                list : 0.000043 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000716 s
+             struct3 : 0.000463 s
+               deque : 0.000412 s
+empty w eject :
+                list : 0.000059 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 123
+make size w inject :
+                list : 0.000041 s
+             struct3 : 0.000005 s
+               deque : 0.000004 s
+concat :
+                list : 0.000766 s
+             struct3 : 0.000459 s
+               deque : 0.000420 s
+empty w eject :
+                list : 0.000051 s
+              struct : 0.000009 s
+               deque : 0.000009 s
+size: 124
+make size w inject :
+                list : 0.000047 s
+             struct3 : 0.000004 s
+               deque : 0.000005 s
+concat :
+                list : 0.000783 s
+             struct3 : 0.000474 s
+               deque : 0.000418 s
+empty w eject :
+                list : 0.000058 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 125
+make size w inject :
+                list : 0.000046 s
+             struct3 : 0.000005 s
+               deque : 0.000005 s
+concat :
+                list : 0.000755 s
+             struct3 : 0.000449 s
+               deque : 0.000405 s
+empty w eject :
+                list : 0.000062 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 126
+make size w inject :
+                list : 0.000045 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000748 s
+             struct3 : 0.000456 s
+               deque : 0.000405 s
+empty w eject :
+                list : 0.000063 s
+              struct : 0.000009 s
+               deque : 0.000007 s
+size: 127
+make size w inject :
+                list : 0.000041 s
+             struct3 : 0.000005 s
+               deque : 0.000005 s
+concat :
+                list : 0.000793 s
+             struct3 : 0.000436 s
+               deque : 0.000406 s
+empty w eject :
+                list : 0.000064 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 128
+make size w inject :
+                list : 0.000049 s
+             struct3 : 0.000005 s
+               deque : 0.000004 s
+concat :
+                list : 0.000787 s
+             struct3 : 0.000457 s
+               deque : 0.000410 s
+empty w eject :
+                list : 0.000056 s
+              struct : 0.000010 s
+               deque : 0.000009 s
+size: 129
+make size w inject :
+                list : 0.000050 s
+             struct3 : 0.000005 s
+               deque : 0.000005 s
+concat :
+                list : 0.000728 s
+             struct3 : 0.000466 s
+               deque : 0.000415 s
+empty w eject :
+                list : 0.000067 s
+              struct : 0.000011 s
+               deque : 0.000008 s
+size: 130
+make size w inject :
+                list : 0.000051 s
+             struct3 : 0.000004 s
+               deque : 0.000005 s
+concat :
+                list : 0.000779 s
+             struct3 : 0.000447 s
+               deque : 0.000394 s
+empty w eject :
+                list : 0.000059 s
+              struct : 0.000009 s
+               deque : 0.000007 s
+size: 131
+make size w inject :
+                list : 0.000051 s
+             struct3 : 0.000004 s
+               deque : 0.000006 s
+concat :
+                list : 0.000809 s
+             struct3 : 0.000411 s
+               deque : 0.000380 s
+empty w eject :
+                list : 0.000060 s
+              struct : 0.000010 s
+               deque : 0.000008 s
+size: 132
+make size w inject :
+                list : 0.000043 s
+             struct3 : 0.000004 s
+               deque : 0.000005 s
+concat :
+                list : 0.000758 s
+             struct3 : 0.000446 s
+               deque : 0.000404 s
+empty w eject :
+                list : 0.000058 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 133
+make size w inject :
+                list : 0.000054 s
+             struct3 : 0.000006 s
+               deque : 0.000004 s
+concat :
+                list : 0.000813 s
+             struct3 : 0.000435 s
+               deque : 0.000392 s
+empty w eject :
+                list : 0.000061 s
+              struct : 0.000008 s
+               deque : 0.000006 s
+size: 134
+make size w inject :
+                list : 0.000052 s
+             struct3 : 0.000004 s
+               deque : 0.000005 s
+concat :
+                list : 0.000796 s
+             struct3 : 0.000443 s
+               deque : 0.000402 s
+empty w eject :
+                list : 0.000063 s
+              struct : 0.000008 s
+               deque : 0.000007 s
+size: 135
+make size w inject :
+                list : 0.000051 s
+             struct3 : 0.000003 s
+               deque : 0.000004 s
+concat :
+                list : 0.000831 s
+             struct3 : 0.000415 s
+               deque : 0.000391 s
+empty w eject :
+                list : 0.000069 s
+              struct : 0.000009 s
+               deque : 0.000007 s
+size: 136
+make size w inject :
+                list : 0.000052 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000785 s
+             struct3 : 0.000431 s
+               deque : 0.000396 s
+empty w eject :
+                list : 0.000063 s
+              struct : 0.000008 s
+               deque : 0.000008 s
+size: 137
+make size w inject :
+                list : 0.000050 s
+             struct3 : 0.000003 s
+               deque : 0.000004 s
+concat :
+                list : 0.000822 s
+             struct3 : 0.000476 s
+               deque : 0.000438 s
+empty w eject :
+                list : 0.000092 s
+              struct : 0.000008 s
+               deque : 0.000007 s
+size: 138
+make size w inject :
+                list : 0.000058 s
+             struct3 : 0.000004 s
+               deque : 0.000008 s
+concat :
+                list : 0.000902 s
+             struct3 : 0.000471 s
+               deque : 0.000422 s
+empty w eject :
+                list : 0.000067 s
+              struct : 0.000008 s
+               deque : 0.000029 s
+size: 139
+make size w inject :
+                list : 0.000052 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000963 s
+             struct3 : 0.000485 s
+               deque : 0.000475 s
+empty w eject :
+                list : 0.000087 s
+              struct : 0.000011 s
+               deque : 0.000009 s
+size: 140
+make size w inject :
+                list : 0.000080 s
+             struct3 : 0.000005 s
+               deque : 0.000006 s
+concat :
+                list : 0.000899 s
+             struct3 : 0.000527 s
+               deque : 0.000461 s
+empty w eject :
+                list : 0.000070 s
+              struct : 0.000011 s
+               deque : 0.000007 s
+size: 141
+make size w inject :
+                list : 0.000062 s
+             struct3 : 0.000009 s
+               deque : 0.000005 s
+concat :
+                list : 0.000806 s
+             struct3 : 0.000509 s
+               deque : 0.000453 s
+empty w eject :
+                list : 0.000072 s
+              struct : 0.000011 s
+               deque : 0.000009 s
+size: 142
+make size w inject :
+                list : 0.000055 s
+             struct3 : 0.000005 s
+               deque : 0.000006 s
+concat :
+                list : 0.000977 s
+             struct3 : 0.000458 s
+               deque : 0.000544 s
+empty w eject :
+                list : 0.000088 s
+              struct : 0.000016 s
+               deque : 0.000010 s
+size: 143
+make size w inject :
+                list : 0.000068 s
+             struct3 : 0.000005 s
+               deque : 0.000006 s
+concat :
+                list : 0.000932 s
+             struct3 : 0.000504 s
+               deque : 0.000452 s
+empty w eject :
+                list : 0.000075 s
+              struct : 0.000009 s
+               deque : 0.000007 s
+size: 144
+make size w inject :
+                list : 0.000066 s
+             struct3 : 0.000006 s
+               deque : 0.000006 s
+concat :
+                list : 0.001044 s
+             struct3 : 0.000520 s
+               deque : 0.000472 s
+empty w eject :
+                list : 0.000066 s
+              struct : 0.000012 s
+               deque : 0.000008 s
+size: 145
+make size w inject :
+                list : 0.000069 s
+             struct3 : 0.000005 s
+               deque : 0.000010 s
+concat :
+                list : 0.001063 s
+             struct3 : 0.000561 s
+               deque : 0.000473 s
+empty w eject :
+                list : 0.000069 s
+              struct : 0.000013 s
+               deque : 0.000009 s
+size: 146
+make size w inject :
+                list : 0.000062 s
+             struct3 : 0.000005 s
+               deque : 0.000006 s
+concat :
+                list : 0.000906 s
+             struct3 : 0.000443 s
+               deque : 0.000393 s
+empty w eject :
+                list : 0.000071 s
+              struct : 0.000011 s
+               deque : 0.000009 s
+size: 147
+make size w inject :
+                list : 0.000055 s
+             struct3 : 0.000005 s
+               deque : 0.000005 s
+concat :
+                list : 0.000952 s
+             struct3 : 0.000533 s
+               deque : 0.000458 s
+empty w eject :
+                list : 0.000075 s
+              struct : 0.000010 s
+               deque : 0.000007 s
+size: 148
+make size w inject :
+                list : 0.000059 s
+             struct3 : 0.000005 s
+               deque : 0.000006 s
+concat :
+                list : 0.001062 s
+             struct3 : 0.000534 s
+               deque : 0.000460 s
+empty w eject :
+                list : 0.000106 s
+              struct : 0.000012 s
+               deque : 0.000010 s
+size: 149
+make size w inject :
+                list : 0.000060 s
+             struct3 : 0.000006 s
+               deque : 0.000006 s
+concat :
+                list : 0.001175 s
+             struct3 : 0.000523 s
+               deque : 0.000458 s
+empty w eject :
+                list : 0.000081 s
+              struct : 0.000011 s
+               deque : 0.000009 s
+size: 150
+make size w inject :
+                list : 0.000074 s
+             struct3 : 0.000006 s
+               deque : 0.000006 s
+concat :
+                list : 0.001043 s
+             struct3 : 0.000445 s
+               deque : 0.000401 s
+empty w eject :
+                list : 0.000077 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 151
+make size w inject :
+                list : 0.000067 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000949 s
+             struct3 : 0.000439 s
+               deque : 0.000395 s
+empty w eject :
+                list : 0.000077 s
+              struct : 0.000010 s
+               deque : 0.000007 s
+size: 152
+make size w inject :
+                list : 0.000072 s
+             struct3 : 0.000004 s
+               deque : 0.000005 s
+concat :
+                list : 0.000952 s
+             struct3 : 0.000433 s
+               deque : 0.000399 s
+empty w eject :
+                list : 0.000073 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 153
+make size w inject :
+                list : 0.000069 s
+             struct3 : 0.000005 s
+               deque : 0.000005 s
+concat :
+                list : 0.000974 s
+             struct3 : 0.000483 s
+               deque : 0.000427 s
+empty w eject :
+                list : 0.000081 s
+              struct : 0.000009 s
+               deque : 0.000007 s
+size: 154
+make size w inject :
+                list : 0.000070 s
+             struct3 : 0.000004 s
+               deque : 0.000005 s
+concat :
+                list : 0.000965 s
+             struct3 : 0.000469 s
+               deque : 0.000420 s
+empty w eject :
+                list : 0.000075 s
+              struct : 0.000010 s
+               deque : 0.000015 s
+size: 155
+make size w inject :
+                list : 0.000067 s
+             struct3 : 0.000004 s
+               deque : 0.000004 s
+concat :
+                list : 0.000976 s
+             struct3 : 0.000458 s
+               deque : 0.000411 s
+empty w eject :
+                list : 0.000084 s
+              struct : 0.000009 s
+               deque : 0.000008 s
+size: 156
+make size w inject :
+                list : 0.000073 s
+             struct3 : 0.000005 s
+               deque : 0.000005 s
+concat :
+                list : 0.000965 s
+             struct3 : 0.000482 s
+               deque : 0.000431 s
+empty w eject :
+                list : 0.000081 s
+              struct : 0.000008 s
+               deque : 0.000008 s
+size: 157
+make size w inject :
+                list : 0.000072 s
+             struct3 : 0.000005 s
+               deque : 0.000006 s
+concat :
+                list : 0.000989 s
+             struct3 : 0.000464 s
+               deque : 0.000414 s
+empty w eject :
+                list : 0.000083 s
+              struct : 0.000008 s
+               deque : 0.000009 s
+size: 158
+make size w inject :
+                list : 0.000092 s
+             struct3 : 0.000005 s
+               deque : 0.000004 s
+concat :
+                list : 0.000970 s
+             struct3 : 0.000503 s
+               deque : 0.000412 s
+empty w eject :
+                list : 0.000085 s
+              struct : 0.000010 s
+               deque : 0.000008 s
+size: 159
+make size w inject :
+                list : 0.000074 s
+             struct3 : 0.000004 s
+               deque : 0.000005 s
+concat :
+                list : 0.001048 s
+             struct3 : 0.000468 s
+               deque : 0.000419 s
+empty w eject :
+                list : 0.000081 s
+              struct : 0.000010 s
+               deque : 0.000007 s
+size: 160
+make size w inject :
+                list : 0.000074 s
+             struct3 : 0.000005 s
+               deque : 0.000005 s
+concat :
+                list : 0.000986 s
+             struct3 : 0.000475 s
+               deque : 0.000446 s
+empty w eject :
+                list : 0.000085 s
+              struct : 0.000009 s
+               deque : 0.000009 s
+size: 161
+make size w inject :
+                list : 0.000102 s
+             struct3 : 0.000005 s
+               deque : 0.000005 s
+concat :
+                list : 0.000996 s
+             struct3 : 0.000475 s
+               deque : 0.000422 s
+empty w eject :
+                list : 0.000089 s
+              struct : 0.000010 s
+               deque : 0.000008 s
+size: 162
+make size w inject :
+                list : 0.000071 s
+             struct3 : 0.000005 s
+               deque : 0.000005 s
+concat :
+                list : 0.001047 s
+             struct3 : 0.000478 s
+               deque : 0.000398 s
+empty w eject :
+                list : 0.000114 s
+              struct : 0.000010 s
+               deque : 0.000008 s
+size: 163
+make size w inject :
+                list : 0.000076 s
+             struct3 : 0.000004 s
+               deque : 0.000005 s
+concat :
+                list : 0.000994 s
+             struct3 : 0.000421 s
+               deque : 0.000391 s
+empty w eject :
+                list : 0.000094 s
+              struct : 0.000010 s
+               deque : 0.000009 s
+size: 164
+make size w inject :
+                list : 0.000081 s
+             struct3 : 0.000005 s
+               deque : 0.000005 s
+concat :
+                list : 0.000998 s
+             struct3 : 0.000458 s
+               deque : 0.000404 s
+empty w eject :
+                list : 0.000099 s
+              struct : 0.000010 s
+               deque : 0.000008 s
+size: 165
+make size w inject :
+                list : 0.000078 s
+             struct3 : 0.000006 s
+               deque : 0.000006 s
+concat :
+                list : 0.000981 s
+             struct3 : 0.000441 s
+               deque : 0.000401 s
+empty w eject :
+                list : 0.000093 s
+              struct : 0.000021 s
+               deque : 0.000008 s
+size: 166
+make size w inject :
+                list : 0.000074 s
+             struct3 : 0.000005 s
+               deque : 0.000017 s
+concat :
+                list : 0.001033 s
+             struct3 : 0.000437 s
+               deque : 0.000395 s
+empty w eject :
+                list : 0.000095 s
+              struct : 0.000014 s
+               deque : 0.000010 s
+size: 167
+make size w inject :
+                list : 0.000082 s
+             struct3 : 0.000007 s
+               deque : 0.000007 s
+concat :
+                list : 0.001034 s
+             struct3 : 0.000406 s
+               deque : 0.000388 s
+empty w eject :
+                list : 0.000104 s
+              struct : 0.000014 s
+               deque : 0.000010 s
+size: 168
+make size w inject :
+                list : 0.000079 s
+             struct3 : 0.000011 s
+               deque : 0.000007 s
+concat :
+                list : 0.000917 s
+             struct3 : 0.000427 s
+               deque : 0.000397 s
+empty w eject :
+                list : 0.000103 s
+              struct : 0.000014 s
+               deque : 0.000011 s
+size: 169
+make size w inject :
+                list : 0.000079 s
+             struct3 : 0.000006 s
+               deque : 0.000007 s
+concat :
+                list : 0.001037 s
+             struct3 : 0.000490 s
+               deque : 0.000417 s
+empty w eject :
+                list : 0.000096 s
+              struct : 0.000012 s
+               deque : 0.000010 s
+size: 170
+make size w inject :
+                list : 0.000076 s
+             struct3 : 0.000011 s
+               deque : 0.000007 s
+concat :
+                list : 0.000926 s
+             struct3 : 0.000465 s
+               deque : 0.000411 s
+empty w eject :
+                list : 0.000122 s
+              struct : 0.000012 s
+               deque : 0.000010 s
+size: 171
+make size w inject :
+                list : 0.000079 s
+             struct3 : 0.000007 s
+               deque : 0.000007 s
+concat :
+                list : 0.001053 s
+             struct3 : 0.000448 s
+               deque : 0.000410 s
+empty w eject :
+                list : 0.000120 s
+              struct : 0.000014 s
+               deque : 0.000009 s
+size: 172
+make size w inject :
+                list : 0.000077 s
+             struct3 : 0.000006 s
+               deque : 0.000007 s
+concat :
+                list : 0.001036 s
+             struct3 : 0.000476 s
+               deque : 0.000454 s
+empty w eject :
+                list : 0.000099 s
+              struct : 0.000013 s
+               deque : 0.000011 s
+size: 173
+make size w inject :
+                list : 0.000085 s
+             struct3 : 0.000006 s
+               deque : 0.000012 s
+concat :
+                list : 0.001059 s
+             struct3 : 0.000451 s
+               deque : 0.000407 s
+empty w eject :
+                list : 0.000104 s
+              struct : 0.000013 s
+               deque : 0.000011 s
+size: 174
+make size w inject :
+                list : 0.000079 s
+             struct3 : 0.000009 s
+               deque : 0.000007 s
+concat :
+                list : 0.000930 s
+             struct3 : 0.000456 s
+               deque : 0.000408 s
+empty w eject :
+                list : 0.000103 s
+              struct : 0.000015 s
+               deque : 0.000010 s
+size: 175
+make size w inject :
+                list : 0.000081 s
+             struct3 : 0.000006 s
+               deque : 0.000007 s
+concat :
+                list : 0.001040 s
+             struct3 : 0.000440 s
+               deque : 0.000416 s
+empty w eject :
+                list : 0.000100 s
+              struct : 0.000011 s
+               deque : 0.000009 s
+size: 176
+make size w inject :
+                list : 0.000094 s
+             struct3 : 0.000005 s
+               deque : 0.000005 s
+concat :
+                list : 0.001097 s
+             struct3 : 0.000463 s
+               deque : 0.000415 s
+empty w eject :
+                list : 0.000115 s
+              struct : 0.000013 s
+               deque : 0.000010 s
+size: 177
+make size w inject :
+                list : 0.000092 s
+             struct3 : 0.000007 s
+               deque : 0.000007 s
+concat :
+                list : 0.001094 s
+             struct3 : 0.000459 s
+               deque : 0.000412 s
+empty w eject :
+                list : 0.000115 s
+              struct : 0.000016 s
+               deque : 0.000010 s
+size: 178
+make size w inject :
+                list : 0.000092 s
+             struct3 : 0.000007 s
+               deque : 0.000007 s
+concat :
+                list : 0.001024 s
+             struct3 : 0.000440 s
+               deque : 0.000391 s
+empty w eject :
+                list : 0.000122 s
+              struct : 0.000014 s
+               deque : 0.000011 s
+size: 179
+make size w inject :
+                list : 0.000087 s
+             struct3 : 0.000007 s
+               deque : 0.000007 s
+concat :
+                list : 0.001043 s
+             struct3 : 0.000413 s
+               deque : 0.000378 s
+empty w eject :
+                list : 0.000118 s
+              struct : 0.000013 s
+               deque : 0.000010 s
+size: 180
+make size w inject :
+                list : 0.000086 s
+             struct3 : 0.000006 s
+               deque : 0.000006 s
+concat :
+                list : 0.001088 s
+             struct3 : 0.000445 s
+               deque : 0.000395 s
+empty w eject :
+                list : 0.000113 s
+              struct : 0.000015 s
+               deque : 0.000010 s
+size: 181
+make size w inject :
+                list : 0.000098 s
+             struct3 : 0.000006 s
+               deque : 0.000007 s
+concat :
+                list : 0.001098 s
+             struct3 : 0.000428 s
+               deque : 0.000389 s
+empty w eject :
+                list : 0.000109 s
+              struct : 0.000015 s
+               deque : 0.000011 s
+size: 182
+make size w inject :
+                list : 0.000091 s
+             struct3 : 0.000007 s
+               deque : 0.000007 s
+concat :
+                list : 0.001091 s
+             struct3 : 0.000433 s
+               deque : 0.000388 s
+empty w eject :
+                list : 0.000120 s
+              struct : 0.000012 s
+               deque : 0.000010 s
+size: 183
+make size w inject :
+                list : 0.000095 s
+             struct3 : 0.000006 s
+               deque : 0.000007 s
+concat :
+                list : 0.001115 s
+             struct3 : 0.000415 s
+               deque : 0.000383 s
+empty w eject :
+                list : 0.000112 s
+              struct : 0.000015 s
+               deque : 0.000011 s
+size: 184
+make size w inject :
+                list : 0.000093 s
+             struct3 : 0.000006 s
+               deque : 0.000008 s
+concat :
+                list : 0.001072 s
+             struct3 : 0.000422 s
+               deque : 0.000390 s
+empty w eject :
+                list : 0.000127 s
+              struct : 0.000013 s
+               deque : 0.000010 s
+size: 185
+make size w inject :
+                list : 0.000096 s
+             struct3 : 0.000006 s
+               deque : 0.000008 s
+concat :
+                list : 0.001105 s
+             struct3 : 0.000463 s
+               deque : 0.000419 s
+empty w eject :
+                list : 0.000127 s
+              struct : 0.000014 s
+               deque : 0.000012 s
+size: 186
+make size w inject :
+                list : 0.000090 s
+             struct3 : 0.000007 s
+               deque : 0.000007 s
+concat :
+                list : 0.001137 s
+             struct3 : 0.000467 s
+               deque : 0.000414 s
+empty w eject :
+                list : 0.000132 s
+              struct : 0.000013 s
+               deque : 0.000010 s
+size: 187
+make size w inject :
+                list : 0.000107 s
+             struct3 : 0.000006 s
+               deque : 0.000007 s
+concat :
+                list : 0.001140 s
+             struct3 : 0.000450 s
+               deque : 0.000413 s
+empty w eject :
+                list : 0.000117 s
+              struct : 0.000014 s
+               deque : 0.000011 s
+size: 188
+make size w inject :
+                list : 0.000095 s
+             struct3 : 0.000006 s
+               deque : 0.000007 s
+concat :
+                list : 0.001088 s
+             struct3 : 0.000477 s
+               deque : 0.000421 s
+empty w eject :
+                list : 0.000132 s
+              struct : 0.000014 s
+               deque : 0.000011 s
+size: 189
+make size w inject :
+                list : 0.000094 s
+             struct3 : 0.000010 s
+               deque : 0.000007 s
+concat :
+                list : 0.000977 s
+             struct3 : 0.000452 s
+               deque : 0.000414 s
+empty w eject :
+                list : 0.000119 s
+              struct : 0.000014 s
+               deque : 0.000010 s
+size: 190
+make size w inject :
+                list : 0.000109 s
+             struct3 : 0.000007 s
+               deque : 0.000007 s
+concat :
+                list : 0.001137 s
+             struct3 : 0.000456 s
+               deque : 0.000410 s
+empty w eject :
+                list : 0.000120 s
+              struct : 0.000015 s
+               deque : 0.000013 s
+size: 191
+make size w inject :
+                list : 0.000098 s
+             struct3 : 0.000006 s
+               deque : 0.000007 s
+concat :
+                list : 0.001148 s
+             struct3 : 0.000447 s
+               deque : 0.000425 s
+empty w eject :
+                list : 0.000119 s
+              struct : 0.000010 s
+               deque : 0.000009 s
+size: 192
+make size w inject :
+                list : 0.000106 s
+             struct3 : 0.000005 s
+               deque : 0.000007 s
+concat :
+                list : 0.001243 s
+             struct3 : 0.000467 s
+               deque : 0.000414 s
+empty w eject :
+                list : 0.000121 s
+              struct : 0.000014 s
+               deque : 0.000011 s
+size: 193
+make size w inject :
+                list : 0.000104 s
+             struct3 : 0.000007 s
+               deque : 0.000008 s
+concat :
+                list : 0.001197 s
+             struct3 : 0.000484 s
+               deque : 0.000428 s
+empty w eject :
+                list : 0.000143 s
+              struct : 0.000015 s
+               deque : 0.000011 s
+size: 194
+make size w inject :
+                list : 0.000117 s
+             struct3 : 0.000007 s
+               deque : 0.000007 s
+concat :
+                list : 0.001194 s
+             struct3 : 0.000448 s
+               deque : 0.000392 s
+empty w eject :
+                list : 0.000141 s
+              struct : 0.000014 s
+               deque : 0.000010 s
+size: 195
+make size w inject :
+                list : 0.000106 s
+             struct3 : 0.000007 s
+               deque : 0.000007 s
+concat :
+                list : 0.001208 s
+             struct3 : 0.000412 s
+               deque : 0.000384 s
+empty w eject :
+                list : 0.000137 s
+              struct : 0.000014 s
+               deque : 0.000011 s
+size: 196
+make size w inject :
+                list : 0.000100 s
+             struct3 : 0.000007 s
+               deque : 0.000008 s
+concat :
+                list : 0.001214 s
+             struct3 : 0.000446 s
+               deque : 0.000394 s
+empty w eject :
+                list : 0.000145 s
+              struct : 0.000015 s
+               deque : 0.000011 s
+size: 197
+make size w inject :
+                list : 0.000112 s
+             struct3 : 0.000007 s
+               deque : 0.000008 s
+concat :
+                list : 0.001223 s
+             struct3 : 0.000435 s
+               deque : 0.000390 s
+empty w eject :
+                list : 0.000137 s
+              struct : 0.000014 s
+               deque : 0.000010 s
+size: 198
+make size w inject :
+                list : 0.000108 s
+             struct3 : 0.000011 s
+               deque : 0.000007 s
+concat :
+                list : 0.001181 s
+             struct3 : 0.000443 s
+               deque : 0.000393 s
+empty w eject :
+                list : 0.000149 s
+              struct : 0.000013 s
+               deque : 0.000011 s
+size: 199
+make size w inject :
+                list : 0.000103 s
+             struct3 : 0.000007 s
+               deque : 0.000008 s
+concat :
+                list : 0.001224 s
+             struct3 : 0.000404 s
+               deque : 0.000389 s
+empty w eject :
+                list : 0.000132 s
+              struct : 0.000014 s
+               deque : 0.000011 s
+size: 200
+make size w inject :
+                list : 0.000107 s
+             struct3 : 0.000007 s
+               deque : 0.000008 s
+concat :
+                list : 0.001226 s
+             struct3 : 0.000419 s
+               deque : 0.000392 s
+empty w eject :
+                list : 0.000145 s
+              struct : 0.000015 s
+               deque : 0.000011 s
+size: 10000
+make size w inject :
+                list : 0.452208 s
+             struct3 : 0.000568 s
+               deque : 0.000893 s
+concat :
+                list : 0.079382 s
+             struct3 : 0.000483 s
+               deque : 0.000430 s
+empty w eject :
+                list : 0.502424 s
+              struct : 0.000551 s
+               deque : 0.000499 s
