@@ -3,7 +3,9 @@ Import ListNotations.
 From Equations Require Import Equations.
 Require Import Coq.Program.Equality.
 
-From Deque Require Import ncdeque.
+From Color Require Import color.
+Import GYOR.
+From Sdeque Require Import corevf.
 From Cdeque Require Import buffer types.
 
 Fixpoint stored_triple_seq {A : Type} {lvl : nat} (strd : stored_triple A lvl) {struct strd} : list A :=
@@ -52,7 +54,7 @@ Fixpoint stored_triple_seq {A : Type} {lvl : nat} (strd : stored_triple A lvl) {
       let '(Packet bd tl) := pkt in storage_right_seq tl ++ body_right_seq bd in
     match c with
     | Empty => []
-    | Only_chain _ pkt rest =>
+    | Single_chain _ pkt rest =>
       packet_left_seq pkt ++ chain_seq rest ++ packet_right_seq pkt
     | Pair_chain cl cr => chain_seq cl ++ chain_seq cr
     end in
@@ -87,7 +89,8 @@ Definition strd_storage_right_seq {A lvl k e C} (st : storage A lvl k e C) : lis
   | Right_st _ _ s => strd_buffer_seq s
   end.
 
-Fixpoint chain_seq {A : Type} {lvl : nat} {pk k : kind} {e : ending} {Cl Cr : color}
+Fixpoint chain_seq {A : Type} {lvl : nat} {pk : pkind}
+                   {k : kind} {e : ending} {Cl Cr : color}
   (c : chain A lvl pk k e Cl Cr) {struct c} : list A :=
   let fix body_left_seq {B hlvl tlvl hk tk} (bd : body B hlvl tlvl hk tk) {struct bd} : list B :=
     match bd with
@@ -117,7 +120,7 @@ Fixpoint chain_seq {A : Type} {lvl : nat} {pk k : kind} {e : ending} {Cl Cr : co
   in
   match c with
   | Empty => []
-  | Only_chain _ pkt rest =>
+  | Single_chain _ pkt rest =>
     packet_left_seq pkt ++ chain_seq rest ++ packet_right_seq pkt
   | Pair_chain cl cr => chain_seq cl ++ chain_seq cr
   end.
@@ -295,11 +298,11 @@ Proof.
   apply IHbd.
 Qed.
 
-Lemma chain_only [A hlvl tlvl k pk e C Cl Cr]
+Lemma chain_single [A hlvl tlvl k pk e C Cl Cr]
   (reg : chain_regularity C Cl Cr)
   (pkt : packet A hlvl tlvl k e C)
   (c : chain A (S tlvl) pk Only e Cl Cr) :
-  chain_seq (Only_chain reg pkt c) =
+  chain_seq (Single_chain reg pkt c) =
     packet_left_seq pkt ++ chain_seq c ++ packet_right_seq pkt.
 Proof.
   cbn. repeat apply div_app2;
@@ -313,7 +316,7 @@ Proof.
 Qed.
 
 Lemma chain_pair [A lvl Cl Cr]
-  (cl : chain A lvl Only Left  Not_end Cl Cl)
-  (cr : chain A lvl Only Right Not_end Cr Cr) :
+  (cl : chain A lvl Single Left  Not_end Cl Cl)
+  (cr : chain A lvl Single Right Not_end Cr Cr) :
   chain_seq (Pair_chain cl cr) = chain_seq cl ++ chain_seq cr.
 Proof. reflexivity. Qed.

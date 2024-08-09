@@ -1,67 +1,69 @@
+open Color.GYR
+
 (** A type for colored buffers. *)
 type ('a, 'color) buffer =
-  | B0 :                           ('a, [`red   ]) buffer
-  | B1 : 'a                     -> ('a, [`yellow]) buffer
-  | B2 : 'a * 'a                -> ('a, [`green ]) buffer
-  | B3 : 'a * 'a * 'a           -> ('a, [`green ]) buffer
-  | B4 : 'a * 'a * 'a * 'a      -> ('a, [`yellow]) buffer
-  | B5 : 'a * 'a * 'a * 'a * 'a -> ('a, [`red   ]) buffer
+  | B0 :                           ('a, red   ) buffer
+  | B1 : 'a                     -> ('a, yellow) buffer
+  | B2 : 'a * 'a                -> ('a, green ) buffer
+  | B3 : 'a * 'a * 'a           -> ('a, green ) buffer
+  | B4 : 'a * 'a * 'a * 'a      -> ('a, yellow) buffer
+  | B5 : 'a * 'a * 'a * 'a * 'a -> ('a, red   ) buffer
 
 (** A type for yellow buffers. *)
 type 'a yellow_buffer =
-  Yellowish : ('a, [< `green | `yellow]) buffer -> 'a yellow_buffer
+  Yellowish : ('a, _ * _ * nored) buffer -> 'a yellow_buffer
 
 (** A type for any buffers. *)
 type 'a any_buffer =
-  Any : ('a, [< `green | `yellow | `red ]) buffer -> 'a any_buffer
+  Any : ('a, _) buffer -> 'a any_buffer
 
 (** A type for packets. *)
 type ('a, 'b, 'color) packet =
   (* The empty packet. *)
-  | Hole : ('a, 'a, [`hole]) packet
+  | Hole : ('a, 'a, uncolored) packet
 
   (* Packet starting with green. *)
-  | Green : ('a, [`green]) buffer
-          * ('a * 'a, 'b, [< `yellow | `hole]) packet
-          * ('a, [`green]) buffer
-         -> ('a, 'b, [`green]) packet
+  | Green : ('a, green) buffer
+          * ('a * 'a, 'b, nogreen * _ * nored) packet
+          * ('a, green) buffer
+         -> ('a, 'b, green) packet
 
   (* Packet starting with one. *)
-  | Yellow : ('a, [< `green | `yellow]) buffer
-           * ('a * 'a, 'b, [< `yellow | `hole]) packet
-           * ('a, [< `green | `yellow]) buffer
-          -> ('a, 'b, [`yellow]) packet
+  | Yellow : ('a, _ * _ * nored) buffer
+           * ('a * 'a, 'b, nogreen * _ * nored) packet
+           * ('a, _ * _ * nored) buffer
+          -> ('a, 'b, yellow) packet
 
   (* Packet starting with red. *)
-  | Red : ('a, [< `green | `yellow | `red]) buffer
-        * ('a * 'a, 'b, [< `yellow | `hole]) packet
-        * ('a, [< `green | `yellow | `red]) buffer
-       -> ('a, 'b, [`red]) packet
+  | Red : ('a, _) buffer
+        * ('a * 'a, 'b, nogreen * _ * nored) packet
+        * ('a, _) buffer
+       -> ('a, 'b, red) packet
 
 (** A typed for colored deques. *)
 type ('a, 'color) chain =
   (* Colored deque made of only one buffer. *)
-  | Ending : ('a, _) buffer -> ('a, [`green]) chain
+  | Ending : ('a, _) buffer -> ('a, green) chain
 
   (* Colored deque starting with a green packet. *)
-  | G : ('a, 'b, [`green ]) packet
-      * ('b, [< `green | `red]) chain
-     -> ('a, [`green ]) chain
+  | G : ('a, 'b, green) packet
+      * ('b, _ * noyellow * _) chain
+     -> ('a, green) chain
 
   (* Colored deque starting with a yellow packet. It must be followed by a green packet
      in order to be regular. *)
-  | Y : ('a, 'b, [`yellow]) packet
-      * ('b, [`green]) chain
-     -> ('a, [`yellow]) chain
+  | Y : ('a, 'b, yellow) packet
+      * ('b, green) chain
+     -> ('a, yellow) chain
 
   (* Colored deque starting with a red packet. It must be followed by a green packet in
      order to be semiregular. *)
-  | R : ('a, 'b, [`red]) packet
-      * ('b, [`green]) chain
-     -> ('a, [`red]) chain
+  | R : ('a, 'b, red) packet
+      * ('b, green) chain
+     -> ('a, red) chain
 
 (** A type for deques. *)
-type 'a deque = T : ('a, [< `green | `yellow]) chain -> 'a deque
+type 'a deque = T : ('a, _ * _ * nored) chain -> 'a deque
 
 (** The empty deque. *)
 let empty = T (Ending B0)
@@ -70,7 +72,7 @@ let empty = T (Ending B0)
 let is_empty d = d = empty
 
 (** Pushes an element onto a buffer, and returns a green chain. *)
-let buffer_push : type a c. a -> (a, c) buffer -> (a, [`green]) chain
+let buffer_push : type a c. a -> (a, c) buffer -> (a, green) chain
 = fun x buf ->
   match buf with
   | B0 -> Ending (B1 x)
@@ -82,7 +84,7 @@ let buffer_push : type a c. a -> (a, c) buffer -> (a, [`green]) chain
       G (Green (B3 (x, a, b), Hole, B3 (c, d, e)), Ending B0)
 
 (** Injects an element onto a buffer, and returns a green chain. *)
-let buffer_inject : type a c. (a, c) buffer -> a -> (a, [`green]) chain
+let buffer_inject : type a c. (a, c) buffer -> a -> (a, green) chain
 = fun buf x ->
   match buf with
   | B0 -> Ending (B1 x)
@@ -135,7 +137,7 @@ let buffer_eject : type a c. (a, c) buffer -> (a any_buffer * a) option
 
 (** Pushes an element onto a green buffer, returning a yellow one. *)
 let green_push
-: type a. a -> (a, [`green]) buffer -> a yellow_buffer
+: type a. a -> (a, green) buffer -> a yellow_buffer
 = fun x buf ->
   match buf with
   | B2 (a, b) -> Yellowish (B3 (x, a, b))
@@ -143,7 +145,7 @@ let green_push
 
 (** Injects an element onto a green buffer, returning a yellow one. *)
 let green_inject
-: type a. (a, [`green]) buffer -> a -> a yellow_buffer
+: type a. (a, green) buffer -> a -> a yellow_buffer
 = fun buf x ->
   match buf with
   | B2 (a, b)    -> Yellowish (B3 (a, b, x))
@@ -151,14 +153,14 @@ let green_inject
 
 (** Pops an element from a green buffer, returns the removed element and the
     new yellow buffer. *)
-let green_pop : type a. (a, [`green]) buffer -> a * a yellow_buffer
+let green_pop : type a. (a, green) buffer -> a * a yellow_buffer
 = function
   | B2 (a, b)    -> a, Yellowish (B1 b)
   | B3 (a, b, c) -> a, Yellowish (B2 (b, c))
 
 (** Ejects an element from a green buffer, returns the new yellow buffer and
     the removed element. *)
-let green_eject : type a. (a, [`green]) buffer -> a yellow_buffer * a
+let green_eject : type a. (a, green) buffer -> a yellow_buffer * a
 = function
   | B2 (a, b)    -> Yellowish (B1 a), b
   | B3 (a, b, c) -> Yellowish (B2 (a, b)), c
@@ -242,8 +244,8 @@ let suffix12 x opt = match opt with
     elements, the buffer [Overflow], we can make it green by removing a pair. *)
 type 'a decompose =
   | Underflow : 'a option -> 'a decompose
-  | Ok        : ('a, [`green]) buffer -> 'a decompose
-  | Overflow  : ('a, [`green]) buffer * ('a * 'a) -> 'a decompose
+  | Ok        : ('a, green) buffer -> 'a decompose
+  | Overflow  : ('a, green) buffer * ('a * 'a) -> 'a decompose
 
 (** Returns the decomposed version of a buffer. Here, it is a prefix
     decomposition: when the buffer is overflowed, elements at the end are
@@ -316,8 +318,8 @@ let buffer_halve : type a c. (a, c) buffer -> a option * (a * a) any_buffer
 let green_prefix_concat
 : type a c.
      (a, c) buffer
-  -> (a * a, [`green]) buffer
-  -> (a, [`green]) buffer * (a * a) yellow_buffer
+  -> (a * a, green) buffer
+  -> (a, green) buffer * (a * a) yellow_buffer
 = fun buf1 buf2 ->
   match prefix_decompose buf1 with
   (* If the first one is already green, we have nothing to do. *)
@@ -337,9 +339,9 @@ let green_prefix_concat
     green 'a buffer. The order of elements is preserved. *)
 let green_suffix_concat
 : type a c.
-     (a * a, [`green]) buffer
+     (a * a, green) buffer
   -> (a, c) buffer
-  -> (a * a) yellow_buffer * (a, [`green]) buffer
+  -> (a * a) yellow_buffer * (a, green) buffer
 = fun buf1 buf2 ->
   match suffix_decompose buf2 with
   | Ok buf2 -> Yellowish buf1, buf2
@@ -476,7 +478,7 @@ let make_small
 
 (** Takes a red chain and returns a green one representing the same set. *)
 let green_of_red
-: type a. (a, [`red]) chain -> (a, [`green]) chain
+: type a. (a, red) chain -> (a, green) chain
 = function
   (* If our red packet is at the end of the chain, we handle a lot of different
      cases in the make_small function. *)
@@ -495,16 +497,11 @@ let green_of_red
       let Yellowish s2, s1 = green_suffix_concat s2 s1 in
       G (Green (p1, Yellow (p2, child, s2), s1), chain)
 
-(** Type [not_yellow] serves as a predicate on types: if we have a
-    [c not_yellow], then [c] is not [`yellow]. *)
-type _ not_yellow = Not_yellow: [< `green | `red] not_yellow
-
 (** Takes a green or red chain, and returns a green one representing
     the same set. *)
 let ensure_green
-: type a c. c not_yellow -> (a, c) chain -> (a, [`green]) chain
-= fun Not_yellow t ->
-  match t with
+: type a g r. (a, g * noyellow * r) chain -> (a, green) chain
+= function
   | Ending buf -> Ending buf
   | G (x, k) -> G (x, k)
   | R (x, k) -> green_of_red (R (x, k))
@@ -513,7 +510,7 @@ let ensure_green
     a deque starting with this packet and followed by the green version of
     [chain]. *)
 let yellow p1 child s1 chain =
-  T (Y (Yellow (p1, child, s1), ensure_green Not_yellow chain))
+  T (Y (Yellow (p1, child, s1), ensure_green chain))
 
 (** Takes a red packet, [p1], [child], [s1], and a green chain [chain].
     Returns the green version of the chain made of the red packet followed by

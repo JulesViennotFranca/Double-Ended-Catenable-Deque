@@ -73,9 +73,9 @@ val prodN_seq : nat -> 'a1 prodN -> 'a1 list
 
 val buffer_seq : nat -> nat -> color -> 'a1 buffer -> 'a1 list
 
-val packet_front_seq : nat -> nat -> nat -> color -> 'a1 packet -> 'a1 list
+val packet_left_seq : nat -> nat -> nat -> color -> 'a1 packet -> 'a1 list
 
-val packet_rear_seq : nat -> nat -> nat -> color -> 'a1 packet -> 'a1 list
+val packet_right_seq : nat -> nat -> nat -> color -> 'a1 packet -> 'a1 list
 
 val cdeque_seq : nat -> nat -> color -> 'a1 cdeque -> 'a1 list
 

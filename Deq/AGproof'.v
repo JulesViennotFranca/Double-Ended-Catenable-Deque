@@ -28,11 +28,11 @@ Opaque app.
 Definition singleton {A : Type} (x : A) : list A := [x].
 Opaque singleton.
 
-(* A simple lemma to prove the distributivity of flattenp over concatenation 
+(* A simple lemma to prove the distributivity of flattenp over concatenation
    of lists. *)
 
 Lemma flattenp_app A (l1: list (A * A)) l2 : flattenp (l1 ++ l2) = flattenp l1 ++ flattenp l2.
-Proof. 
+Proof.
   induction l1 as [ | (a, b) l].
   - eauto.
   - rewrite <- app_comm_cons.
@@ -55,21 +55,21 @@ Qed.
 
 (* Types *)
 
-(* Here, [green_hue], [yellow_hue], and [red_hue] will be utilized to generate 
-   the colors essential for our program. They function as boolean variables, 
+(* Here, [green_hue], [yellow_hue], and [red_hue] will be utilized to generate
+   the colors essential for our program. They function as boolean variables,
    indicating whether or not a specific hue is present in our color. *)
 
 Inductive green_hue  : Type := SomeGreen  | NoGreen.
 Inductive yellow_hue : Type := SomeYellow | NoYellow.
 Inductive red_hue    : Type := SomeRed    | NoRed.
 
-(* Colors are generated through the constructor [Mix], which accepts amount 
+(* Colors are generated through the constructor [Mix], which accepts amount
    of each hue as arguments. *)
 
 Inductive color : Type :=
   | Mix : green_hue -> yellow_hue -> red_hue -> color.
 
-(* In order for [Equations] to work on hues and colors, instances of 
+(* In order for [Equations] to work on hues and colors, instances of
    [NoConfusion] are added to these types. *)
 
 Derive NoConfusion for green_hue.
@@ -188,7 +188,7 @@ Set Equations Transparent.
 
 (* Get a list from a pair. *)
 
-Equations pair_seq {A} : A * A -> list A := 
+Equations pair_seq {A} : A * A -> list A :=
 pair_seq (a, b) := [a] ++ [b].
 
 (* Get a list from an option. *)
@@ -217,32 +217,32 @@ yellow_buffer_seq (Yellowish buf) := buffer_seq buf.
 Equations any_buffer_seq {A} : any_buffer A -> list A :=
 any_buffer_seq (Any buf) := buffer_seq buf.
 
-(* Get the list corresponding to elements stored in prefix buffers along a 
+(* Get the list corresponding to elements stored in prefix buffers along a
    packet. *)
 
-Equations packet_front_seq {A B C} : packet A B C -> list A :=
-packet_front_seq HOLE := [];
-packet_front_seq (Yellow buf1 p _) :=
-  buffer_seq buf1 ++ flattenp (packet_front_seq p);
-packet_front_seq (Green buf1 p _) :=
-  buffer_seq buf1 ++ flattenp (packet_front_seq p);
-packet_front_seq (Red buf1 p _) :=
-  buffer_seq buf1 ++ flattenp (packet_front_seq p).
+Equations packet_left_seq {A B C} : packet A B C -> list A :=
+packet_left_seq HOLE := [];
+packet_left_seq (Yellow buf1 p _) :=
+  buffer_seq buf1 ++ flattenp (packet_left_seq p);
+packet_left_seq (Green buf1 p _) :=
+  buffer_seq buf1 ++ flattenp (packet_left_seq p);
+packet_left_seq (Red buf1 p _) :=
+  buffer_seq buf1 ++ flattenp (packet_left_seq p).
 
-(* Get the list corresponding to elements stored in suffix buffers along a 
+(* Get the list corresponding to elements stored in suffix buffers along a
    packet. *)
 
-Equations packet_rear_seq {A B C} : packet A B C -> list A :=
-packet_rear_seq HOLE := [];
-packet_rear_seq (Yellow _ p buf2) :=
-  flattenp (packet_rear_seq p) ++ buffer_seq buf2;
-packet_rear_seq (Green _ p buf2) :=
-  flattenp (packet_rear_seq p) ++ buffer_seq buf2;
-packet_rear_seq (Red _ p buf2) :=
-  flattenp (packet_rear_seq p) ++ buffer_seq buf2.
+Equations packet_right_seq {A B C} : packet A B C -> list A :=
+packet_right_seq HOLE := [];
+packet_right_seq (Yellow _ p buf2) :=
+  flattenp (packet_right_seq p) ++ buffer_seq buf2;
+packet_right_seq (Green _ p buf2) :=
+  flattenp (packet_right_seq p) ++ buffer_seq buf2;
+packet_right_seq (Red _ p buf2) :=
+  flattenp (packet_right_seq p) ++ buffer_seq buf2.
 
 (* Constructs the function transforming a list B into a list A, given a packet
-   A B _ _. It uses the induction relation of packets' Constructors to deduct 
+   A B _ _. It uses the induction relation of packets' Constructors to deduct
    the right relation between A and B. *)
 
 Equations packet_hole_flatten {A B C} : packet A B C -> list B -> list A :=
@@ -259,17 +259,17 @@ packet_hole_flatten (Red _ p _) :=
 Equations cdeque_seq {A C} : cdeque A C -> list A :=
 cdeque_seq (Small buf) := buffer_seq buf;
 cdeque_seq (G p dq) :=
-  packet_front_seq p ++
+  packet_left_seq p ++
   packet_hole_flatten p (cdeque_seq dq) ++
-  packet_rear_seq p;
+  packet_right_seq p;
 cdeque_seq (Y p dq) :=
-  packet_front_seq p ++
+  packet_left_seq p ++
   packet_hole_flatten p (cdeque_seq dq) ++
-  packet_rear_seq p;
+  packet_right_seq p;
 cdeque_seq (R p dq) :=
-  packet_front_seq p ++
+  packet_left_seq p ++
   packet_hole_flatten p (cdeque_seq dq) ++
-  packet_rear_seq p.
+  packet_right_seq p.
 
 (* Get the list of non-excess elements of an object of type decompose. *)
 
@@ -403,7 +403,7 @@ buffer_inject (B4 a b c d) x := ? Small (B5 a b c d x);
 buffer_inject (B5 a b c d e) x := ? G (Green (B3 a b c) HOLE (B3 d e x)) (Small B0).
 
 (* Poping from a buffer. *)
-  
+
 Equations buffer_pop {A C} (b : buffer A C) :
   { o : option (A * any_buffer A) |
     buffer_seq b =
@@ -473,8 +473,8 @@ Equations suffix12 {A} (x : A) (o : option A) :
 suffix12 x None := ? B1 x;
 suffix12 x (Some y) := ? B2 x y.
 
-(* Returns the decomposed version of a buffer. Here, it is a prefix 
-   decomposition: when the buffer is overflowed, elements at the end are 
+(* Returns the decomposed version of a buffer. Here, it is a prefix
+   decomposition: when the buffer is overflowed, elements at the end are
    removed. *)
 
 Equations prefix_decompose {A C} (b : buffer A C) :
@@ -510,7 +510,7 @@ buffer_unsandwich (B3 a b c) := ? Sandwich a (B1 b) c;
 buffer_unsandwich (B4 a b c d) := ? Sandwich a (B2 b c) d;
 buffer_unsandwich (B5 a b c d e) := ? Sandwich a (B3 b c d) e.
 
-(* Translates a buffer to a pairs buffer. A additional option type is returned 
+(* Translates a buffer to a pairs buffer. A additional option type is returned
    to handle cases where the buffer contains an odd number of elements. *)
 
 Equations buffer_halve {A C} (b : buffer A C) :
@@ -523,8 +523,8 @@ buffer_halve (B3 a b c) := ? (Some a, Any (B1 (b, c)));
 buffer_halve (B4 a b c d) := ? (None, Any (B2 (a, b) (c, d)));
 buffer_halve (B5 a b c d e) := ? (Some a, Any (B2 (b, c) (d, e))).
 
-(* Takes any buffer and a pairs green one, and rearranges elements contained in 
-   the two buffers to return one green buffer and a pairs yellow buffer. The 
+(* Takes any buffer and a pairs green one, and rearranges elements contained in
+   the two buffers to return one green buffer and a pairs yellow buffer. The
    order of elements is preserved. *)
 
 Equations green_prefix_concat {A C}
@@ -544,8 +544,8 @@ green_prefix_concat buf1 buf2 with prefix_decompose buf1 => {
     ? (buf, Yellowish suffix)
 }.
 
-(* Takes a pairs green buffer and any one, and rearranges elements contained in 
-   the two buffers to return one pairs yellow buffer and one green buffer. The 
+(* Takes a pairs green buffer and any one, and rearranges elements contained in
+   the two buffers to return one pairs yellow buffer and one green buffer. The
    order of elements is preserved. *)
 
 Equations green_suffix_concat {A C}
@@ -565,8 +565,8 @@ green_suffix_concat buf1 buf2 with suffix_decompose buf2 => {
     ? (Yellowish prefix, buf)
 }.
 
-(* Takes any buffer and a pairs yellow one, and rearranges elements contained 
-   in the two buffers to return one green buffer and any pairs buffer. The 
+(* Takes any buffer and a pairs yellow one, and rearranges elements contained
+   in the two buffers to return one green buffer and any pairs buffer. The
    order of elements is preserved. *)
 
 Equations yellow_prefix_concat {A B}
@@ -588,8 +588,8 @@ yellow_prefix_concat buf1 buf2 with prefix_decompose buf1 => {
     ? (buf, suffix)
 }.
 
-(* Takes a pairs yellow buffer and any one, and rearranges elements contained 
-   in the two buffers to return any pairs buffer and one green buffer. The 
+(* Takes a pairs yellow buffer and any one, and rearranges elements contained
+   in the two buffers to return any pairs buffer and one green buffer. The
    order of elements is preserved. *)
 
 Equations yellow_suffix_concat {A B}
@@ -625,17 +625,17 @@ cdeque_of_opt3 (Some a) (Some (b, c)) None := ? Small (B3 a b c);
 cdeque_of_opt3 None (Some (a, b)) (Some c) := ? Small (B3 a b c);
 cdeque_of_opt3 (Some a) (Some (b, c)) (Some d) := ? Small (B4 a b c d).
 
-(* A new tactics, flattenp_lists is introduced. It is used when the context contains 
-   an equality over lists of pairs. The tactic will destruct all the pairs, find 
+(* A new tactics, flattenp_lists is introduced. It is used when the context contains
+   an equality over lists of pairs. The tactic will destruct all the pairs, find
    the hypothesis containing the equality, apply flattenp on it, simplify, and try
    to rewrite it in the goal. *)
 
 Local Ltac flattenp_lists :=
   repeat
-  match goal with 
+  match goal with
   | ab : ?A * ?A |- _ => destruct ab; cbn in *
   end;
-  match goal with 
+  match goal with
   | H : _ ++ [(_, _)] = _ |- _ =>
     apply (f_equal flattenp) in H;
     rewrite !flattenp_app in H;
@@ -651,7 +651,7 @@ Local Ltac flattenp_lists :=
   end.
 
 (* Takes a prefix buffer, a following buffer (when the next level is composed
-   of only one buffer), and a suffix buffer. It allows to rearrange all 
+   of only one buffer), and a suffix buffer. It allows to rearrange all
    elements contained in those buffers into a green cdeque. *)
 
 Equations make_small {A C1 C2 C3}
@@ -740,8 +740,8 @@ ensure_green Not_yellow (Small buf) := ? Small buf;
 ensure_green Not_yellow (G x cd) := ? G x cd;
 ensure_green Not_yellow (R x cd) := green_of_red (R x cd).
 
-(* Takes a yellow packet, as a prefix buffer, a child packet and a suffix 
-   buffer, and a green or red cdeque. Returns a deque starting with this packet 
+(* Takes a yellow packet, as a prefix buffer, a child packet and a suffix
+   buffer, and a green or red cdeque. Returns a deque starting with this packet
    and followed by the green version of the input colored deque. *)
 
 Equations make_yellow {A B: Type} {G1 Y1 Y2 G3 Y3 G4 R4}
@@ -751,16 +751,16 @@ Equations make_yellow {A B: Type} {G1 Y1 Y2 G3 Y3 G4 R4}
   (cd : cdeque B (Mix G4 NoYellow R4)) :
   { sq : deque A |
     deque_seq sq = buffer_seq buf1 ++
-               flattenp (packet_front_seq p) ++
+               flattenp (packet_left_seq p) ++
                flattenp (packet_hole_flatten p (cdeque_seq cd)) ++
-               flattenp (packet_rear_seq p) ++
+               flattenp (packet_right_seq p) ++
                buffer_seq buf2 }
 :=
 make_yellow p1 child s1 cd with ensure_green Not_yellow cd => {
   | ? cd' => ? T (Y (Yellow p1 child s1) cd') }.
 
 (* Takes a red packet, as a prefix buffer, a child packet and a suffix
-   buffer, and a green cdeque. Returns the green version of the colored deque 
+   buffer, and a green cdeque. Returns the green version of the colored deque
    made of the red packet followed by the green cdeque. *)
 
 Equations make_red {A B: Type} {C1 Y2 C3}
@@ -770,9 +770,9 @@ Equations make_red {A B: Type} {C1 Y2 C3}
   (cd : cdeque B green) :
   { sq : deque A |
     deque_seq sq = buffer_seq buf1 ++
-               flattenp (packet_front_seq p) ++
+               flattenp (packet_left_seq p) ++
                flattenp (packet_hole_flatten p (cdeque_seq cd)) ++
-               flattenp (packet_rear_seq p) ++
+               flattenp (packet_right_seq p) ++
                buffer_seq buf2 }
 :=
 make_red p1 child s1 cd with green_of_red (R (Red p1 child s1) cd) => {
@@ -891,7 +891,7 @@ Proof.
   rewrite rev_length in H. by apply length_zero_iff_nil.
 Qed.
 
-(* Designing of a custom tactics to directly assume a list is empty if its 
+(* Designing of a custom tactics to directly assume a list is empty if its
    length is null, or its reverse is the empty list. *)
 
 Local Ltac simplist :=
@@ -914,7 +914,7 @@ Equations is_empty {A} (sq : t A) :
   { b : bool | b = true <-> t_seq sq = [] } :=
 is_empty sq := ? (seq_length sq =? 0).
 Next Obligation.
-  cbn. intros *. 
+  cbn. intros *.
   destruct sq as [x deque Hlen]. cbn. rewrite Z.eqb_eq. case_lt.
   all: split; [intros -> | intros HH]; simplist; try hauto.
   all: rewrite HH /= in Hlen; hauto.
@@ -1064,7 +1064,7 @@ Qed.
 Next Obligation.
   cbn. intros ? ? ? ? ? ? Hseq Hlen. case_lt; last hauto.
   assert (n = 0) by lia; subst; simplist. rewrite Hlen in Hseq |-*.
-  destruct (deque_seq deque'). exact Hseq. 
+  destruct (deque_seq deque'). exact Hseq.
   apply (f_equal (@List.length _)) in Hseq; rewrite <- app_comm_cons in Hseq; simpl in Hseq.
   apply O_S in Hseq. destruct Hseq.
 Qed.

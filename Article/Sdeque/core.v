@@ -7,36 +7,10 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
+From Color Require Import color.
+Import GYR.
+
 (* Types *)
-
-(* Here, [green_hue], [yellow_hue], and [red_hue] will be utilized to generate
-   the colors essential for our program. They function as boolean variables,
-   indicating whether or not a specific hue is present in our color. *)
-
-Inductive green_hue  : Type := SomeGreen  | NoGreen.
-Inductive yellow_hue : Type := SomeYellow | NoYellow.
-Inductive red_hue    : Type := SomeRed    | NoRed.
-
-(* Colors are generated through the constructor [Mix], which accepts amount
-   of each hue as arguments. *)
-
-Inductive color : Type :=
-  | Mix : green_hue -> yellow_hue -> red_hue -> color.
-
-(* In order for [Equations] to work on hues and colors, instances of
-   [NoConfusion] are added to these types. *)
-
-Derive NoConfusion for green_hue.
-Derive NoConfusion for yellow_hue.
-Derive NoConfusion for red_hue.
-Derive NoConfusion for color.
-
-(* Some basic colors that we'll need. *)
-
-Notation green := (Mix SomeGreen NoYellow NoRed).
-Notation yellow := (Mix NoGreen SomeYellow NoRed).
-Notation red := (Mix NoGreen NoYellow SomeRed).
-Notation uncolored := (Mix NoGreen NoYellow NoRed).
 
 (* A type for iterated products. *)
 
@@ -210,27 +184,27 @@ any_buffer_seq (Any buf) := buffer_seq buf.
 (* Returns the sequence of elements stored in prefix buffers along a
    packet. *)
 
-Equations packet_front_seq {A lvl len C} : packet A lvl len C -> list A :=
-packet_front_seq Hole := [];
-packet_front_seq (Triple buf1 p _ _) :=
-  buffer_seq buf1 ++ packet_front_seq p.
+Equations packet_left_seq {A lvl len C} : packet A lvl len C -> list A :=
+packet_left_seq Hole := [];
+packet_left_seq (Triple buf1 p _ _) :=
+  buffer_seq buf1 ++ packet_left_seq p.
 
 (* Returns the sequence of elements stored in suffix buffers along a
    packet. *)
 
-Equations packet_rear_seq {A lvl len C} : packet A lvl len C -> list A :=
-packet_rear_seq Hole := [];
-packet_rear_seq (Triple _ p buf2 _) :=
-  packet_rear_seq p ++ buffer_seq buf2.
+Equations packet_right_seq {A lvl len C} : packet A lvl len C -> list A :=
+packet_right_seq Hole := [];
+packet_right_seq (Triple _ p buf2 _) :=
+  packet_right_seq p ++ buffer_seq buf2.
 
 (* Returns the sequence contained in a leveled colored deque. *)
 
 Equations chain_seq {A lvl C} : chain A lvl C -> list A :=
 chain_seq (Small buf) := buffer_seq buf;
 chain_seq (Big p cd _) :=
-    packet_front_seq p ++
+    packet_left_seq p ++
     chain_seq cd ++
-    packet_rear_seq p.
+    packet_right_seq p.
 
 (* Returns the sequence of non-excess elements of an object of type decompose. *)
 
@@ -733,9 +707,9 @@ Equations make_yellow {A tlvl} {G1 Y1 Y2 G3 Y3 G4 R4}
   { sq : deque A |
     deque_seq sq =
                buffer_seq buf1 ++
-               packet_front_seq p ++
+               packet_left_seq p ++
                chain_seq cd ++
-               packet_rear_seq p ++
+               packet_right_seq p ++
                buffer_seq buf2 }
 :=
 make_yellow p1 child s1 cd with ensure_green cd => {
@@ -753,9 +727,9 @@ Equations make_red {A tlvl} {C1 Y2 C3}
   { sq : deque A |
     deque_seq sq =
                buffer_seq buf1 ++
-               packet_front_seq p ++
+               packet_left_seq p ++
                chain_seq cd ++
-               packet_rear_seq p ++
+               packet_right_seq p ++
                buffer_seq buf2 }
 :=
 make_red p1 child s1 cd with green_of_red (Big (Triple p1 child s1 PCRed) cd CCRed) => {

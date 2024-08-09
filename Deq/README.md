@@ -147,7 +147,7 @@ type ('a, 'color) cdeque =
       * ('b, [< `green | `red]) cdeque
      -> ('a, [`green ]) cdeque
 
-  (* Deque starting with a yellow packet. It must be followed by a green packet 
+  (* Deque starting with a yellow packet. It must be followed by a green packet
      in order to be regular. *)
   | Y : ('a, 'b, [`yellow]) packet
       * ('b, [`green]) cdeque
@@ -250,17 +250,17 @@ val green_prefix_concat :
 
 val green_suffix_concat :
   ('a * 'a, [ `green ]) buffer ->
-  ('a, 'c) buffer -> 
+  ('a, 'c) buffer ->
   ('a * 'a) yellow_buffer * ('a, [ `green ]) buffer
 
 val yellow_prefix_concat :
   ('a, 'b) buffer ->
-  ('a * 'a) yellow_buffer -> 
+  ('a * 'a) yellow_buffer ->
   ('a, [ `green ]) buffer * ('a * 'a) any_buffer
 
 val yellow_suffix_concat :
   ('a * 'a) yellow_buffer ->
-  ('a, 'b) buffer -> 
+  ('a, 'b) buffer ->
   ('a * 'a) any_buffer * ('a, [ `green ]) buffer
 ```
 
@@ -269,8 +269,8 @@ Arthur Wendling designs special function `make_small` when the red *cdeque* is a
 ```ml
 val make_small :
   ('a, 'b) buffer ->
-  ('a * 'a, 'c) buffer -> 
-  ('a, 'd) buffer -> 
+  ('a * 'a, 'c) buffer ->
+  ('a, 'd) buffer ->
   ('a, [ `green ]) cdeque
 ```
 
@@ -283,8 +283,8 @@ val green_of_red : ('a, [ `red ]) cdeque -> ('a, [ `green ]) cdeque
 
 type _ not_yellow = Not_yellow : [< `green | `red ] not_yellow
 val ensure_green :
-  'c not_yellow -> 
-  ('a, 'c) cdeque -> 
+  'c not_yellow ->
+  ('a, 'c) cdeque ->
   ('a, [ `green ]) cdeque
 ```
 
@@ -295,14 +295,14 @@ val yellow :
   ('a, [< `green | `yellow ]) buffer ->
   ('a * 'a, 'b, [< `hole | `yellow ]) packet ->
   ('a, [< `green | `yellow ]) buffer ->
-  ('b, [< `green | `red ]) cdeque -> 
+  ('b, [< `green | `red ]) cdeque ->
   'a deque
 
 val red :
   ('a, [< `green | `red | `yellow ]) buffer ->
   ('a * 'a, 'b, [< `hole | `yellow ]) packet ->
   ('a, [< `green | `red | `yellow ]) buffer ->
-  ('b, [ `green ]) cdeque -> 
+  ('b, [ `green ]) cdeque ->
   'a deque
 ```
 
@@ -370,8 +370,8 @@ Equations buffer_seq {A C} : buffer A C -> list A := ...
 Equations yellow_buffer_seq {A} : yellow_buffer A -> list A := ...
 Equations any_buffer_seq {A} : any_buffer A -> list A := ...
 
-Equations packet_front_seq {A B C K} : packet A B C K -> list A := ...
-Equations packet_rear_seq {A B C K} : packet A B C K -> list A := ...
+Equations packet_left_seq {A B C K} : packet A B C K -> list A := ...
+Equations packet_right_seq {A B C K} : packet A B C K -> list A := ...
 Equations packet_hole_flatten {A B C K} : packet A B C K -> list B -> list A := ...
 
 Equations cdeque_seq {A C} : cdeque A C -> list A := ...
@@ -445,7 +445,7 @@ Equations is_empty {A} (sq : t A) :
 Equations length {A} (sq : t A) :
   { n : Z | n = Z.of_nat (List.length (t_seq sq)) } := ...
 
-Equations rev {A} (sq : t A) : 
+Equations rev {A} (sq : t A) :
   { sq' : t A | t_seq sq' = rev (t_seq sq) } := ...
 
 Definition is_rev {A} (sq : t A) : bool := ...
@@ -502,7 +502,7 @@ Inductive BT_list (A : Type) : Type :=
 Now, we try to define a type containing complete binary trees storing other complete binary trees in their leaves.
 
 ```coq
-Inductive BT_BT : Type := 
+Inductive BT_BT : Type :=
   | End : DBT unit unit -> BT_BT
   | Body : DBT unit (BT_BT) -> BT_BT.
 ```
@@ -560,8 +560,8 @@ Notation uncolored := (Mix NoGreen NoYellow NoRed).
 The first important type is the one for iterated products:
 
 ```coq
-Inductive prodN (A : Type) : nat -> Type := 
-  | prodZ : A -> prodN A 0 
+Inductive prodN (A : Type) : nat -> Type :=
+  | prodZ : A -> prodN A 0
   | prodS {n : nat} : prodN A n * prodN A n -> prodN A (S n).
 ```
 
@@ -595,18 +595,18 @@ Inductive lvl_packet (A : Type) (lvl : nat) : nat -> color -> Type :=
 Inductive cdeque_color : color -> color -> Type := ...
 
 Inductive lvl_cdeque (A : Type) (lvl : nat) : color -> Type :=
-  | Small {C : color} : 
-      buffer A lvl C -> 
+  | Small {C : color} :
+      buffer A lvl C ->
       lvl_cdeque A lvl green
   | Big {len : nat} {C1 C2 : color} :
-      lvl_packet A lvl len C1 -> 
-      lvl_cdeque A (len + lvl) C2 -> 
+      lvl_packet A lvl len C1 ->
+      lvl_cdeque A (len + lvl) C2 ->
       cdeque_color C1 C2 ->
       lvl_cdeque A lvl C1.
 
-Inductive deque (A : Type) : Type := 
-  T : forall (G : green_hue) (Y : yellow_hue), 
-      cdeque A (Mix G Y NoRed) -> 
+Inductive deque (A : Type) : Type :=
+  T : forall (G : green_hue) (Y : yellow_hue),
+      cdeque A (Mix G Y NoRed) ->
       deque A.
 ```
 
@@ -630,7 +630,7 @@ In all those definitions, the type parameter `A` is always uniform, we will not 
 We need to translate those different structure to the list of elements they contain:
 
 ```coq
-Equations prodN_seq {A} (n : nat) : prodN A n -> list A := 
+Equations prodN_seq {A} (n : nat) : prodN A n -> list A :=
 prodN_seq 0 (prodZ a) := [a];
 prodN_seq (S n) (prodS (p1, p2)) := prodN_seq n p1 ++ prodN_seq n p2.
 
@@ -640,8 +640,8 @@ Equations buffer_seq {A lvl C} : buffer A lvl C -> list A := ...
 Equations yellow_buffer_seq {A lvl} : yellow_buffer A lvl -> list A := ...
 Equations any_buffer_seq {A lvl} : any_buffer A lvl -> list A := ...
 
-Equations packet_front_seq {A lvl len C} : lvl_packet A lvl len C -> list A := ...
-Equations packet_rear_seq {A lvl len C} : lvl_packet A lvl len C -> list A := ...
+Equations packet_left_seq {A lvl len C} : lvl_packet A lvl len C -> list A := ...
+Equations packet_right_seq {A lvl len C} : lvl_packet A lvl len C -> list A := ...
 
 Equations cdeque_seq {A lvl C} : lvl_cdeque A lvl C -> list A := ...
 

@@ -8,7 +8,9 @@ From AAC_tactics Require Import AAC.
 From AAC_tactics Require Import Instances.
 Import Instances.Lists.
 
-From Cdeque Require Import buffer types UIP_color models.
+From Color Require Import color.
+Import GYOR.
+From Cdeque Require Import buffer types models.
 
 (* The list application is made opaque. *)
 
@@ -30,7 +32,7 @@ Opaque singleton.
 #[export] Hint Rewrite stored_triple_small : rlist.
 #[export] Hint Rewrite stored_triple_big : rlist.
 #[export] Hint Rewrite chain_empty : rlist.
-#[export] Hint Rewrite chain_only : rlist.
+#[export] Hint Rewrite chain_single : rlist.
 #[export] Hint Rewrite chain_pair : rlist.
 
 Opaque stored_triple_seq.
@@ -73,8 +75,6 @@ push_left_storage a1 (Left_st O p s) with buffer.push a1 p => {
   | ? p' := ? Left_st O p' s };
 push_left_storage a1 (Left_st R p s) with buffer.push a1 p => {
   | ? p' := ? Left_st R p' s }.
-
-(* TODO : rename Empty in chain into Ending, rename front and rear in left and right. *)
 
 Equations inject_right_storage {A lvl e C}
   (st : storage A lvl Right e C)
@@ -157,14 +157,18 @@ Equations push_left_packet {A hlvl tlvl e C}
     /\ packet_right_seq pkt' = packet_right_seq pkt } :=
 push_left_packet a1 (Packet Hole tl) with push_left_storage a1 tl => {
   | ? tl' := ? Packet Hole tl' };
-push_left_packet a1 (Packet (Only_yellow hd bd) tl) with push_left_storage a1 hd => {
-  | ? hd' := ? Packet (Only_yellow hd' bd) tl };
-push_left_packet a1 (Packet (Only_orange hd bd) tl) with push_left_storage a1 hd => {
-  | ? hd' := ? Packet (Only_orange hd' bd) tl };
-push_left_packet a1 (Packet (Pair_yellow hd bd cr) tl) with push_left_storage a1 hd => {
-  | ? hd' := ? Packet (Pair_yellow hd' bd cr) tl };
-push_left_packet a1 (Packet (Pair_orange hd cl bd) tl) with push_left_storage a1 hd => {
-  | ? hd' := ? Packet (Pair_orange hd' cl bd) tl }.
+push_left_packet a1 (Packet (Only_yellow hd bd) tl)
+  with push_left_storage a1 hd => {
+    | ? hd' := ? Packet (Only_yellow hd' bd) tl };
+push_left_packet a1 (Packet (Only_orange hd bd) tl)
+  with push_left_storage a1 hd => {
+    | ? hd' := ? Packet (Only_orange hd' bd) tl };
+push_left_packet a1 (Packet (Pair_yellow hd bd cr) tl)
+  with push_left_storage a1 hd => {
+    | ? hd' := ? Packet (Pair_yellow hd' bd cr) tl };
+push_left_packet a1 (Packet (Pair_orange hd cl bd) tl)
+  with push_left_storage a1 hd => {
+    | ? hd' := ? Packet (Pair_orange hd' cl bd) tl }.
 
 Equations inject_right_packet {A hlvl tlvl e C}
   (pkt : packet A hlvl tlvl Right e C)
@@ -174,14 +178,18 @@ Equations inject_right_packet {A hlvl tlvl e C}
     packet_right_seq pkt' = packet_right_seq pkt ++ stored_triple_seq a1 } :=
 inject_right_packet (Packet Hole tl) a1 with inject_right_storage tl a1 => {
   | ? tl' := ? Packet Hole tl' };
-inject_right_packet (Packet (Only_yellow hd bd) tl) a1 with inject_right_storage hd a1 => {
-  | ? hd' := ? Packet (Only_yellow hd' bd) tl };
-inject_right_packet (Packet (Only_orange hd bd) tl) a1 with inject_right_storage hd a1 => {
-  | ? hd' := ? Packet (Only_orange hd' bd) tl };
-inject_right_packet (Packet (Pair_yellow hd bd cr) tl) a1 with inject_right_storage hd a1 => {
-  | ? hd' := ? Packet (Pair_yellow hd' bd cr) tl };
-inject_right_packet (Packet (Pair_orange hd cl bd) tl) a1 with inject_right_storage hd a1 => {
-  | ? hd' := ? Packet (Pair_orange hd' cl bd) tl }.
+inject_right_packet (Packet (Only_yellow hd bd) tl) a1
+  with inject_right_storage hd a1 => {
+    | ? hd' := ? Packet (Only_yellow hd' bd) tl };
+inject_right_packet (Packet (Only_orange hd bd) tl) a1
+  with inject_right_storage hd a1 => {
+    | ? hd' := ? Packet (Only_orange hd' bd) tl };
+inject_right_packet (Packet (Pair_yellow hd bd cr) tl) a1
+  with inject_right_storage hd a1 => {
+    | ? hd' := ? Packet (Pair_yellow hd' bd cr) tl };
+inject_right_packet (Packet (Pair_orange hd cl bd) tl) a1
+  with inject_right_storage hd a1 => {
+    | ? hd' := ? Packet (Pair_orange hd' cl bd) tl }.
 
 Equations push_only_packet_prop {A hlvl tlvl e C}
   (a1 : stored_triple A hlvl)
@@ -221,14 +229,18 @@ Equations push_only_packet {A hlvl tlvl e C}
     push_only_packet_prop a1 pkt pkt' } :=
 push_only_packet a1 (Packet Hole tl) with push_only_storage a1 tl => {
   | ? tl' := ? Packet Hole tl' };
-push_only_packet a1 (Packet (Only_yellow hd bd) tl) with push_only_storage a1 hd => {
-  | ? hd' := ? Packet (Only_yellow hd' bd) tl };
-push_only_packet a1 (Packet (Only_orange hd bd) tl) with push_only_storage a1 hd => {
-  | ? hd' := ? Packet (Only_orange hd' bd) tl };
-push_only_packet a1 (Packet (Pair_yellow hd bd cr) tl) with push_only_storage a1 hd => {
-  | ? hd' := ? Packet (Pair_yellow hd' bd cr) tl };
-push_only_packet a1 (Packet (Pair_orange hd cl bd) tl) with push_only_storage a1 hd => {
-  | ? hd' := ? Packet (Pair_orange hd' cl bd) tl }.
+push_only_packet a1 (Packet (Only_yellow hd bd) tl)
+  with push_only_storage a1 hd => {
+    | ? hd' := ? Packet (Only_yellow hd' bd) tl };
+push_only_packet a1 (Packet (Only_orange hd bd) tl)
+  with push_only_storage a1 hd => {
+    | ? hd' := ? Packet (Only_orange hd' bd) tl };
+push_only_packet a1 (Packet (Pair_yellow hd bd cr) tl)
+  with push_only_storage a1 hd => {
+    | ? hd' := ? Packet (Pair_yellow hd' bd cr) tl };
+push_only_packet a1 (Packet (Pair_orange hd cl bd) tl)
+  with push_only_storage a1 hd => {
+    | ? hd' := ? Packet (Pair_orange hd' cl bd) tl }.
 
 Equations inject_only_packet {A hlvl tlvl e C}
   (pkt : packet A hlvl tlvl Only e C)
@@ -237,14 +249,18 @@ Equations inject_only_packet {A hlvl tlvl e C}
     inject_only_packet_prop pkt a1 pkt' } :=
 inject_only_packet (Packet Hole tl) a1 with inject_only_storage tl a1 => {
   | ? tl' := ? Packet Hole tl' };
-inject_only_packet (Packet (Only_yellow hd bd) tl) a1 with inject_only_storage hd a1 => {
-  | ? hd' := ? Packet (Only_yellow hd' bd) tl };
-inject_only_packet (Packet (Only_orange hd bd) tl) a1 with inject_only_storage hd a1 => {
-  | ? hd' := ? Packet (Only_orange hd' bd) tl };
-inject_only_packet (Packet (Pair_yellow hd bd cr) tl) a1 with inject_only_storage hd a1 => {
-  | ? hd' := ? Packet (Pair_yellow hd' bd cr) tl };
-inject_only_packet (Packet (Pair_orange hd cl bd) tl) a1 with inject_only_storage hd a1 => {
-  | ? hd' := ? Packet (Pair_orange hd' cl bd) tl }.
+inject_only_packet (Packet (Only_yellow hd bd) tl) a1
+  with inject_only_storage hd a1 => {
+    | ? hd' := ? Packet (Only_yellow hd' bd) tl };
+inject_only_packet (Packet (Only_orange hd bd) tl) a1
+  with inject_only_storage hd a1 => {
+    | ? hd' := ? Packet (Only_orange hd' bd) tl };
+inject_only_packet (Packet (Pair_yellow hd bd cr) tl) a1
+  with inject_only_storage hd a1 => {
+    | ? hd' := ? Packet (Pair_yellow hd' bd cr) tl };
+inject_only_packet (Packet (Pair_orange hd cl bd) tl) a1
+  with inject_only_storage hd a1 => {
+    | ? hd' := ? Packet (Pair_orange hd' cl bd) tl }.
 
 Equations single_storage {A lvl}
   (a1 : stored_triple A lvl) :
@@ -263,30 +279,28 @@ single_packet a1 with single_storage a1 => { | ? tl := ? Packet Hole tl }.
 
 Equations single_chain {A lvl}
   (a1 : stored_triple A lvl) :
-  { c : chain A lvl Only Only Not_end green green |
+  { c : chain A lvl Single Only Not_end green green |
     chain_seq c = stored_triple_seq a1 } :=
 single_chain a1 with single_packet a1 => {
-  | ? pkt := ? Only_chain Green_chain pkt Empty }.
-
-(* On peut peut-être renommer Only_chain et Pair_chain en Only et Pair. *)
+  | ? pkt := ? Single_chain Green_chain pkt Empty }.
 
 Set Equations With UIP.
 
 Equations push_left_chain {A lvl C}
   (a1 : stored_triple A lvl)
-  (c : chain A lvl Only Left Not_end C C) :
-  { c' : chain A lvl Only Left Not_end C C |
+  (c : chain A lvl Single Left Not_end C C) :
+  { c' : chain A lvl Single Left Not_end C C |
     chain_seq c' = stored_triple_seq a1 ++ chain_seq c } :=
-push_left_chain a1 (Only_chain reg pkt c) with push_left_packet a1 pkt => {
-    | ? pkt' := ? Only_chain reg pkt' c }.
+push_left_chain a1 (Single_chain reg pkt c) with push_left_packet a1 pkt => {
+    | ? pkt' := ? Single_chain reg pkt' c }.
 
 Equations inject_right_chain {A lvl C}
-  (c : chain A lvl Only Right Not_end C C)
+  (c : chain A lvl Single Right Not_end C C)
   (a1 : stored_triple A lvl) :
-  { c' : chain A lvl Only Right Not_end C C |
+  { c' : chain A lvl Single Right Not_end C C |
     chain_seq c' = chain_seq c ++ stored_triple_seq a1 } :=
-inject_right_chain (Only_chain reg pkt c) a1 with inject_right_packet pkt a1 => {
-    | ? pkt' := ? Only_chain reg pkt' c }.
+inject_right_chain (Single_chain reg pkt c) a1
+  with inject_right_packet pkt a1 => { | ? pkt' := ? Single_chain reg pkt' c }.
 
 Equations push_chain {A lvl pk e Cl Cr}
   (a1 : stored_triple A lvl)
@@ -294,8 +308,8 @@ Equations push_chain {A lvl pk e Cl Cr}
   { c' : chain A lvl pk Only Not_end Cl Cr |
     chain_seq c' = stored_triple_seq a1 ++ chain_seq c } :=
 push_chain a1 Empty with single_chain a1 => { | ? c := ? c };
-push_chain a1 (Only_chain reg pkt c) with push_only_packet a1 pkt => {
-  | ? pkt' := ? Only_chain reg pkt' c };
+push_chain a1 (Single_chain reg pkt c) with push_only_packet a1 pkt => {
+  | ? pkt' := ? Single_chain reg pkt' c };
 push_chain a1 (Pair_chain cl cr) with push_left_chain a1 cl => {
   | ? cl' := ? Pair_chain cl' cr }.
 
@@ -305,8 +319,8 @@ Equations inject_chain {A lvl pk e Cl Cr}
   { c' : chain A lvl pk Only Not_end Cl Cr |
     chain_seq c' = chain_seq c ++ stored_triple_seq a1 } :=
 inject_chain Empty a1 with single_chain a1 => { | ? c := ? c };
-inject_chain (Only_chain reg pkt c) a1 with inject_only_packet pkt a1 => {
-  | ? pkt' := ? Only_chain reg pkt' c };
+inject_chain (Single_chain reg pkt c) a1 with inject_only_packet pkt a1 => {
+  | ? pkt' := ? Single_chain reg pkt' c };
 inject_chain (Pair_chain cl cr) a1 with inject_right_chain cr a1 => {
   | ? cr' := ? Pair_chain cl cr' }.
 
@@ -333,49 +347,51 @@ Equations push_vector {A lvl n pk Cl Cr}
   (v : vector (stored_triple A lvl) n)
   (c : non_ending_chain A lvl pk Only Cl Cr) :
   { c' : non_ending_chain A lvl pk Only Cl Cr |
-    ne_chain_seq c' = concat (map stored_triple_seq (vector_seq v)) ++ ne_chain_seq c } :=
+    ne_chain_seq c' =
+      concat (map stored_triple_seq (vector_seq v)) ++ ne_chain_seq c } :=
 push_vector V0 c := ? c;
 push_vector (V1 a1) c with push_ne_chain a1 c => { | ? c1 := ? c1 };
 push_vector (V2 a1 a2) c with push_ne_chain a2 c => {
   | ? c2 with push_ne_chain a1 c2 => { | ? c1 := ? c1 } };
 push_vector (V3 a1 a2 a3) c with push_ne_chain a3 c => {
   | ? c3 with push_ne_chain a2 c3 => { | ? c2 with push_ne_chain a1 c2 => {
-    | ? c1 := ? c1 } } };
+  | ? c1 := ? c1 } } };
 push_vector (V4 a1 a2 a3 a4) c with push_ne_chain a4 c => {
   | ? c4 with push_ne_chain a3 c4 => { | ? c3 with push_ne_chain a2 c3 => {
-    | ? c2 with push_ne_chain a1 c2 => { | ? c1 := ? c1 } } } };
+  | ? c2 with push_ne_chain a1 c2 => { | ? c1 := ? c1 } } } };
 push_vector (V5 a1 a2 a3 a4 a5) c with push_ne_chain a5 c => {
   | ? c5 with push_ne_chain a4 c5 => { | ? c4 with push_ne_chain a3 c4 => {
-    | ? c3 with push_ne_chain a2 c3 => { | ? c2 with push_ne_chain a1 c2 => {
-      | ? c1 := ? c1 } } } } };
+  | ? c3 with push_ne_chain a2 c3 => { | ? c2 with push_ne_chain a1 c2 => {
+  | ? c1 := ? c1 } } } } };
 push_vector (V6 a1 a2 a3 a4 a5 a6) c with push_ne_chain a6 c => {
   | ? c6 with push_ne_chain a5 c6 => { | ? c5 with push_ne_chain a4 c5 => {
-    | ? c4 with push_ne_chain a3 c4 => { | ? c3 with push_ne_chain a2 c3 => {
-      | ? c2 with push_ne_chain a1 c2 => { | ? c1 := ? c1 } } } } } }.
+  | ? c4 with push_ne_chain a3 c4 => { | ? c3 with push_ne_chain a2 c3 => {
+  | ? c2 with push_ne_chain a1 c2 => { | ? c1 := ? c1 } } } } } }.
 
 Equations inject_vector {A lvl n pk Cl Cr}
   (c : non_ending_chain A lvl pk Only Cl Cr)
   (v : vector (stored_triple A lvl) n) :
   { c' : non_ending_chain A lvl pk Only Cl Cr |
-    ne_chain_seq c' = ne_chain_seq c ++ concat (map stored_triple_seq (vector_seq v)) } :=
+    ne_chain_seq c' =
+      ne_chain_seq c ++ concat (map stored_triple_seq (vector_seq v)) } :=
 inject_vector c V0 := ? c;
 inject_vector c (V1 a1) with inject_ne_chain c a1 => { | ? c1 := ? c1 };
 inject_vector c (V2 a1 a2) with inject_ne_chain c a1 => {
   | ? c1 with inject_ne_chain c1 a2 => { | ? c2 := ? c2 } };
 inject_vector c (V3 a1 a2 a3) with inject_ne_chain c a1 => {
   | ? c1 with inject_ne_chain c1 a2 => { | ? c2 with inject_ne_chain c2 a3 => {
-    | ? c3 := ? c3 } } };
+  | ? c3 := ? c3 } } };
 inject_vector c (V4 a1 a2 a3 a4) with inject_ne_chain c a1 => {
   | ? c1 with inject_ne_chain c1 a2 => { | ? c2 with inject_ne_chain c2 a3 => {
-    | ? c3 with inject_ne_chain c3 a4 => { | ? c4 := ? c4 } } } };
+  | ? c3 with inject_ne_chain c3 a4 => { | ? c4 := ? c4 } } } };
 inject_vector c (V5 a1 a2 a3 a4 a5) with inject_ne_chain c a1 => {
   | ? c1 with inject_ne_chain c1 a2 => { | ? c2 with inject_ne_chain c2 a3 => {
-    | ? c3 with inject_ne_chain c3 a4 => { | ? c4 with inject_ne_chain c4 a5 => {
-      | ? c5 := ? c5 } } } } };
+  | ? c3 with inject_ne_chain c3 a4 => { | ? c4 with inject_ne_chain c4 a5 => {
+  | ? c5 := ? c5 } } } } };
 inject_vector c (V6 a1 a2 a3 a4 a5 a6) with inject_ne_chain c a1 => {
   | ? c1 with inject_ne_chain c1 a2 => { | ? c2 with inject_ne_chain c2 a3 => {
-    | ? c3 with inject_ne_chain c3 a4 => { | ? c4 with inject_ne_chain c4 a5 => {
-      | ? c5 with inject_ne_chain c5 a6 => { | ? c6 := ? c6 } } } } } }.
+  | ? c3 with inject_ne_chain c3 a4 => { | ? c4 with inject_ne_chain c4 a5 => {
+  | ? c5 with inject_ne_chain c5 a6 => { | ? c6 := ? c6 } } } } } }.
 
 Equations push_semi {A lvl}
   (a1 : stored_triple A lvl)
@@ -391,35 +407,37 @@ Equations inject_semi {A lvl}
     semi_deque_seq sd' = semi_deque_seq sd ++ stored_triple_seq a1 } :=
 inject_semi (Semi c) a1 with inject_chain c a1 => { | ? c' := ? Semi c' }.
 
-Equations triple_of_chain {A lvl k C}  (c : chain A lvl Only k Not_end C C) :
+Equations triple_of_chain {A lvl k C}  (c : chain A lvl Single k Not_end C C) :
   { t : triple A lvl k C | triple_seq t = chain_seq c } :=
-triple_of_chain (Only_chain Green_chain (Packet Hole tl) child) :=
+triple_of_chain (Single_chain Green_chain (Packet Hole tl) child) :=
   ? Triple Green tl child;
-triple_of_chain (Only_chain Red_chain (Packet Hole tl) child) :=
+triple_of_chain (Single_chain Red_chain (Packet Hole tl) child) :=
   ? Triple Red tl child;
-triple_of_chain (Only_chain reg (Packet (Only_yellow hd bd) tl) child) :=
-  ? Triple Yellow hd (Only_chain reg (Packet bd tl) child);
-triple_of_chain (Only_chain reg (Packet (Only_orange hd bd) tl) child) :=
-  ? Triple OrangeO hd (Only_chain reg (Packet bd tl) child);
-triple_of_chain (Only_chain reg (Packet (Pair_yellow hd bd cr) tl) child) :=
-  ? Triple Yellow hd (Pair_chain (Only_chain reg (Packet bd tl) child) cr);
-triple_of_chain (Only_chain reg (Packet (Pair_orange hd cl bd) tl) child) :=
-  ? Triple OrangeP hd (Pair_chain cl (Only_chain reg (Packet bd tl) child)).
+triple_of_chain (Single_chain reg (Packet (Only_yellow hd bd) tl) rest) :=
+  ? Triple Yellow hd (Single_chain reg (Packet bd tl) rest);
+triple_of_chain (Single_chain reg (Packet (Only_orange hd bd) tl) rest) :=
+  ? Triple OrangeS hd (Single_chain reg (Packet bd tl) rest);
+triple_of_chain (Single_chain reg (Packet (Pair_yellow hd bd cr) tl) rest) :=
+  ? Triple Yellow hd (Pair_chain (Single_chain reg (Packet bd tl) rest) cr);
+triple_of_chain (Single_chain reg (Packet (Pair_orange hd cl bd) tl) rest) :=
+  ? Triple OrangeP hd (Pair_chain cl (Single_chain reg (Packet bd tl) rest)).
 
 Equations chain_of_triple {A lvl k C} (t : triple A lvl k C) :
-  { c : chain A lvl Only k Not_end C C | chain_seq c = triple_seq t } :=
+  { c : chain A lvl Single k Not_end C C | chain_seq c = triple_seq t } :=
 chain_of_triple (Triple Green hd child) :=
-  ? Only_chain Green_chain (Packet Hole hd) child;
-chain_of_triple (Triple Yellow hd (Only_chain reg (Packet bd tl) child)) :=
-  ? Only_chain reg (Packet (Only_yellow hd bd) tl) child;
-chain_of_triple (Triple Yellow hd (Pair_chain (Only_chain reg (Packet bd tl) child) cr)) :=
-  ? Only_chain reg (Packet (Pair_yellow hd bd cr) tl) child;
-chain_of_triple (Triple OrangeO hd (Only_chain reg (Packet bd tl) child)) :=
-  ? Only_chain reg (Packet (Only_orange hd bd) tl) child;
-chain_of_triple (Triple OrangeP hd (Pair_chain cl (Only_chain reg (Packet bd tl) child))) :=
-  ? Only_chain reg (Packet (Pair_orange hd cl bd) tl) child;
+  ? Single_chain Green_chain (Packet Hole hd) child;
+chain_of_triple (Triple Yellow hd (Single_chain reg (Packet bd tl) rest)) :=
+  ? Single_chain reg (Packet (Only_yellow hd bd) tl) rest;
+chain_of_triple
+  (Triple Yellow hd (Pair_chain (Single_chain reg (Packet bd tl) rest) cr)) :=
+  ? Single_chain reg (Packet (Pair_yellow hd bd cr) tl) rest;
+chain_of_triple (Triple OrangeS hd (Single_chain reg (Packet bd tl) rest)) :=
+  ? Single_chain reg (Packet (Only_orange hd bd) tl) rest;
+chain_of_triple
+  (Triple OrangeP hd (Pair_chain cl (Single_chain reg (Packet bd tl) rest))) :=
+  ? Single_chain reg (Packet (Pair_orange hd cl bd) tl) rest;
 chain_of_triple (Triple Red hd child) :=
-  ? Only_chain Red_chain (Packet Hole hd) child.
+  ? Single_chain Red_chain (Packet Hole hd) child.
 
 #[local] Obligation Tactic :=
   try first [ done |
@@ -435,9 +453,10 @@ left_of_only (Triple Green (Only_end p) Empty) with buffer.has7 p => {
   | ? inr p1 with buffer.eject2 p1 => {
     | ? (p2, a2, a1) with buffer.pair a2 a1 => {
       | ? s := ? Ok_lrt (Triple Green (Left_end p2 s) Empty) } } };
-left_of_only (Triple reg (Only_st coloring p s) child) with buffer.eject2 s => {
+left_of_only (Triple reg (Only_st col p s) child) with buffer.eject2 s => {
   | ? (s1, a2, a1) with buffer.pair a2 a1, inject_chain child (Small s1) => {
-    | ? s2, ? child1 := ? Ok_lrt (Triple reg (Left_st coloring p s2) child1) } }.
+    | ? s2, ? child1 :=
+      ? Ok_lrt (Triple reg (Left_st col p s2) child1) } }.
 
 Equations right_of_only {A lvl C} (t : triple A lvl Only C) :
   { rt : left_right_triple A lvl Right C | lr_triple_seq rt = triple_seq t } :=
@@ -446,9 +465,10 @@ right_of_only (Triple Green (Only_end s) Empty) with buffer.has7 s => {
   | ? inr s1 with buffer.pop2 s1 => {
     | ? (a1, a2, s2) with buffer.pair a1 a2 => {
       | ? p := ? Ok_lrt (Triple Green (Right_end p s2) Empty) } } };
-right_of_only (Triple reg (Only_st coloring p s) child) with buffer.pop2 p => {
+right_of_only (Triple reg (Only_st col p s) child) with buffer.pop2 p => {
   | ? (a1, a2, p1) with buffer.pair a1 a2, push_chain (Small p1) child => {
-    | ? p2, ? child1 := ? Ok_lrt (Triple reg (Right_st coloring p2 s) child1) } }.
+    | ? p2, ? child1 :=
+      ? Ok_lrt (Triple reg (Right_st col p2 s) child1) } }.
 
 Equations make_stored_suffix {A lvl ql q pk e Cl Cr}
   (sl : suffix A lvl (1 + ql))
@@ -459,8 +479,9 @@ Equations make_stored_suffix {A lvl ql q pk e Cl Cr}
     stored_triple_seq stored ++ suffix_seq sleft =
     suffix_seq sl ++ prefix_seq p ++ chain_seq child ++ suffix_seq s } :=
 make_stored_suffix sl p child s with buffer.two p, buffer.eject2 s => {
-  | ? (a1, a2), ? (sstored, c, d) with buffer.inject2 sl a1 a2, buffer.pair c d => {
-    | ? pstored, ? sleft := ? (Big pstored child sstored, sleft) } }.
+  | ? (a1, a2), ? (sstored, c, d)
+    with buffer.inject2 sl a1 a2, buffer.pair c d => {
+      | ? pstored, ? sleft := ? (Big pstored child sstored, sleft) } }.
 
 Equations make_prefix_stored {A lvl q qr pk e Cl Cr}
   (p : prefix A lvl (5 + q))
@@ -471,8 +492,9 @@ Equations make_prefix_stored {A lvl q qr pk e Cl Cr}
     prefix_seq pright ++ stored_triple_seq stored =
     prefix_seq p ++ chain_seq child ++ suffix_seq s ++ prefix_seq pr } :=
 make_prefix_stored p child s pr with buffer.pop2 p, buffer.two s => {
-  | ? (a1, a2, pstored), ? (c, d) with buffer.pair a1 a2, buffer.push2 c d pr => {
-    | ? pright, ? sstored := ? (pright, Big pstored child sstored) } }.
+  | ? (a1, a2, pstored), ? (c, d)
+    with buffer.pair a1 a2, buffer.push2 c d pr => {
+      | ? pright, ? sstored := ? (pright, Big pstored child sstored) } }.
 
 Equations stored_of_right {A lvl ql C}
   (sl : suffix A lvl (1 + ql))
@@ -481,9 +503,9 @@ Equations stored_of_right {A lvl ql C}
     stored_triple_seq stored ++ suffix_seq sleft =
     suffix_seq sl ++ triple_seq tr } :=
 stored_of_right sl (Triple Green (Right_end p s) Empty)
-  with make_stored_suffix sl p Empty s => { | ? res := ? res };
-stored_of_right sl (Triple reg (Right_st coloring p s) child)
-  with make_stored_suffix sl p child s => { | ? res := ? res }.
+  with make_stored_suffix sl p Empty s => { | ? (st, s1) := ? (st, s1) };
+stored_of_right sl (Triple reg (Right_st col p s) child)
+  with make_stored_suffix sl p child s => { | ? (st, s1) := ? (st, s1) }.
 
 Equations stored_of_left {A lvl qr C}
   (tl : triple A lvl Left C)
@@ -492,9 +514,9 @@ Equations stored_of_left {A lvl qr C}
     prefix_seq pright ++ stored_triple_seq stored =
     triple_seq tl ++ prefix_seq pr } :=
 stored_of_left (Triple Green (Left_end p s) Empty) pr
-  with make_prefix_stored p Empty s pr => { | ? res := ? res };
+  with make_prefix_stored p Empty s pr => { | ? (p1, st) := ? (p1, st) };
 stored_of_left (Triple _ (Left_st _ p s) child) pr
-  with make_prefix_stored p child s pr => { | ? res := ? res }.
+  with make_prefix_stored p child s pr => { | ? (p1, st) := ? (p1, st) }.
 
 Equations left_of_pair {A lvl Cl Cr}
   (tl : triple A lvl Left Cl) (tr : triple A lvl Right Cr) :
@@ -503,10 +525,11 @@ Equations left_of_pair {A lvl Cl Cr}
 left_of_pair (Triple Green (Left_end p s) Empty) tr with buffer.pop s => {
   | ? (a1, s1) with buffer.inject p a1, stored_of_right s1 tr => {
     | ? p1, ? (stored, s2) with single_chain stored => {
-      | ? child := ? Triple OrangeO (Left_st O p1 s2) child } } };
-left_of_pair (Triple reg (Left_st coloring p s) child) tr with stored_of_right s tr => {
-  | ? (stored, s1) with inject_chain child stored => {
-    | ? child1 := ? Triple reg (Left_st coloring p s1) child1 } }.
+      | ? child := ? Triple OrangeS (Left_st O p1 s2) child } } };
+left_of_pair (Triple reg (Left_st col p s) child) tr
+  with stored_of_right s tr => {
+    | ? (stored, s1) with inject_chain child stored => {
+      | ? child1 := ? Triple reg (Left_st col p s1) child1 } }.
 
 #[local] Obligation Tactic :=
   try first [ done |
@@ -521,15 +544,16 @@ Equations right_of_pair {A lvl Cl Cr}
 right_of_pair tl (Triple Green (Right_end p s) Empty) with buffer.eject p => {
   | ? (p1, a1) with buffer.push a1 s, stored_of_left tl p1 => {
     | ? s1, ? (p2, stored) with single_chain stored => {
-      | ? child := ? Triple OrangeO (Right_st O p2 s1) child } } };
-right_of_pair tl (Triple reg (Right_st coloring p s) child) with stored_of_left tl p => {
-  | ? (p1, stored) with push_chain stored child => {
-    | ? child1 := ? Triple reg (Right_st coloring p1 s) child1 } }.
+      | ? child := ? Triple OrangeS (Right_st O p2 s1) child } } };
+right_of_pair tl (Triple reg (Right_st col p s) child)
+  with stored_of_left tl p => {
+    | ? (p1, stored) with push_chain stored child => {
+      | ? child1 := ? Triple reg (Right_st col p1 s) child1 } }.
 
 Equations make_left {A lvl pk e Cl Cr} (c : chain A lvl pk Only e Cl Cr) :
   { t : left_right_triple A lvl Left Cl | lr_triple_seq t = chain_seq c } :=
 make_left Empty := ? Not_enough V0;
-make_left (Only_chain reg pkt c) with triple_of_chain (Only_chain reg pkt c) => {
+make_left (Single_chain r pkt c) with triple_of_chain (Single_chain r pkt c) => {
   | ? t with left_of_only t => { | ? t' := ? t' } };
 make_left (Pair_chain cl cr) with triple_of_chain cl, triple_of_chain cr => {
   | ? tl, ? tr with left_of_pair tl tr => { | ? t := ? Ok_lrt t } }.
@@ -537,7 +561,7 @@ make_left (Pair_chain cl cr) with triple_of_chain cl, triple_of_chain cr => {
 Equations make_right {A lvl pk e Cl Cr} (c : chain A lvl pk Only e Cl Cr) :
   { t : left_right_triple A lvl Right Cr | lr_triple_seq t = chain_seq c } :=
 make_right Empty := ? Not_enough V0;
-make_right (Only_chain reg pkt c) with triple_of_chain (Only_chain reg pkt c) => {
+make_right (Single_chain r pkt c) with triple_of_chain (Single_chain r pkt c) => {
   | ? t with right_of_only t => { | ? t' := ? t' } };
 make_right (Pair_chain cl cr) with triple_of_chain cl, triple_of_chain cr => {
   | ? tl, ? tr with right_of_pair tl tr => { | ? t := ? Ok_lrt t } }.
@@ -555,8 +579,9 @@ concat_semi (Semi c1) (Semi c2) with make_left c1 => {
       | ? cl, ? cr := ? Semi (Pair_chain cl cr) } } }.
 
 Equations orange_reg {A lvl pk Cr} :
-  chain A lvl pk Only Not_end green Cr -> regularity orange pk Not_end green Cr Cr :=
-orange_reg (Only_chain _ _ _) := OrangeO;
+  chain A lvl pk Only Not_end green Cr ->
+  regularity orange pk Not_end green Cr Cr :=
+orange_reg (Single_chain _ _ _) := OrangeS;
 orange_reg (Pair_chain _ _) := OrangeP.
 
 Equations pop_left_green {A lvl} (tl : triple A lvl Left green) :
@@ -569,12 +594,15 @@ pop_left_green (Triple Green (Left_end p s) Empty) with buffer.pop p => {
     | ? inr p2 => ? (a1, Ok_pt (Triple Green (Left_end p2 s) Empty)) } };
 pop_left_green (Triple Green (Left_st G p s) child) with buffer.pop p => {
   | ? (a1, p1) := ? (a1, Ok_pt (Triple Yellow (Left_st Y p1 s) child)) };
-pop_left_green (Triple Yellow (Left_st Y p s) child) with buffer.pop p => {
-  | ? (a1, p1) := ? (a1, Ok_pt (Triple (orange_reg child) (Left_st O p1 s) child)) };
-pop_left_green (Triple OrangeO (Left_st O p s) child) with buffer.pop p => {
-  | ? (a1, p1) := ? (a1, Ok_pt (Triple Red (Left_st R p1 s) child)) };
-pop_left_green (Triple OrangeP (Left_st O p s) child) with buffer.pop p => {
-  | ? (a1, p1) := ? (a1, Ok_pt (Triple Red (Left_st R p1 s) child)) }.
+pop_left_green (Triple Yellow (Left_st Y p s) child)
+  with buffer.pop p => { | ? (a1, p1) :=
+    ? (a1, Ok_pt (Triple (orange_reg child) (Left_st O p1 s) child)) };
+pop_left_green (Triple OrangeS (Left_st O p s) child)
+  with buffer.pop p => { | ? (a1, p1) :=
+    ? (a1, Ok_pt (Triple Red (Left_st R p1 s) child)) };
+pop_left_green (Triple OrangeP (Left_st O p s) child)
+  with buffer.pop p => { | ? (a1, p1) :=
+    ? (a1, Ok_pt (Triple Red (Left_st R p1 s) child)) }.
 
 Equations eject_right_green {A lvl} (tr : triple A lvl Right green) :
   { '(pt, a1) : partial_triple A lvl Pair Right * stored_triple A lvl |
@@ -586,15 +614,18 @@ eject_right_green (Triple Green (Right_end p s) Empty) with buffer.eject s => {
     | ? inr s2 => ? (Ok_pt (Triple Green (Right_end p s2) Empty), a1) } };
 eject_right_green (Triple Green (Right_st G p s) child) with buffer.eject s => {
   | ? (s1, a1) := ? (Ok_pt (Triple Yellow (Right_st Y p s1) child), a1) };
-eject_right_green (Triple Yellow (Right_st Y p s) child) with buffer.eject s => {
-  | ? (s1, a1) := ? (Ok_pt (Triple (orange_reg child) (Right_st O p s1) child), a1) };
-eject_right_green (Triple OrangeO (Right_st O p s) child) with buffer.eject s => {
-  | ? (s1, a1) := ? (Ok_pt (Triple Red (Right_st R p s1) child), a1) };
-eject_right_green (Triple OrangeP (Right_st O p s) child) with buffer.eject s => {
-  | ? (s1, a1) := ? (Ok_pt (Triple Red (Right_st R p s1) child), a1) }.
+eject_right_green (Triple Yellow (Right_st Y p s) child)
+  with buffer.eject s => { | ? (s1, a1) :=
+    ? (Ok_pt (Triple (orange_reg child) (Right_st O p s1) child), a1) };
+eject_right_green (Triple OrangeS (Right_st O p s) child)
+  with buffer.eject s => { | ? (s1, a1) :=
+    ? (Ok_pt (Triple Red (Right_st R p s1) child), a1) };
+eject_right_green (Triple OrangeP (Right_st O p s) child)
+  with buffer.eject s => { | ? (s1, a1) :=
+    ? (Ok_pt (Triple Red (Right_st R p s1) child), a1) }.
 
 Equations pop_only_green {A lvl} (t : triple A lvl Only green) :
-  { '(a1, pt) : stored_triple A lvl * partial_triple A lvl Only Only |
+  { '(a1, pt) : stored_triple A lvl * partial_triple A lvl Single Only |
     triple_seq t = stored_triple_seq a1 ++ pt_triple_seq pt } :=
 pop_only_green (Triple Green (Only_end p) Empty) with buffer.pop p => {
   | ? (a1, p1) with buffer.has1 p1 => {
@@ -603,14 +634,15 @@ pop_only_green (Triple Green (Only_end p) Empty) with buffer.pop p => {
 pop_only_green (Triple Green (Only_st G p s) child) with buffer.pop p => {
   | ? (a1, p1) := ? (a1, Ok_pt (Triple Yellow (Only_st Y p1 s) child)) };
 pop_only_green (Triple Yellow (Only_st Y p s) child) with buffer.pop p => {
-  | ? (a1, p1) := ? (a1, Ok_pt (Triple (orange_reg child) (Only_st O p1 s) child)) };
-pop_only_green (Triple OrangeO (Only_st O p s) child) with buffer.pop p => {
+  | ? (a1, p1) :=
+    ? (a1, Ok_pt (Triple (orange_reg child) (Only_st O p1 s) child)) };
+pop_only_green (Triple OrangeS (Only_st O p s) child) with buffer.pop p => {
   | ? (a1, p1) := ? (a1, Ok_pt (Triple Red (Only_st R p1 s) child)) };
 pop_only_green (Triple OrangeP (Only_st O p s) child) with buffer.pop p => {
   | ? (a1, p1) := ? (a1, Ok_pt (Triple Red (Only_st R p1 s) child)) }.
 
 Equations eject_only_green {A lvl} (t : triple A lvl Only green) :
-  { '(pt, a1) : partial_triple A lvl Only Only * stored_triple A lvl |
+  { '(pt, a1) : partial_triple A lvl Single Only * stored_triple A lvl |
     triple_seq t = pt_triple_seq pt ++ stored_triple_seq a1 } :=
 eject_only_green (Triple Green (Only_end s) Empty) with buffer.eject s => {
   | ? (s1, a1) with buffer.has1 s1 => {
@@ -619,14 +651,15 @@ eject_only_green (Triple Green (Only_end s) Empty) with buffer.eject s => {
 eject_only_green (Triple Green (Only_st G p s) child) with buffer.eject s => {
   | ? (s1, a1) := ? (Ok_pt (Triple Yellow (Only_st Y p s1) child), a1) };
 eject_only_green (Triple Yellow (Only_st Y p s) child) with buffer.eject s => {
-  | ? (s1, a1) := ? (Ok_pt (Triple (orange_reg child) (Only_st O p s1) child), a1) };
-eject_only_green (Triple OrangeO (Only_st O p s) child) with buffer.eject s => {
+  | ? (s1, a1) :=
+    ? (Ok_pt (Triple (orange_reg child) (Only_st O p s1) child), a1) };
+eject_only_green (Triple OrangeS (Only_st O p s) child) with buffer.eject s => {
   | ? (s1, a1) := ? (Ok_pt (Triple Red (Only_st R p s1) child), a1) };
 eject_only_green (Triple OrangeP (Only_st O p s) child) with buffer.eject s => {
   | ? (s1, a1) := ? (Ok_pt (Triple Red (Only_st R p s1) child), a1) }.
 
 Equations sandwich_only_green {A lvl} (t : triple A lvl Only green) :
-  { s : sandwich (stored_triple A lvl) (partial_triple A lvl Only Only) |
+  { s : sandwich (stored_triple A lvl) (partial_triple A lvl Single Only) |
     triple_seq t = sandwich_seq stored_triple_seq pt_triple_seq s } :=
 sandwich_only_green (Triple Green (Only_end p) Empty) with buffer.pop p => {
   | ? (a1, p1) with buffer.has1 p1 => {
@@ -640,8 +673,10 @@ sandwich_only_green (Triple Green (Only_st G p s) child)
     ? Sandwich a1 (Ok_pt (Triple Yellow (Only_st Y p1 s1) child)) z1 };
 sandwich_only_green (Triple Yellow (Only_st Y p s) child)
   with buffer.pop p, buffer.eject s => { | ? (a1, p1), ? (s1, z1) :=
-    ? Sandwich a1 (Ok_pt (Triple (orange_reg child) (Only_st O p1 s1) child)) z1 };
-sandwich_only_green (Triple OrangeO (Only_st O p s) child)
+    ? Sandwich a1
+               (Ok_pt (Triple (orange_reg child) (Only_st O p1 s1) child))
+               z1 };
+sandwich_only_green (Triple OrangeS (Only_st O p s) child)
   with buffer.pop p, buffer.eject s => { | ? (a1, p1), ? (s1, z1) :=
     ? Sandwich a1 (Ok_pt (Triple Red (Only_st R p1 s1) child)) z1 };
 sandwich_only_green (Triple OrangeP (Only_st O p s) child)
@@ -665,9 +700,9 @@ only_of_right (a1, a2, a3, a4, a5, a6) (Triple Green (Right_end p s) Empty)
     | ? (a7, a8) with buffer.push2 a7 a8 s => {
       | ? s1 with buffer.push6 a1 a2 a3 a4 a5 a6 s1 => {
         | ? s2 := ? Triple Green (Only_end s2) Empty } } };
-only_of_right (a1, a2, a3, a4, a5, a6) (Triple reg (Right_st coloring p s) child)
+only_of_right (a1, a2, a3, a4, a5, a6) (Triple reg (Right_st col p s) child)
   with buffer.push6 a1 a2 a3 a4 a5 a6 p => {
-    | ? p1 := ? Triple reg (Only_st (adapt_to_prefix coloring) p1 s) child }.
+    | ? p1 := ? Triple reg (Only_st (adapt_to_prefix col) p1 s) child }.
 
 Equations adapt_to_suffix {qp qs q C} :
   coloring qp qs C -> coloring qp (3 + q) C :=
@@ -686,9 +721,9 @@ only_of_left (Triple Green (Left_end p s) Empty) (a6, a5, a4, a3, a2, a1)
     | ? (a8, a7) with buffer.inject2 p a8 a7 => {
       | ? p1 with buffer.inject6 p1 a6 a5 a4 a3 a2 a1 => {
         | ? p2 := ? Triple Green (Only_end p2) Empty } } };
-only_of_left (Triple reg (Left_st coloring p s) child) (a6, a5, a4, a3, a2, a1)
+only_of_left (Triple reg (Left_st col p s) child) (a6, a5, a4, a3, a2, a1)
   with buffer.inject6 s a6 a5 a4 a3 a2 a1 => {
-    | ? s1 := ? Triple reg (Only_st (adapt_to_suffix coloring) p s1) child }.
+    | ? s1 := ? Triple reg (Only_st (adapt_to_suffix col) p s1) child }.
 
 Equations pop_pair_green {A lvl}
   (c : chain A lvl Pair Only Not_end green green) :
@@ -746,7 +781,7 @@ sandwich_pair_green (Pair_chain cl cr)
           | ? b1 with buffer.inject6 b1 z7 z6 z5 z4 z3 z2 => { | ? b2 :=
             ? Sandwich
               a1
-              (Semi (Only_chain Green_chain (Packet Hole (Only_end b2)) Empty))
+              (Semi (Single_chain Green_chain (Packet Hole (Only_end b2)) Empty))
               z1 } } };
       | ? (a1, Six_elements six), ? (Ok_pt tr1, z1)
         with only_of_right six tr1 => {
@@ -787,28 +822,30 @@ Qed.
 Equations pop_green {A lvl pk} (c : chain A lvl pk Only Not_end green green) :
   { '(a1, sd) : stored_triple A lvl * semi_deque A lvl |
     chain_seq c = stored_triple_seq a1 ++ semi_deque_seq sd } :=
-pop_green (pk := Only) c with triple_of_chain c => {
+pop_green (pk := Single) c with triple_of_chain c => {
   | ? t with pop_only_green t => {
     | ? (a1, Zero_element) := ? (a1, Semi Empty)
     | ? (a1, Ok_pt t1) with chain_of_triple t1 => {
       | ? c1 := ? (a1, Semi c1) } } };
-pop_green (pk := Pair) c with pop_pair_green c => { | ? res := ? res }.
+pop_green (pk := Pair) c with pop_pair_green c => {
+  | ? (a1, sd) := ? (a1, sd) }.
 
 Equations eject_green {A lvl pk} (c : chain A lvl pk Only Not_end green green) :
   { '(sd, a1) : semi_deque A lvl * stored_triple A lvl |
     chain_seq c = semi_deque_seq sd ++ stored_triple_seq a1 } :=
-eject_green (pk := Only) c with triple_of_chain c => {
+eject_green (pk := Single) c with triple_of_chain c => {
   | ? t with eject_only_green t => {
     | ? (Zero_element, a1) := ? (Semi Empty, a1);
     | ? (Ok_pt t1, a1) with chain_of_triple t1 => {
       | ? c1 := ? (Semi c1, a1) } } };
-eject_green (pk := Pair) c with eject_pair_green c => { | ? res := ? res }.
+eject_green (pk := Pair) c with eject_pair_green c => {
+  | ? (sd, a1) := ? (sd, a1) }.
 
 Equations sandwich_green {A lvl pk}
   (c : chain A lvl pk Only Not_end green green) :
   { s : sandwich (stored_triple A lvl) (semi_deque A lvl) |
     chain_seq c = sandwich_seq stored_triple_seq semi_deque_seq s } :=
-sandwich_green (pk := Only) c with triple_of_chain c => {
+sandwich_green (pk := Single) c with triple_of_chain c => {
   | ? t with sandwich_only_green t => {
     | ? Alone a1 := ? Alone a1;
     | ? Sandwich a1 Zero_element z1 := ? Sandwich a1 (Semi Empty) z1;
@@ -878,7 +915,7 @@ Equations ensure_green_prefix {A lvl q pk}
 ensure_green_prefix p child with pop_green child => {
   | ? (stored, child1) with extract_prefix stored child1 => {
     | ? (Sbuf pstored, child2) with make_green_prefix p pstored child2 => {
-      | ? res := ? res } } }.
+      | ? (pg, child3) := ? (pg, child3) } } }.
 
 #[local] Obligation Tactic :=
   try first [ done |
@@ -895,21 +932,21 @@ Equations ensure_green_suffix {A lvl q pk}
 ensure_green_suffix child s with eject_green child => {
   | ? (child1, stored) with extract_suffix child1 stored => {
     | ? (child2, Sbuf sstored) with make_green_suffix child2 sstored s => {
-      | ? res := ? res } } }.
+      | ? (child3, sg) := ? (child3, sg) } } }.
 
-Equations ensure_green_left {A hlvl tlvl hk pk}
+Equations green_of_red_left {A hlvl tlvl hk pk}
   (bd : body A hlvl tlvl hk Left)
   (red : storage A tlvl Left Not_end red)
   (child : chain A (S tlvl) pk Only Not_end green green) :
-  { c : chain A hlvl Only hk Not_end green green |
+  { c : chain A hlvl Single hk Not_end green green |
     chain_seq c = body_left_seq bd ++ storage_left_seq red ++
     chain_seq child ++ storage_right_seq red ++ body_right_seq bd } :=
-ensure_green_left bd (Left_st R p s) child
+green_of_red_left bd (Left_st R p s) child
   with ensure_green_prefix p child => {
     | ? (Gbuf p1, Semi (e := Is_end) Empty) :=
-      ? Only_chain Green_chain (Packet bd (Left_end p1 s)) Empty;
+      ? Single_chain Green_chain (Packet bd (Left_end p1 s)) Empty;
     | ? (Gbuf p1, Semi (e := Not_end) child1) :=
-      ? Only_chain Green_chain (Packet bd (Left_st G p1 s)) child1 }.
+      ? Single_chain Green_chain (Packet bd (Left_st G p1 s)) child1 }.
 Next Obligation.
   cbn; intros.
   autorewrite with rlist in *; cbn.
@@ -925,19 +962,19 @@ Next Obligation.
   hauto db:rassoc,rlist.
 Qed.
 
-Equations ensure_green_right {A hlvl tlvl hk pk}
+Equations green_of_red_right {A hlvl tlvl hk pk}
   (bd : body A hlvl tlvl hk Right)
   (red : storage A tlvl Right Not_end red)
   (child : chain A (S tlvl) pk Only Not_end green green) :
-  { c : chain A hlvl Only hk Not_end green green |
+  { c : chain A hlvl Single hk Not_end green green |
     chain_seq c = body_left_seq bd ++ storage_left_seq red ++
     chain_seq child ++ storage_right_seq red ++ body_right_seq bd } :=
-ensure_green_right bd (Right_st R p s) child
+green_of_red_right bd (Right_st R p s) child
   with ensure_green_suffix child s => {
     | ? (Semi (e := Is_end) Empty, Gbuf s1) :=
-      ? Only_chain Green_chain (Packet bd (Right_end p s1)) Empty;
+      ? Single_chain Green_chain (Packet bd (Right_end p s1)) Empty;
     | ? (Semi (e := Not_end) child1, Gbuf s1) :=
-      ? Only_chain Green_chain (Packet bd (Right_st G p s1)) child1 }.
+      ? Single_chain Green_chain (Packet bd (Right_st G p s1)) child1 }.
 Next Obligation.
   cbn; intros.
   autorewrite with rlist in *; cbn.
@@ -958,7 +995,7 @@ Equations make_green_only {A hlvl tlvl hk qp qs}
   (p : prefix A tlvl (8 + qp))
   (child : semi_deque A (S tlvl))
   (s : prefix A tlvl (8 + qs)) :
-  { c : chain A hlvl Only hk Not_end green green |
+  { c : chain A hlvl Single hk Not_end green green |
     chain_seq c = body_left_seq bd ++ prefix_seq p ++
     semi_deque_seq child ++ suffix_seq s ++ body_right_seq bd } :=
 make_green_only bd p (Semi (e := Is_end) Empty) s with buffer.has3p8 s => {
@@ -966,12 +1003,12 @@ make_green_only bd p (Semi (e := Is_end) Empty) s with buffer.has3p8 s => {
     with buffer.inject8 p a1 a2 a3 a4 a5 a6 a7 a8 => {
       | ? p1 with buffer.inject_vector p1 v => {
         | ? p2 :=
-          ? Only_chain Green_chain (Packet bd (Only_end p2)) Empty } };
+          ? Single_chain Green_chain (Packet bd (Only_end p2)) Empty } };
   | ? inr (small, s1) with single_chain (Small small) => {
     | ? child :=
-      ? Only_chain Green_chain (Packet bd (Only_st G p s1)) child } };
+      ? Single_chain Green_chain (Packet bd (Only_st G p s1)) child } };
 make_green_only bd p (Semi (e := Not_end) child) s :=
-  ? Only_chain Green_chain (Packet bd (Only_st G p s)) child.
+  ? Single_chain Green_chain (Packet bd (Only_st G p s)) child.
 Next Obligation.
   cbn; intros.
   autorewrite with rlist in *; cbn.
@@ -985,14 +1022,14 @@ Qed.
   autorewrite with rlist in *; cbn;
   unfold prefix_seq, suffix_seq, buffer_seq in *.
 
-Equations ensure_green_only {A hlvl tlvl hk pk}
+Equations green_of_red_only {A hlvl tlvl hk pk}
   (bd : body A hlvl tlvl hk Only)
   (red : storage A tlvl Only Not_end red)
   (child : chain A (S tlvl) pk Only Not_end green green) :
-  { c : chain A hlvl Only hk Not_end green green |
+  { c : chain A hlvl Single hk Not_end green green |
     chain_seq c = body_left_seq bd ++ storage_left_seq red ++
     chain_seq child ++ storage_right_seq red ++ body_right_seq bd } :=
-ensure_green_only bd (Only_st R p s) child
+green_of_red_only bd (Only_st R p s) child
   with buffer.has8 p, buffer.has8 s => {
     | ? inl ((a1, a2, a3, a4, a5), vp),
       ? inl ((z5, z4, z3, z2, z1), vs) with sandwich_green child => {
@@ -1000,7 +1037,7 @@ ensure_green_only bd (Only_st R p s) child
         with buffer.push_5vector a1 a2 a3 a4 a5 vp b => {
           | ? b1 with buffer.inject_5vector b1 z5 z4 z3 z2 z1 vs => {
             | ? b2 :=
-              ? Only_chain Green_chain (Packet bd (Only_end b2)) Empty } };
+              ? Single_chain Green_chain (Packet bd (Only_end b2)) Empty } };
       | ? Alone (Big p1 child1 s1)
         with buffer.push_5vector a1 a2 a3 a4 a5 vp p1 => {
           | ? p2 with buffer.inject_5vector s1 z5 z4 z3 z2 z1 vs => {
@@ -1020,7 +1057,7 @@ ensure_green_only bd (Only_st R p s) child
       | ? (child1, Gbuf s1) with make_green_only bd pre1 child1 s1 => {
         | ? res := ? res } };
     | ? inr p1, ? inr suf :=
-      ? Only_chain Green_chain (Packet bd (Only_st G p1 suf)) child }.
+      ? Single_chain Green_chain (Packet bd (Only_st G p1 suf)) child }.
 Next Obligation.
   rewrite e3 e2.
   hauto db:rassoc,rlist.
@@ -1068,12 +1105,12 @@ Equations ensure_green {A lvl pk k e Cl Cr}
   (c : chain A lvl pk k e Cl Cr) :
   { c' : chain A lvl pk k e green green | chain_seq c = chain_seq c' } :=
 ensure_green Empty := ? Empty;
-ensure_green (Only_chain Green_chain pkt c) := ? Only_chain Green_chain pkt c;
-ensure_green (Only_chain Red_chain (Packet bd (Only_st R p s)) c)
-  with ensure_green_only bd (Only_st R p s) c => { | ? c' := ? c' };
-ensure_green (Only_chain Red_chain (Packet bd (Left_st R p s)) c)
-  with ensure_green_left bd (Left_st R p s) c => { | ? c' := ? c' };
-ensure_green (Only_chain Red_chain (Packet bd (Right_st R p s)) c)
-  with ensure_green_right bd (Right_st R p s) c => { | ? c' := ? c' };
+ensure_green (Single_chain Green_chain pkt c) := ? Single_chain Green_chain pkt c;
+ensure_green (Single_chain Red_chain (Packet bd (Only_st R p s)) c)
+  with green_of_red_only bd (Only_st R p s) c => { | ? c' := ? c' };
+ensure_green (Single_chain Red_chain (Packet bd (Left_st R p s)) c)
+  with green_of_red_left bd (Left_st R p s) c => { | ? c' := ? c' };
+ensure_green (Single_chain Red_chain (Packet bd (Right_st R p s)) c)
+  with green_of_red_right bd (Right_st R p s) c => { | ? c' := ? c' };
 ensure_green (Pair_chain cl cr) with ensure_green cl, ensure_green cr => {
   | ? cl', ? cr' := ? Pair_chain cl' cr' }.

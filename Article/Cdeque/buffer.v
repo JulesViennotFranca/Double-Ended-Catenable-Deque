@@ -4,7 +4,7 @@ Import ListNotations.
 From Equations Require Import Equations.
 From Hammer Require Import Tactics.
 
-From Deque Require Import ncdeque.
+From Sdeque Require Import corevf.
 
 (* Types *)
 
@@ -66,7 +66,7 @@ Lemma correct_mapping {T : Type -> nat -> Type} {A : Type}
   {lvl q : nat}
   (b : t (T A lvl) q) :
   map_buffer (@f) b = concat (map f (seq b)).
-Proof. destruct b; cbn; apply ncdeque.correct_mapping. Qed.
+Proof. destruct b; cbn; apply corevf.correct_mapping. Qed.
 
 (* Lemmas *)
 
@@ -98,7 +98,7 @@ Opaque singleton.
 (* Elements *)
 
 Equations empty {A : Type} : { b : t A 0 | seq b = [] } :=
-empty with ncdeque.empty => { | ? d := ? Buffer d }.
+empty with corevf.empty => { | ? d := ? Buffer d }.
 
 (* Functions *)
 
@@ -136,18 +136,18 @@ Equations translate {A q1 q2} (b : t A q1) : q1 = q2 -> { b' : t A q2 | seq b' =
 translate b eq_refl := ? b.
 
 Equations push {A q} (a1 : A) (b : t A q) : { b' : t A (S q) | seq b' = [a1] ++ seq b } :=
-push a1 (Buffer d) with ncdeque.push a1 d => {
+push a1 (Buffer d) with corevf.push a1 d => {
   | ? d' := ? Buffer d' }.
 
 Equations inject {A q} (b : t A q) (a1 : A) : { b' : t A (S q) | seq b' = seq b ++ [a1] } :=
-inject (Buffer d) a1 with ncdeque.inject d a1 => {
+inject (Buffer d) a1 with corevf.inject d a1 => {
   | ? d' := ? Buffer d' }.
 
 Equations pop {A q} (b : t A (S q)) : { '(a1, b') : A * t A q | seq b = [a1] ++ seq b' } :=
-pop (Buffer d) with ncdeque.pop d => { | ? (a1, d') := ? (a1, Buffer d') }.
+pop (Buffer d) with corevf.pop d => { | ? (a1, d') := ? (a1, Buffer d') }.
 
 Equations eject {A q} (b : t A (S q)) : { '(b', a1) : t A q * A | seq b = seq b' ++ [a1] } :=
-eject (Buffer d) with ncdeque.eject d => { | ? (d', a1) := ? (Buffer d', a1) }.
+eject (Buffer d) with corevf.eject d => { | ? (d', a1) := ? (Buffer d', a1) }.
 
 Equations push2 {A q} (a1 a2 : A) (b : t A q) :
     { b' : t A (S (S q)) | seq b' = [a1] ++ [a2] ++ seq b } :=
@@ -179,8 +179,8 @@ two b with pop b => {
     | ? (a2, _) := ? (a1, a2) } }.
 
 Equations single {A} (a1 : A) : { b : t A 1 | seq b = [a1] } :=
-single a1 with ncdeque.empty => {
-  | ? d with ncdeque.push a1 d => {
+single a1 with corevf.empty => {
+  | ? d with corevf.push a1 d => {
     | ? d' := ? Buffer d' } }.
 
 Equations pair {A} (a1 a2 : A) : { b : t A 2 | seq b = [a1] ++ [a2] } :=

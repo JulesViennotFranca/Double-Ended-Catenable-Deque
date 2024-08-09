@@ -107,22 +107,22 @@ let buffer_seq lvl _ _ = function
     (app (prodN_seq lvl p0)
       (app (prodN_seq lvl p1) (app (prodN_seq lvl p2) (prodN_seq lvl p3))))
 
-(** val packet_front_seq :
+(** val packet_left_seq :
     nat -> nat -> nat -> color -> 'a1 packet -> 'a1 list **)
 
-let rec packet_front_seq lvl _ _ _ = function
+let rec packet_left_seq lvl _ _ _ = function
 | Hole -> Coq_nil
 | Triple (len, psize, pktsize, _, y, c1, _, _, b, p0, _, _) ->
   app (buffer_seq lvl psize c1 b)
-    (packet_front_seq (S lvl) len pktsize (Mix (NoGreen, y, NoRed)) p0)
+    (packet_left_seq (S lvl) len pktsize (Mix (NoGreen, y, NoRed)) p0)
 
-(** val packet_rear_seq :
+(** val packet_right_seq :
     nat -> nat -> nat -> color -> 'a1 packet -> 'a1 list **)
 
-let rec packet_rear_seq lvl _ _ _ = function
+let rec packet_right_seq lvl _ _ _ = function
 | Hole -> Coq_nil
 | Triple (len, _, pktsize, ssize, y, _, c2, _, _, p0, b, _) ->
-  app (packet_rear_seq (S lvl) len pktsize (Mix (NoGreen, y, NoRed)) p0)
+  app (packet_right_seq (S lvl) len pktsize (Mix (NoGreen, y, NoRed)) p0)
     (buffer_seq lvl ssize c2 b)
 
 (** val cdeque_seq : nat -> nat -> color -> 'a1 cdeque -> 'a1 list **)
@@ -130,8 +130,8 @@ let rec packet_rear_seq lvl _ _ _ = function
 let rec cdeque_seq lvl _ _ = function
 | Small (size, c0, b) -> buffer_seq lvl size c0 b
 | Big (len, pktsize, nlvl, nsize, _, c1, c2, p, c0, _) ->
-  app (packet_front_seq lvl len pktsize c1 p)
-    (app (cdeque_seq nlvl nsize c2 c0) (packet_rear_seq lvl len pktsize c1 p))
+  app (packet_left_seq lvl len pktsize c1 p)
+    (app (cdeque_seq nlvl nsize c2 c0) (packet_right_seq lvl len pktsize c1 p))
 
 (** val deque_seq : nat -> 'a1 deque -> 'a1 list **)
 
@@ -168,31 +168,31 @@ let map_deque f lvl q d =
           (app (prodN_seq0 lvlt lvlp p3)
             (app (prodN_seq0 lvlt lvlp p4) (prodN_seq0 lvlt lvlp p5))))
   in
-  let packet_front_seq0 =
-    let rec packet_front_seq0 lvlt lvlp _ _ _ = function
+  let packet_left_seq0 =
+    let rec packet_left_seq0 lvlt lvlp _ _ _ = function
     | Hole -> Coq_nil
     | Triple (len0, psize, pktsize, _, y, c1, _, _, p, pkt0, _, _) ->
       app (buffer_seq0 lvlt lvlp psize c1 p)
-        (packet_front_seq0 lvlt (S lvlp) len0 pktsize (Mix (NoGreen, y,
+        (packet_left_seq0 lvlt (S lvlp) len0 pktsize (Mix (NoGreen, y,
           NoRed)) pkt0)
-    in packet_front_seq0
+    in packet_left_seq0
   in
-  let packet_rear_seq0 =
-    let rec packet_rear_seq0 lvlt lvlp _ _ _ = function
+  let packet_right_seq0 =
+    let rec packet_right_seq0 lvlt lvlp _ _ _ = function
     | Hole -> Coq_nil
     | Triple (len0, _, pktsize, ssize, y, _, c2, _, _, pkt0, s, _) ->
       app
-        (packet_rear_seq0 lvlt (S lvlp) len0 pktsize (Mix (NoGreen, y,
+        (packet_right_seq0 lvlt (S lvlp) len0 pktsize (Mix (NoGreen, y,
           NoRed)) pkt0) (buffer_seq0 lvlt lvlp ssize c2 s)
-    in packet_rear_seq0
+    in packet_right_seq0
   in
   let cdeque_seq0 =
     let rec cdeque_seq0 lvlt lvlp _ _ = function
     | Small (size0, c0, b) -> buffer_seq0 lvlt lvlp size0 c0 b
     | Big (len, pktsize, nlvl, nsize, _, c1, c2, pkt, cd0, _) ->
-      app (packet_front_seq0 lvlt lvlp len pktsize c1 pkt)
+      app (packet_left_seq0 lvlt lvlp len pktsize c1 pkt)
         (app (cdeque_seq0 lvlt nlvl nsize c2 cd0)
-          (packet_rear_seq0 lvlt lvlp len pktsize c1 pkt))
+          (packet_right_seq0 lvlt lvlp len pktsize c1 pkt))
     in cdeque_seq0
   in
   let T (g, y, cd) = d in cdeque_seq0 lvl O q (Mix (g, y, NoRed)) cd

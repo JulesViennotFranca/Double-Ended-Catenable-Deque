@@ -42,21 +42,21 @@ let rec path_seq _ _ _ p =
     in stored_triple_seq0
   in
   let buffer_seq0 = fun lvl q b -> map_buffer stored_triple_seq0 lvl q b in
-  let triple_front_seq0 =
-    let rec triple_front_seq0 _ _ _ _ _ _ t0 =
-      let packet_front_seq0 = fun _ _ _ _ pkt ->
+  let triple_left_seq0 =
+    let rec triple_left_seq0 _ _ _ _ _ _ t0 =
+      let packet_left_seq0 = fun _ _ _ _ pkt ->
         match pkt with
         | Only_child (lvl0, len0, is_hole0, k0, y, o, _, t1) ->
-          triple_front_seq0 lvl0 len0 is_hole0 Only k0 (Mix (NoGreen, y, o,
+          triple_left_seq0 lvl0 len0 is_hole0 Only k0 (Mix (NoGreen, y, o,
             NoRed)) t1
         | Left_child (lvl0, len0, is_hole0, k0, y, o, _, t1, _) ->
-          triple_front_seq0 lvl0 len0 is_hole0 Left k0 (Mix (NoGreen, y, o,
+          triple_left_seq0 lvl0 len0 is_hole0 Left k0 (Mix (NoGreen, y, o,
             NoRed)) t1
         | Right_child (lvl0, len0, is_hole0, k0, y, o, p0, t1) ->
           app
             (path_seq lvl0 Left (Mix (SomeGreen, NoYellow, NoOrange, NoRed))
               p0)
-            (triple_front_seq0 lvl0 len0 is_hole0 Right k0 (Mix (NoGreen, y,
+            (triple_left_seq0 lvl0 len0 is_hole0 Right k0 (Mix (NoGreen, y,
               o, NoRed)) t1)
       in
       (match t0 with
@@ -67,29 +67,29 @@ let rec path_seq _ _ _ p =
            (ne_cdeque_seq0 (S lvl0) (Mix (g, NoYellow, NoOrange, r)) cd)
        | Yellow (lvl0, len0, qp, _, _, k3, p0, pkt, _, _) ->
          app (buffer_seq0 lvl0 qp p0)
-           (packet_front_seq0 (S lvl0) len0 Preferred_left k3 pkt)
+           (packet_left_seq0 (S lvl0) len0 Preferred_left k3 pkt)
        | Orange (lvl0, len0, qp, _, _, k3, p0, pkt, _, _) ->
          app (buffer_seq0 lvl0 qp p0)
-           (packet_front_seq0 (S lvl0) len0 Preferred_right k3 pkt)
+           (packet_left_seq0 (S lvl0) len0 Preferred_right k3 pkt)
        | Red (lvl0, qp, _, _, p0, cd, _, _) ->
          app (buffer_seq0 lvl0 qp p0)
            (ne_cdeque_seq0 (S lvl0) (Mix (SomeGreen, NoYellow, NoOrange,
              NoRed)) cd))
-    in triple_front_seq0
+    in triple_left_seq0
   in
-  let triple_rear_seq0 =
-    let rec triple_rear_seq0 _ _ _ _ _ _ t0 =
-      let packet_rear_seq0 = fun _ _ _ _ pkt ->
+  let triple_right_seq0 =
+    let rec triple_right_seq0 _ _ _ _ _ _ t0 =
+      let packet_right_seq0 = fun _ _ _ _ pkt ->
         match pkt with
         | Only_child (lvl0, len0, is_hole0, k0, y, o, _, t1) ->
-          triple_rear_seq0 lvl0 len0 is_hole0 Only k0 (Mix (NoGreen, y, o,
+          triple_right_seq0 lvl0 len0 is_hole0 Only k0 (Mix (NoGreen, y, o,
             NoRed)) t1
         | Left_child (lvl0, len0, is_hole0, k0, y, o, c0, t1, p0) ->
           app
-            (triple_rear_seq0 lvl0 len0 is_hole0 Left k0 (Mix (NoGreen, y, o,
+            (triple_right_seq0 lvl0 len0 is_hole0 Left k0 (Mix (NoGreen, y, o,
               NoRed)) t1) (path_seq lvl0 Right c0 p0)
         | Right_child (lvl0, len0, is_hole0, k0, y, o, _, t1) ->
-          triple_rear_seq0 lvl0 len0 is_hole0 Right k0 (Mix (NoGreen, y, o,
+          triple_right_seq0 lvl0 len0 is_hole0 Right k0 (Mix (NoGreen, y, o,
             NoRed)) t1
       in
       (match t0 with
@@ -97,27 +97,27 @@ let rec path_seq _ _ _ p =
        | Small (lvl0, _, qs, _, _, s, _) -> buffer_seq0 lvl0 qs s
        | Green (lvl0, _, qs, _, _, _, _, _, s, _) -> buffer_seq0 lvl0 qs s
        | Yellow (lvl0, len0, _, qs, _, k3, _, pkt, s, _) ->
-         app (packet_rear_seq0 (S lvl0) len0 Preferred_left k3 pkt)
+         app (packet_right_seq0 (S lvl0) len0 Preferred_left k3 pkt)
            (buffer_seq0 lvl0 qs s)
        | Orange (lvl0, len0, _, qs, _, k3, _, pkt, s, _) ->
-         app (packet_rear_seq0 (S lvl0) len0 Preferred_right k3 pkt)
+         app (packet_right_seq0 (S lvl0) len0 Preferred_right k3 pkt)
            (buffer_seq0 lvl0 qs s)
        | Red (lvl0, _, qs, _, _, _, s, _) -> buffer_seq0 lvl0 qs s)
-    in triple_rear_seq0
+    in triple_right_seq0
   in
   let Children (lvl0, len, nlvl, is_hole, k1, k2, g, y, o, r, natur, adopt) =
     p
   in
   app
-    (triple_front_seq0 lvl0 len is_hole k1 k2 (Mix (NoGreen, y, o, NoRed))
+    (triple_left_seq0 lvl0 len is_hole k1 k2 (Mix (NoGreen, y, o, NoRed))
       natur)
     (app
-      (triple_front_seq0 nlvl O Coq_false k2 k2 (Mix (g, NoYellow, NoOrange,
+      (triple_left_seq0 nlvl O Coq_false k2 k2 (Mix (g, NoYellow, NoOrange,
         r)) adopt)
       (app
-        (triple_rear_seq0 nlvl O Coq_false k2 k2 (Mix (g, NoYellow, NoOrange,
+        (triple_right_seq0 nlvl O Coq_false k2 k2 (Mix (g, NoYellow, NoOrange,
           r)) adopt)
-        (triple_rear_seq0 lvl0 len is_hole k1 k2 (Mix (NoGreen, y, o, NoRed))
+        (triple_right_seq0 lvl0 len is_hole k1 k2 (Mix (NoGreen, y, o, NoRed))
           natur)))
 
 (** val ne_cdeque_seq : nat -> color -> 'a1 non_empty_cdeque -> 'a1 list **)
@@ -313,21 +313,21 @@ let path_buffer_seq lvl q b =
           (map_buffer stored_triple_seq0 lvl' (add (S (S (S O))) qs) s))
     in stored_triple_seq0 lvl0) lvl q b
 
-(** val triple_front_seq :
+(** val triple_left_seq :
     nat -> nat -> bool -> kind -> kind -> color -> 'a1 triple -> 'a1 list **)
 
-let rec triple_front_seq _ _ _ _ _ _ t0 =
-  let packet_front_seq0 = fun _ _ _ _ pkt ->
+let rec triple_left_seq _ _ _ _ _ _ t0 =
+  let packet_left_seq0 = fun _ _ _ _ pkt ->
     match pkt with
     | Only_child (lvl0, len0, is_hole0, k0, y, o, _, t1) ->
-      triple_front_seq lvl0 len0 is_hole0 Only k0 (Mix (NoGreen, y, o,
+      triple_left_seq lvl0 len0 is_hole0 Only k0 (Mix (NoGreen, y, o,
         NoRed)) t1
     | Left_child (lvl0, len0, is_hole0, k0, y, o, _, t1, _) ->
-      triple_front_seq lvl0 len0 is_hole0 Left k0 (Mix (NoGreen, y, o,
+      triple_left_seq lvl0 len0 is_hole0 Left k0 (Mix (NoGreen, y, o,
         NoRed)) t1
     | Right_child (lvl0, len0, is_hole0, k0, y, o, p, t1) ->
       app (path_seq lvl0 Left (Mix (SomeGreen, NoYellow, NoOrange, NoRed)) p)
-        (triple_front_seq lvl0 len0 is_hole0 Right k0 (Mix (NoGreen, y, o,
+        (triple_left_seq lvl0 len0 is_hole0 Right k0 (Mix (NoGreen, y, o,
           NoRed)) t1)
   in
   (match t0 with
@@ -338,66 +338,66 @@ let rec triple_front_seq _ _ _ _ _ _ t0 =
        (ne_cdeque_seq (S lvl0) (Mix (g, NoYellow, NoOrange, r)) cd)
    | Yellow (lvl0, len0, qp, _, _, k3, p, pkt, _, _) ->
      app (path_buffer_seq lvl0 qp p)
-       (packet_front_seq0 (S lvl0) len0 Preferred_left k3 pkt)
+       (packet_left_seq0 (S lvl0) len0 Preferred_left k3 pkt)
    | Orange (lvl0, len0, qp, _, _, k3, p, pkt, _, _) ->
      app (path_buffer_seq lvl0 qp p)
-       (packet_front_seq0 (S lvl0) len0 Preferred_right k3 pkt)
+       (packet_left_seq0 (S lvl0) len0 Preferred_right k3 pkt)
    | Red (lvl0, qp, _, _, p, cd, _, _) ->
      app (path_buffer_seq lvl0 qp p)
        (ne_cdeque_seq (S lvl0) (Mix (SomeGreen, NoYellow, NoOrange, NoRed))
          cd))
 
-(** val packet_front_seq :
+(** val packet_left_seq :
     nat -> nat -> preferred_child -> kind -> 'a1 packet -> 'a1 list **)
 
-let packet_front_seq _ _ _ _ = function
+let packet_left_seq _ _ _ _ = function
 | Only_child (lvl, len, is_hole, k, y, o, _, t0) ->
-  triple_front_seq lvl len is_hole Only k (Mix (NoGreen, y, o, NoRed)) t0
+  triple_left_seq lvl len is_hole Only k (Mix (NoGreen, y, o, NoRed)) t0
 | Left_child (lvl, len, is_hole, k, y, o, _, t0, _) ->
-  triple_front_seq lvl len is_hole Left k (Mix (NoGreen, y, o, NoRed)) t0
+  triple_left_seq lvl len is_hole Left k (Mix (NoGreen, y, o, NoRed)) t0
 | Right_child (lvl, len, is_hole, k, y, o, p0, t0) ->
   app (path_seq lvl Left (Mix (SomeGreen, NoYellow, NoOrange, NoRed)) p0)
-    (triple_front_seq lvl len is_hole Right k (Mix (NoGreen, y, o, NoRed)) t0)
+    (triple_left_seq lvl len is_hole Right k (Mix (NoGreen, y, o, NoRed)) t0)
 
-type 'a packet_front_seq_graph =
-| Coq_packet_front_seq_graph_equation_1 of nat * nat * preferred_child * 
+type 'a packet_left_seq_graph =
+| Coq_packet_left_seq_graph_equation_1 of nat * nat * preferred_child *
    kind * bool * yellow_hue * orange_hue * 'a triple
-| Coq_packet_front_seq_graph_equation_2 of nat * nat * kind * bool
+| Coq_packet_left_seq_graph_equation_2 of nat * nat * kind * bool
    * yellow_hue * orange_hue * color * 'a triple * 'a path
-| Coq_packet_front_seq_graph_equation_3 of nat * nat * kind * bool
+| Coq_packet_left_seq_graph_equation_3 of nat * nat * kind * bool
    * yellow_hue * orange_hue * 'a path * 'a triple
 
-(** val packet_front_seq_graph_rect :
+(** val packet_left_seq_graph_rect :
     (__ -> nat -> nat -> preferred_child -> kind -> bool -> yellow_hue ->
     orange_hue -> __ triple -> 'a1) -> (__ -> nat -> nat -> kind -> bool ->
     yellow_hue -> orange_hue -> color -> __ triple -> __ path -> 'a1) -> (__
     -> nat -> nat -> kind -> bool -> yellow_hue -> orange_hue -> __ path ->
     __ triple -> 'a1) -> nat -> nat -> preferred_child -> kind -> 'a2 packet
-    -> 'a2 list -> 'a2 packet_front_seq_graph -> 'a1 **)
+    -> 'a2 list -> 'a2 packet_left_seq_graph -> 'a1 **)
 
-let packet_front_seq_graph_rect f f0 f1 _ _ _ _ _ _ = function
-| Coq_packet_front_seq_graph_equation_1 (lvl, len, pc, k, is_hole, y, o0, t0) ->
+let packet_left_seq_graph_rect f f0 f1 _ _ _ _ _ _ = function
+| Coq_packet_left_seq_graph_equation_1 (lvl, len, pc, k, is_hole, y, o0, t0) ->
   Obj.magic f __ lvl len pc k is_hole y o0 t0
-| Coq_packet_front_seq_graph_equation_2 (lvl, len, k, is_hole0, y0, o1, c,
+| Coq_packet_left_seq_graph_equation_2 (lvl, len, k, is_hole0, y0, o1, c,
                                          t0, p) ->
   Obj.magic f0 __ lvl len k is_hole0 y0 o1 c t0 p
-| Coq_packet_front_seq_graph_equation_3 (lvl, len, k, is_hole1, y1, o2, p, t0) ->
+| Coq_packet_left_seq_graph_equation_3 (lvl, len, k, is_hole1, y1, o2, p, t0) ->
   Obj.magic f1 __ lvl len k is_hole1 y1 o2 p t0
 
-(** val packet_front_seq_graph_correct :
+(** val packet_left_seq_graph_correct :
     nat -> nat -> preferred_child -> kind -> 'a1 packet -> 'a1
-    packet_front_seq_graph **)
+    packet_left_seq_graph **)
 
-let packet_front_seq_graph_correct _ _ _ _ = function
+let packet_left_seq_graph_correct _ _ _ _ = function
 | Only_child (lvl, len, is_hole, k, y, o, pref, t0) ->
-  Coq_packet_front_seq_graph_equation_1 (lvl, len, pref, k, is_hole, y, o, t0)
+  Coq_packet_left_seq_graph_equation_1 (lvl, len, pref, k, is_hole, y, o, t0)
 | Left_child (lvl, len, is_hole, k, y, o, c, t0, p0) ->
-  Coq_packet_front_seq_graph_equation_2 (lvl, len, k, is_hole, y, o, c, t0,
+  Coq_packet_left_seq_graph_equation_2 (lvl, len, k, is_hole, y, o, c, t0,
     p0)
 | Right_child (lvl, len, is_hole, k, y, o, p0, t0) ->
-  Coq_packet_front_seq_graph_equation_3 (lvl, len, k, is_hole, y, o, p0, t0)
+  Coq_packet_left_seq_graph_equation_3 (lvl, len, k, is_hole, y, o, p0, t0)
 
-(** val packet_front_seq_elim :
+(** val packet_left_seq_elim :
     (__ -> nat -> nat -> preferred_child -> kind -> bool -> yellow_hue ->
     orange_hue -> __ triple -> 'a1) -> (__ -> nat -> nat -> kind -> bool ->
     yellow_hue -> orange_hue -> color -> __ triple -> __ path -> 'a1) -> (__
@@ -405,19 +405,19 @@ let packet_front_seq_graph_correct _ _ _ _ = function
     __ triple -> 'a1) -> nat -> nat -> preferred_child -> kind -> 'a2 packet
     -> 'a1 **)
 
-let packet_front_seq_elim f f0 f1 lvl len pc k p =
-  match packet_front_seq_graph_correct lvl len pc k p with
-  | Coq_packet_front_seq_graph_equation_1 (lvl0, len0, pc0, k0, is_hole, y,
+let packet_left_seq_elim f f0 f1 lvl len pc k p =
+  match packet_left_seq_graph_correct lvl len pc k p with
+  | Coq_packet_left_seq_graph_equation_1 (lvl0, len0, pc0, k0, is_hole, y,
                                            o0, t0) ->
     Obj.magic f __ lvl0 len0 pc0 k0 is_hole y o0 t0
-  | Coq_packet_front_seq_graph_equation_2 (lvl0, len0, k0, is_hole0, y0, o1,
+  | Coq_packet_left_seq_graph_equation_2 (lvl0, len0, k0, is_hole0, y0, o1,
                                            c, t0, p0) ->
     Obj.magic f0 __ lvl0 len0 k0 is_hole0 y0 o1 c t0 p0
-  | Coq_packet_front_seq_graph_equation_3 (lvl0, len0, k0, is_hole1, y1, o2,
+  | Coq_packet_left_seq_graph_equation_3 (lvl0, len0, k0, is_hole1, y1, o2,
                                            p0, t0) ->
     Obj.magic f1 __ lvl0 len0 k0 is_hole1 y1 o2 p0 t0
 
-(** val coq_FunctionalElimination_packet_front_seq :
+(** val coq_FunctionalElimination_packet_left_seq :
     (__ -> nat -> nat -> preferred_child -> kind -> bool -> yellow_hue ->
     orange_hue -> __ triple -> __) -> (__ -> nat -> nat -> kind -> bool ->
     yellow_hue -> orange_hue -> color -> __ triple -> __ path -> __) -> (__
@@ -425,31 +425,31 @@ let packet_front_seq_elim f f0 f1 lvl len pc k p =
     __ triple -> __) -> nat -> nat -> preferred_child -> kind -> __ packet ->
     __ **)
 
-let coq_FunctionalElimination_packet_front_seq =
-  packet_front_seq_elim
+let coq_FunctionalElimination_packet_left_seq =
+  packet_left_seq_elim
 
-(** val coq_FunctionalInduction_packet_front_seq :
+(** val coq_FunctionalInduction_packet_left_seq :
     (__ -> nat -> nat -> preferred_child -> kind -> __ packet -> __ list)
     coq_FunctionalInduction **)
 
-let coq_FunctionalInduction_packet_front_seq =
-  Obj.magic (fun _ -> packet_front_seq_graph_correct)
+let coq_FunctionalInduction_packet_left_seq =
+  Obj.magic (fun _ -> packet_left_seq_graph_correct)
 
-(** val triple_rear_seq :
+(** val triple_right_seq :
     nat -> nat -> bool -> kind -> kind -> color -> 'a1 triple -> 'a1 list **)
 
-let rec triple_rear_seq _ _ _ _ _ _ t0 =
-  let packet_rear_seq0 = fun _ _ _ _ pkt ->
+let rec triple_right_seq _ _ _ _ _ _ t0 =
+  let packet_right_seq0 = fun _ _ _ _ pkt ->
     match pkt with
     | Only_child (lvl0, len0, is_hole0, k0, y, o, _, t1) ->
-      triple_rear_seq lvl0 len0 is_hole0 Only k0 (Mix (NoGreen, y, o, NoRed))
+      triple_right_seq lvl0 len0 is_hole0 Only k0 (Mix (NoGreen, y, o, NoRed))
         t1
     | Left_child (lvl0, len0, is_hole0, k0, y, o, c0, t1, p) ->
       app
-        (triple_rear_seq lvl0 len0 is_hole0 Left k0 (Mix (NoGreen, y, o,
+        (triple_right_seq lvl0 len0 is_hole0 Left k0 (Mix (NoGreen, y, o,
           NoRed)) t1) (path_seq lvl0 Right c0 p)
     | Right_child (lvl0, len0, is_hole0, k0, y, o, _, t1) ->
-      triple_rear_seq lvl0 len0 is_hole0 Right k0 (Mix (NoGreen, y, o,
+      triple_right_seq lvl0 len0 is_hole0 Right k0 (Mix (NoGreen, y, o,
         NoRed)) t1
   in
   (match t0 with
@@ -457,64 +457,64 @@ let rec triple_rear_seq _ _ _ _ _ _ t0 =
    | Small (lvl0, _, qs, _, _, s, _) -> path_buffer_seq lvl0 qs s
    | Green (lvl0, _, qs, _, _, _, _, _, s, _) -> path_buffer_seq lvl0 qs s
    | Yellow (lvl0, len0, _, qs, _, k3, _, pkt, s, _) ->
-     app (packet_rear_seq0 (S lvl0) len0 Preferred_left k3 pkt)
+     app (packet_right_seq0 (S lvl0) len0 Preferred_left k3 pkt)
        (path_buffer_seq lvl0 qs s)
    | Orange (lvl0, len0, _, qs, _, k3, _, pkt, s, _) ->
-     app (packet_rear_seq0 (S lvl0) len0 Preferred_right k3 pkt)
+     app (packet_right_seq0 (S lvl0) len0 Preferred_right k3 pkt)
        (path_buffer_seq lvl0 qs s)
    | Red (lvl0, _, qs, _, _, _, s, _) -> path_buffer_seq lvl0 qs s)
 
-(** val packet_rear_seq :
+(** val packet_right_seq :
     nat -> nat -> preferred_child -> kind -> 'a1 packet -> 'a1 list **)
 
-let packet_rear_seq _ _ _ _ = function
+let packet_right_seq _ _ _ _ = function
 | Only_child (lvl, len, is_hole, k, y, o, _, t0) ->
-  triple_rear_seq lvl len is_hole Only k (Mix (NoGreen, y, o, NoRed)) t0
+  triple_right_seq lvl len is_hole Only k (Mix (NoGreen, y, o, NoRed)) t0
 | Left_child (lvl, len, is_hole, k, y, o, c, t0, p0) ->
   app
-    (triple_rear_seq lvl len is_hole Left k (Mix (NoGreen, y, o, NoRed)) t0)
+    (triple_right_seq lvl len is_hole Left k (Mix (NoGreen, y, o, NoRed)) t0)
     (path_seq lvl Right c p0)
 | Right_child (lvl, len, is_hole, k, y, o, _, t0) ->
-  triple_rear_seq lvl len is_hole Right k (Mix (NoGreen, y, o, NoRed)) t0
+  triple_right_seq lvl len is_hole Right k (Mix (NoGreen, y, o, NoRed)) t0
 
-type 'a packet_rear_seq_graph =
-| Coq_packet_rear_seq_graph_equation_1 of nat * nat * preferred_child * 
+type 'a packet_right_seq_graph =
+| Coq_packet_right_seq_graph_equation_1 of nat * nat * preferred_child *
    kind * bool * yellow_hue * orange_hue * 'a triple
-| Coq_packet_rear_seq_graph_equation_2 of nat * nat * kind * bool
+| Coq_packet_right_seq_graph_equation_2 of nat * nat * kind * bool
    * yellow_hue * orange_hue * color * 'a triple * 'a path
-| Coq_packet_rear_seq_graph_equation_3 of nat * nat * kind * bool
+| Coq_packet_right_seq_graph_equation_3 of nat * nat * kind * bool
    * yellow_hue * orange_hue * 'a path * 'a triple
 
-(** val packet_rear_seq_graph_rect :
+(** val packet_right_seq_graph_rect :
     (__ -> nat -> nat -> preferred_child -> kind -> bool -> yellow_hue ->
     orange_hue -> __ triple -> 'a1) -> (__ -> nat -> nat -> kind -> bool ->
     yellow_hue -> orange_hue -> color -> __ triple -> __ path -> 'a1) -> (__
     -> nat -> nat -> kind -> bool -> yellow_hue -> orange_hue -> __ path ->
     __ triple -> 'a1) -> nat -> nat -> preferred_child -> kind -> 'a2 packet
-    -> 'a2 list -> 'a2 packet_rear_seq_graph -> 'a1 **)
+    -> 'a2 list -> 'a2 packet_right_seq_graph -> 'a1 **)
 
-let packet_rear_seq_graph_rect f f0 f1 _ _ _ _ _ _ = function
-| Coq_packet_rear_seq_graph_equation_1 (lvl, len, pc, k, is_hole, y, o0, t0) ->
+let packet_right_seq_graph_rect f f0 f1 _ _ _ _ _ _ = function
+| Coq_packet_right_seq_graph_equation_1 (lvl, len, pc, k, is_hole, y, o0, t0) ->
   Obj.magic f __ lvl len pc k is_hole y o0 t0
-| Coq_packet_rear_seq_graph_equation_2 (lvl, len, k, is_hole0, y0, o1, c, t0,
+| Coq_packet_right_seq_graph_equation_2 (lvl, len, k, is_hole0, y0, o1, c, t0,
                                         p) ->
   Obj.magic f0 __ lvl len k is_hole0 y0 o1 c t0 p
-| Coq_packet_rear_seq_graph_equation_3 (lvl, len, k, is_hole1, y1, o2, p1, t0) ->
+| Coq_packet_right_seq_graph_equation_3 (lvl, len, k, is_hole1, y1, o2, p1, t0) ->
   Obj.magic f1 __ lvl len k is_hole1 y1 o2 p1 t0
 
-(** val packet_rear_seq_graph_correct :
+(** val packet_right_seq_graph_correct :
     nat -> nat -> preferred_child -> kind -> 'a1 packet -> 'a1
-    packet_rear_seq_graph **)
+    packet_right_seq_graph **)
 
-let packet_rear_seq_graph_correct _ _ _ _ = function
+let packet_right_seq_graph_correct _ _ _ _ = function
 | Only_child (lvl, len, is_hole, k, y, o, pref, t0) ->
-  Coq_packet_rear_seq_graph_equation_1 (lvl, len, pref, k, is_hole, y, o, t0)
+  Coq_packet_right_seq_graph_equation_1 (lvl, len, pref, k, is_hole, y, o, t0)
 | Left_child (lvl, len, is_hole, k, y, o, c, t0, p0) ->
-  Coq_packet_rear_seq_graph_equation_2 (lvl, len, k, is_hole, y, o, c, t0, p0)
+  Coq_packet_right_seq_graph_equation_2 (lvl, len, k, is_hole, y, o, c, t0, p0)
 | Right_child (lvl, len, is_hole, k, y, o, p0, t0) ->
-  Coq_packet_rear_seq_graph_equation_3 (lvl, len, k, is_hole, y, o, p0, t0)
+  Coq_packet_right_seq_graph_equation_3 (lvl, len, k, is_hole, y, o, p0, t0)
 
-(** val packet_rear_seq_elim :
+(** val packet_right_seq_elim :
     (__ -> nat -> nat -> preferred_child -> kind -> bool -> yellow_hue ->
     orange_hue -> __ triple -> 'a1) -> (__ -> nat -> nat -> kind -> bool ->
     yellow_hue -> orange_hue -> color -> __ triple -> __ path -> 'a1) -> (__
@@ -522,19 +522,19 @@ let packet_rear_seq_graph_correct _ _ _ _ = function
     __ triple -> 'a1) -> nat -> nat -> preferred_child -> kind -> 'a2 packet
     -> 'a1 **)
 
-let packet_rear_seq_elim f f0 f1 lvl len pc k p =
-  match packet_rear_seq_graph_correct lvl len pc k p with
-  | Coq_packet_rear_seq_graph_equation_1 (lvl0, len0, pc0, k0, is_hole, y,
+let packet_right_seq_elim f f0 f1 lvl len pc k p =
+  match packet_right_seq_graph_correct lvl len pc k p with
+  | Coq_packet_right_seq_graph_equation_1 (lvl0, len0, pc0, k0, is_hole, y,
                                           o0, t0) ->
     Obj.magic f __ lvl0 len0 pc0 k0 is_hole y o0 t0
-  | Coq_packet_rear_seq_graph_equation_2 (lvl0, len0, k0, is_hole0, y0, o1,
+  | Coq_packet_right_seq_graph_equation_2 (lvl0, len0, k0, is_hole0, y0, o1,
                                           c, t0, p0) ->
     Obj.magic f0 __ lvl0 len0 k0 is_hole0 y0 o1 c t0 p0
-  | Coq_packet_rear_seq_graph_equation_3 (lvl0, len0, k0, is_hole1, y1, o2,
+  | Coq_packet_right_seq_graph_equation_3 (lvl0, len0, k0, is_hole1, y1, o2,
                                           p0, t0) ->
     Obj.magic f1 __ lvl0 len0 k0 is_hole1 y1 o2 p0 t0
 
-(** val coq_FunctionalElimination_packet_rear_seq :
+(** val coq_FunctionalElimination_packet_right_seq :
     (__ -> nat -> nat -> preferred_child -> kind -> bool -> yellow_hue ->
     orange_hue -> __ triple -> __) -> (__ -> nat -> nat -> kind -> bool ->
     yellow_hue -> orange_hue -> color -> __ triple -> __ path -> __) -> (__
@@ -542,25 +542,25 @@ let packet_rear_seq_elim f f0 f1 lvl len pc k p =
     __ triple -> __) -> nat -> nat -> preferred_child -> kind -> __ packet ->
     __ **)
 
-let coq_FunctionalElimination_packet_rear_seq =
-  packet_rear_seq_elim
+let coq_FunctionalElimination_packet_right_seq =
+  packet_right_seq_elim
 
-(** val coq_FunctionalInduction_packet_rear_seq :
+(** val coq_FunctionalInduction_packet_right_seq :
     (__ -> nat -> nat -> preferred_child -> kind -> __ packet -> __ list)
     coq_FunctionalInduction **)
 
-let coq_FunctionalInduction_packet_rear_seq =
-  Obj.magic (fun _ -> packet_rear_seq_graph_correct)
+let coq_FunctionalInduction_packet_right_seq =
+  Obj.magic (fun _ -> packet_right_seq_graph_correct)
 
 (** val triple_seq :
     nat -> nat -> bool -> kind -> kind -> color -> 'a1 triple -> 'a1 list **)
 
 let triple_seq lvl len is_hole k1 k2 c t0 =
-  app (triple_front_seq lvl len is_hole k1 k2 c t0)
-    (triple_rear_seq lvl len is_hole k1 k2 c t0)
+  app (triple_left_seq lvl len is_hole k1 k2 c t0)
+    (triple_right_seq lvl len is_hole k1 k2 c t0)
 
 type 'a triple_seq_graph =
-| Coq_triple_seq_graph_equation_1 of nat * nat * bool * kind * kind * 
+| Coq_triple_seq_graph_equation_1 of nat * nat * bool * kind * kind *
    color * 'a triple
 
 (** val triple_seq_graph_rect :
@@ -607,10 +607,10 @@ let coq_FunctionalInduction_triple_seq =
 
 let pref_left_seq lvl = function
 | Pref_left (len, _, k, g, r, p0, t0) ->
-  app (packet_front_seq lvl len Preferred_left k p0)
+  app (packet_left_seq lvl len Preferred_left k p0)
     (app
       (triple_seq (add len lvl) O Coq_false k k (Mix (g, NoYellow, NoOrange,
-        r)) t0) (packet_rear_seq lvl len Preferred_left k p0))
+        r)) t0) (packet_right_seq lvl len Preferred_left k p0))
 
 type 'a pref_left_seq_graph =
 | Coq_pref_left_seq_graph_equation_1 of nat * nat * kind * green_hue
@@ -659,10 +659,10 @@ let coq_FunctionalInduction_pref_left_seq =
 
 let pref_right_seq lvl = function
 | Pref_right (len, _, k, g, r, p0, t0) ->
-  app (packet_front_seq lvl len Preferred_right k p0)
+  app (packet_left_seq lvl len Preferred_right k p0)
     (app
       (triple_seq (add len lvl) O Coq_false k k (Mix (g, NoYellow, NoOrange,
-        r)) t0) (packet_rear_seq lvl len Preferred_right k p0))
+        r)) t0) (packet_right_seq lvl len Preferred_right k p0))
 
 type 'a pref_right_seq_graph =
 | Coq_pref_right_seq_graph_equation_1 of nat * nat * kind * green_hue
@@ -929,95 +929,95 @@ let coq_FunctionalElimination_sdeque_seq =
 let coq_FunctionalInduction_sdeque_seq =
   Obj.magic (fun _ -> sdeque_seq_graph_correct)
 
-(** val unstored_front_seq : nat -> 'a1 unstored -> 'a1 list **)
+(** val unstored_left_seq : nat -> 'a1 unstored -> 'a1 list **)
 
-let unstored_front_seq lvl = function
+let unstored_left_seq lvl = function
 | Unstored (q, p, _) -> buffer_seq lvl (add (S (S (S O))) q) p
 
-type 'a unstored_front_seq_graph =
-| Coq_unstored_front_seq_graph_equation_1 of nat * nat * 'a prefix * 'a sdeque
+type 'a unstored_left_seq_graph =
+| Coq_unstored_left_seq_graph_equation_1 of nat * nat * 'a prefix * 'a sdeque
 
-(** val unstored_front_seq_graph_rect :
+(** val unstored_left_seq_graph_rect :
     (__ -> nat -> nat -> __ prefix -> __ sdeque -> 'a1) -> nat -> 'a2
-    unstored -> 'a2 list -> 'a2 unstored_front_seq_graph -> 'a1 **)
+    unstored -> 'a2 list -> 'a2 unstored_left_seq_graph -> 'a1 **)
 
-let unstored_front_seq_graph_rect f _ _ _ = function
-| Coq_unstored_front_seq_graph_equation_1 (lvl, q, p, s) ->
+let unstored_left_seq_graph_rect f _ _ _ = function
+| Coq_unstored_left_seq_graph_equation_1 (lvl, q, p, s) ->
   Obj.magic f __ lvl q p s
 
-(** val unstored_front_seq_graph_correct :
-    nat -> 'a1 unstored -> 'a1 unstored_front_seq_graph **)
+(** val unstored_left_seq_graph_correct :
+    nat -> 'a1 unstored -> 'a1 unstored_left_seq_graph **)
 
-let unstored_front_seq_graph_correct lvl = function
-| Unstored (q, p, s) -> Coq_unstored_front_seq_graph_equation_1 (lvl, q, p, s)
+let unstored_left_seq_graph_correct lvl = function
+| Unstored (q, p, s) -> Coq_unstored_left_seq_graph_equation_1 (lvl, q, p, s)
 
-(** val unstored_front_seq_elim :
+(** val unstored_left_seq_elim :
     (__ -> nat -> nat -> __ prefix -> __ sdeque -> 'a1) -> nat -> 'a2
     unstored -> 'a1 **)
 
-let unstored_front_seq_elim f lvl u =
-  let Coq_unstored_front_seq_graph_equation_1 (lvl0, q, p, s) =
-    unstored_front_seq_graph_correct lvl u
+let unstored_left_seq_elim f lvl u =
+  let Coq_unstored_left_seq_graph_equation_1 (lvl0, q, p, s) =
+    unstored_left_seq_graph_correct lvl u
   in
   Obj.magic f __ lvl0 q p s
 
-(** val coq_FunctionalElimination_unstored_front_seq :
+(** val coq_FunctionalElimination_unstored_left_seq :
     (__ -> nat -> nat -> __ prefix -> __ sdeque -> __) -> nat -> __ unstored
     -> __ **)
 
-let coq_FunctionalElimination_unstored_front_seq =
-  unstored_front_seq_elim
+let coq_FunctionalElimination_unstored_left_seq =
+  unstored_left_seq_elim
 
-(** val coq_FunctionalInduction_unstored_front_seq :
+(** val coq_FunctionalInduction_unstored_left_seq :
     (__ -> nat -> __ unstored -> __ list) coq_FunctionalInduction **)
 
-let coq_FunctionalInduction_unstored_front_seq =
-  Obj.magic (fun _ -> unstored_front_seq_graph_correct)
+let coq_FunctionalInduction_unstored_left_seq =
+  Obj.magic (fun _ -> unstored_left_seq_graph_correct)
 
-(** val unstored_rear_seq : nat -> 'a1 unstored -> 'a1 list **)
+(** val unstored_right_seq : nat -> 'a1 unstored -> 'a1 list **)
 
-let unstored_rear_seq lvl = function
+let unstored_right_seq lvl = function
 | Unstored (_, _, s) -> sdeque_seq (S lvl) s
 
-type 'a unstored_rear_seq_graph =
-| Coq_unstored_rear_seq_graph_equation_1 of nat * nat * 'a prefix * 'a sdeque
+type 'a unstored_right_seq_graph =
+| Coq_unstored_right_seq_graph_equation_1 of nat * nat * 'a prefix * 'a sdeque
 
-(** val unstored_rear_seq_graph_rect :
+(** val unstored_right_seq_graph_rect :
     (__ -> nat -> nat -> __ prefix -> __ sdeque -> 'a1) -> nat -> 'a2
-    unstored -> 'a2 list -> 'a2 unstored_rear_seq_graph -> 'a1 **)
+    unstored -> 'a2 list -> 'a2 unstored_right_seq_graph -> 'a1 **)
 
-let unstored_rear_seq_graph_rect f _ _ _ = function
-| Coq_unstored_rear_seq_graph_equation_1 (lvl, q, p, sd) ->
+let unstored_right_seq_graph_rect f _ _ _ = function
+| Coq_unstored_right_seq_graph_equation_1 (lvl, q, p, sd) ->
   Obj.magic f __ lvl q p sd
 
-(** val unstored_rear_seq_graph_correct :
-    nat -> 'a1 unstored -> 'a1 unstored_rear_seq_graph **)
+(** val unstored_right_seq_graph_correct :
+    nat -> 'a1 unstored -> 'a1 unstored_right_seq_graph **)
 
-let unstored_rear_seq_graph_correct lvl = function
-| Unstored (q, p, s) -> Coq_unstored_rear_seq_graph_equation_1 (lvl, q, p, s)
+let unstored_right_seq_graph_correct lvl = function
+| Unstored (q, p, s) -> Coq_unstored_right_seq_graph_equation_1 (lvl, q, p, s)
 
-(** val unstored_rear_seq_elim :
+(** val unstored_right_seq_elim :
     (__ -> nat -> nat -> __ prefix -> __ sdeque -> 'a1) -> nat -> 'a2
     unstored -> 'a1 **)
 
-let unstored_rear_seq_elim f lvl u =
-  let Coq_unstored_rear_seq_graph_equation_1 (lvl0, q, p, sd) =
-    unstored_rear_seq_graph_correct lvl u
+let unstored_right_seq_elim f lvl u =
+  let Coq_unstored_right_seq_graph_equation_1 (lvl0, q, p, sd) =
+    unstored_right_seq_graph_correct lvl u
   in
   Obj.magic f __ lvl0 q p sd
 
-(** val coq_FunctionalElimination_unstored_rear_seq :
+(** val coq_FunctionalElimination_unstored_right_seq :
     (__ -> nat -> nat -> __ prefix -> __ sdeque -> __) -> nat -> __ unstored
     -> __ **)
 
-let coq_FunctionalElimination_unstored_rear_seq =
-  unstored_rear_seq_elim
+let coq_FunctionalElimination_unstored_right_seq =
+  unstored_right_seq_elim
 
-(** val coq_FunctionalInduction_unstored_rear_seq :
+(** val coq_FunctionalInduction_unstored_right_seq :
     (__ -> nat -> __ unstored -> __ list) coq_FunctionalInduction **)
 
-let coq_FunctionalInduction_unstored_rear_seq =
-  Obj.magic (fun _ -> unstored_rear_seq_graph_correct)
+let coq_FunctionalInduction_unstored_right_seq =
+  Obj.magic (fun _ -> unstored_right_seq_graph_correct)
 
 (** val sandwich_seq : nat -> 'a1 sandwich -> 'a1 list **)
 

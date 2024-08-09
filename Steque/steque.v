@@ -17,14 +17,14 @@ Notation orange := (Mix NoGreen SomeYellow SomeRed).
 
 (* A type for suffixes, simply the final type of the previous structure. *)
 
-Inductive suffix' (A : Type) : Type := 
+Inductive suffix' (A : Type) : Type :=
   | Suff : deque A -> suffix' A.
 Arguments Suff {A}.
 
 (* A type for prefixes, possibly of length 2, 3 or 4 and more. The color will
    be given by the number of elements. *)
 
-Inductive prefix' (A : Type) : color -> Type := 
+Inductive prefix' (A : Type) : color -> Type :=
   | Pre2 : A -> A -> prefix' A red
   | Pre3 : A -> A -> A -> prefix' A yellow
   | Pre4 : A -> A -> A -> A -> deque A -> prefix' A green.
@@ -32,56 +32,56 @@ Arguments Pre2 {A}.
 Arguments Pre3 {A}.
 Arguments Pre4 {A}.
 
-(* A relation between the packet, the following steque and the current steque 
+(* A relation between the packet, the following steque and the current steque
    colors. *)
 
-Inductive csteque_color : color -> color -> color -> Type := 
+Inductive csteque_color : color -> color -> color -> Type :=
   | CCGreen {G R} : csteque_color green (Mix G NoYellow R) green
-  | CCYellow : csteque_color yellow green yellow 
+  | CCYellow : csteque_color yellow green yellow
   | CCOrange : csteque_color yellow red orange
   | CCRed : csteque_color red green red.
 
-(* The mutally recursive definition of elements, packets and colored steque. 
-   
-   Elements represents the types of elements stored. At level 0, elements of 
-   type A are stored. When the level increase, elements of the new level are 
-   made of a prefix of elements of the previous level and a colored steque of 
+(* The mutally recursive definition of elements, packets and colored steque.
+
+   Elements represents the types of elements stored. At level 0, elements of
+   type A are stored. When the level increase, elements of the new level are
+   made of a prefix of elements of the previous level and a colored steque of
    the new level. *)
-      
-Inductive element (A : Type) : nat -> Type := 
-  | ZElt : A -> element A 0 
-  | SElt {lvl : nat} {C1 C2 : color} : 
-      prefix' (element A lvl) C1 -> 
-      csteque A (S lvl) C2 -> 
+
+Inductive element (A : Type) : nat -> Type :=
+  | ZElt : A -> element A 0
+  | SElt {lvl : nat} {C1 C2 : color} :
+      prefix' (element A lvl) C1 ->
+      csteque A (S lvl) C2 ->
       element A (S lvl)
- 
-   (* Packets represents the same concept as before : either a Hole, the end of 
+
+   (* Packets represents the same concept as before : either a Hole, the end of
    the packet, or a triple prefix - next packet - suffix, with the next packet
    being of one level higher, and yellow or uncolored. *)
 
-with packet (A : Type) : nat -> nat -> color -> Type := 
-  | Hole {lvl : nat} : packet A lvl 0 uncolored 
-  | Triple {lvl len : nat} {Y : yellow_hue} {C : color} : 
-      prefix' (element A lvl) C -> 
+with packet (A : Type) : nat -> nat -> color -> Type :=
+  | Hole {lvl : nat} : packet A lvl 0 uncolored
+  | Triple {lvl len : nat} {Y : yellow_hue} {C : color} :
+      prefix' (element A lvl) C ->
       packet A (S lvl) len (Mix NoGreen Y NoRed) ->
       suffix' (element A lvl) ->
       packet A lvl (S len) C
 
    (* Colored steques also look similar to colored deque in our previous structure,
-   it is either Small, only made of a suffix, or big, made of one packet and a 
+   it is either Small, only made of a suffix, or big, made of one packet and a
    following colored steque. *)
 
-with csteque (A : Type) : nat -> color -> Type := 
-  | Small {lvl : nat} : 
-      suffix' (element A lvl) -> 
-      csteque A lvl green 
+with csteque (A : Type) : nat -> color -> Type :=
+  | Small {lvl : nat} :
+      suffix' (element A lvl) ->
+      csteque A lvl green
   | Big {lvl len nlvl : nat} {C1 C2 C3 : color} :
       packet A lvl len C1 ->
       csteque A nlvl C2 ->
       nlvl = len + lvl ->
       csteque_color C1 C2 C3 ->
       csteque A lvl C3.
-    
+
 Arguments ZElt {A}.
 Arguments SElt {A lvl C1 C2}.
 
@@ -120,8 +120,8 @@ Inductive gy_csteque A lvl :=
 | GY_csteque {G Y} : csteque A lvl (Mix G Y NoRed) -> gy_csteque A lvl.
 Arguments GY_csteque {A lvl G Y}.
 
-(* A type for colored steque partition. A partition of a colored steque is its 
-   natural representation : without the packet type. It is either a suffix, 
+(* A type for colored steque partition. A partition of a colored steque is its
+   natural representation : without the packet type. It is either a suffix,
    [PSmall], or a triple prefix - child - suffix, [PBig]. *)
 
 Inductive partition (A : Type) (lvl : nat) : Type :=
@@ -132,9 +132,9 @@ Arguments PBig {A lvl C1 C2}.
 
 (* A type for steque. *)
 
-Inductive steque (A : Type) : Type := 
-| T {G : green_hue} {Y : yellow_hue} : 
-    csteque A 0 (Mix G Y NoRed) -> 
+Inductive steque (A : Type) : Type :=
+| T {G : green_hue} {Y : yellow_hue} :
+    csteque A 0 (Mix G Y NoRed) ->
     steque A.
 Arguments T {A G Y}.
 
@@ -146,76 +146,76 @@ Set Equations Transparent.
 
 Fixpoint element_seq {A lvl} (e : element A lvl) : list A :=
   let fix prodN_seq {lvle lvlp} (p : prodN (element A lvle) lvlp) : list A :=
-    match p with 
+    match p with
     | prodZ e => element_seq e
     | prodS p1 p2 => prodN_seq p1 ++ prodN_seq p2
     end in
   let buffer_seq {lvle lvlp C} (b : buffer (element A lvle) lvlp C) : list A :=
-    match b with 
+    match b with
     | B0 => []
     | B1 p1 => prodN_seq p1
-    | B2 p1 p2 => prodN_seq p1 ++ prodN_seq p2 
+    | B2 p1 p2 => prodN_seq p1 ++ prodN_seq p2
     | B3 p1 p2 p3 => prodN_seq p1 ++ prodN_seq p2 ++ prodN_seq p3
-    | B4 p1 p2 p3 p4 => 
+    | B4 p1 p2 p3 p4 =>
       prodN_seq p1 ++ prodN_seq p2 ++ prodN_seq p3 ++ prodN_seq p4
-    | B5 p1 p2 p3 p4 p5 => 
+    | B5 p1 p2 p3 p4 p5 =>
       prodN_seq p1 ++ prodN_seq p2 ++ prodN_seq p3 ++ prodN_seq p4 ++ prodN_seq p5
-    end in 
-  let fix dpacket_front_seq {lvle lvlp len C} 
-      (pkt : lvl_packet (element A lvle) lvlp len C) : list A :=
-    match pkt with 
-    | deque.Hole => []
-    | deque.Triple p pkt _ _ => buffer_seq p ++ dpacket_front_seq pkt 
     end in
-  let fix dpacket_rear_seq {lvle lvlp len C} 
+  let fix dpacket_left_seq {lvle lvlp len C}
       (pkt : lvl_packet (element A lvle) lvlp len C) : list A :=
-    match pkt with 
+    match pkt with
     | deque.Hole => []
-    | deque.Triple _ pkt s _ => dpacket_rear_seq pkt ++ buffer_seq s
+    | deque.Triple p pkt _ _ => buffer_seq p ++ dpacket_left_seq pkt
     end in
-  let fix cdeq_seq {lvle lvlp C} 
+  let fix dpacket_right_seq {lvle lvlp len C}
+      (pkt : lvl_packet (element A lvle) lvlp len C) : list A :=
+    match pkt with
+    | deque.Hole => []
+    | deque.Triple _ pkt s _ => dpacket_right_seq pkt ++ buffer_seq s
+    end in
+  let fix cdeq_seq {lvle lvlp C}
       (cd : lvl_cdeque (element A lvle) lvlp C) : list A :=
     match cd with
     | deque.Small b => buffer_seq b
-    | deque.Big pkt cd _ _ => 
-      dpacket_front_seq pkt ++ 
-      cdeq_seq cd ++ 
-      dpacket_rear_seq pkt
+    | deque.Big pkt cd _ _ =>
+      dpacket_left_seq pkt ++
+      cdeq_seq cd ++
+      dpacket_right_seq pkt
     end in
   let prefix_seq {lvl C} (p : prefix A lvl C) : list A :=
-    match p with 
-    | Pre2 e1 e2 => element_seq e1 ++ element_seq e2 
+    match p with
+    | Pre2 e1 e2 => element_seq e1 ++ element_seq e2
     | Pre3 e1 e2 e3 => element_seq e1 ++ element_seq e2 ++ element_seq e3
-    | Pre4 e1 e2 e3 e4 (deque.T d) => 
-      element_seq e1 ++ element_seq e2 ++ element_seq e3 ++ element_seq e4 ++ 
+    | Pre4 e1 e2 e3 e4 (deque.T d) =>
+      element_seq e1 ++ element_seq e2 ++ element_seq e3 ++ element_seq e4 ++
       cdeq_seq d
     end in
-  let fix packet_front_seq {lvl len C} (pkt : packet A lvl len C) : list A :=
+  let fix packet_left_seq {lvl len C} (pkt : packet A lvl len C) : list A :=
     match pkt with
     | Hole => []
-    | Triple p pkt _ => prefix_seq p ++ packet_front_seq pkt
+    | Triple p pkt _ => prefix_seq p ++ packet_left_seq pkt
     end in
-  let fix packet_rear_seq {lvl len C} (pkt : packet A lvl len C) : list A :=
+  let fix packet_right_seq {lvl len C} (pkt : packet A lvl len C) : list A :=
     match pkt with
     | Hole => []
-    | Triple _ pkt (Suff (deque.T d)) => packet_rear_seq pkt ++ cdeq_seq d
+    | Triple _ pkt (Suff (deque.T d)) => packet_right_seq pkt ++ cdeq_seq d
     end in
   let fix csteque_seq {lvl C} (cs : csteque A lvl C) : list A :=
-    match cs with 
+    match cs with
     | Small (Suff (deque.T d)) => cdeq_seq d
-    | Big pkt cs _ _ => 
-      packet_front_seq pkt ++ 
-      csteque_seq cs ++ 
-      packet_rear_seq pkt
+    | Big pkt cs _ _ =>
+      packet_left_seq pkt ++
+      csteque_seq cs ++
+      packet_right_seq pkt
     end in
-  match e with 
+  match e with
   | ZElt a => [a]
-  | SElt p cs => prefix_seq p ++ csteque_seq cs 
+  | SElt p cs => prefix_seq p ++ csteque_seq cs
   end.
 
 (* Returns the sequence contained in a suffix. *)
 
-Equations suffix_seq {A lvl} : suffix A lvl -> list A := 
+Equations suffix_seq {A lvl} : suffix A lvl -> list A :=
 suffix_seq (Suff d) := concat (map element_seq (deque_seq d)).
 
 (* Returns the sequence contained in a prefix. *)
@@ -223,7 +223,7 @@ suffix_seq (Suff d) := concat (map element_seq (deque_seq d)).
 Equations prefix_seq {A lvl C} : prefix A lvl C -> list A :=
 prefix_seq (Pre2 e1 e2) := element_seq e1 ++ element_seq e2;
 prefix_seq (Pre3 e1 e2 e3) := element_seq e1 ++ element_seq e2 ++ element_seq e3;
-prefix_seq (Pre4 e1 e2 e3 e4 d) := 
+prefix_seq (Pre4 e1 e2 e3 e4 d) :=
     element_seq e1 ++ element_seq e2 ++ element_seq e3 ++ element_seq e4 ++
     concat (map element_seq (deque_seq d)).
 
@@ -239,21 +239,21 @@ gy_prefix_seq (GY_prefix p) := prefix_seq p.
 
 (* Returns the sequence of elements stored in prefixes along a packet. *)
 
-Equations packet_front_seq {A lvl len C} : packet A lvl len C -> list A :=
-packet_front_seq Hole := [];
-packet_front_seq (Triple p pkt _) := prefix_seq p ++ packet_front_seq pkt.
+Equations packet_left_seq {A lvl len C} : packet A lvl len C -> list A :=
+packet_left_seq Hole := [];
+packet_left_seq (Triple p pkt _) := prefix_seq p ++ packet_left_seq pkt.
 
 (* Returns the sequence of elements stored in suffixes along a packet. *)
 
-Equations packet_rear_seq {A lvl len C} : packet A lvl len C -> list A :=
-packet_rear_seq Hole := [];
-packet_rear_seq (Triple _ pkt s) := packet_rear_seq pkt ++ suffix_seq s.
+Equations packet_right_seq {A lvl len C} : packet A lvl len C -> list A :=
+packet_right_seq Hole := [];
+packet_right_seq (Triple _ pkt s) := packet_right_seq pkt ++ suffix_seq s.
 
 (* Returns the sequence contained in a colored steque. *)
 
 Equations csteque_seq {A lvl C} : csteque A lvl C -> list A :=
 csteque_seq (Small s) := suffix_seq s;
-csteque_seq (Big pkt cs _ _) := packet_front_seq pkt ++ csteque_seq cs ++ packet_rear_seq pkt.
+csteque_seq (Big pkt cs _ _) := packet_left_seq pkt ++ csteque_seq cs ++ packet_right_seq pkt.
 
 (* Returns the sequence contained in a steque of any color. *)
 
@@ -297,25 +297,25 @@ Opaque singleton.
 
 (* A lemma that destructs an equality of one app into 2 subgoals. *)
 
-Lemma div_app2 {A : Type} {l1 l1' l2 l2' : list A} : 
+Lemma div_app2 {A : Type} {l1 l1' l2 l2' : list A} :
     l1 = l1' -> l2 = l2' -> l1 ++ l2 = l1' ++ l2'.
 Proof. intros [] []. reflexivity. Qed.
 
 (* A tactic that cleans the removes the useless hypothesis. *)
 
-Local Ltac clear_h := 
-  repeat 
+Local Ltac clear_h :=
+  repeat
   match goal with
   | H : _ |- _ => clear H
   end.
 
-(* A lemma proving that we have the desired relation between 
+(* A lemma proving that we have the desired relation between
    element_seq (SElt p cs), prefix_seq p and csteque_seq cs. *)
 
-Lemma Selement_seq [A lvl C1 C2] 
+Lemma Selement_seq [A lvl C1 C2]
     (p : prefix A lvl C1) (cs : csteque A (S lvl) C2) :
     element_seq (SElt p cs) = prefix_seq p ++ csteque_seq cs.
-Proof. 
+Proof.
   simpl element_seq.
   (* We start by destroying the prefix. *)
   destruct p as [e1 e2 | e1 e2 e3 | e1 e2 e3 e4 [G Y c]];
@@ -336,7 +336,7 @@ Proof.
   (* First handle the trivial cases when we have a [Hole]. *)
   try reflexivity;
   (* Depending on the case, destruct the prefix or suffix deque. *)
-  [destruct p as [e1' e2' | e1' e2' e3' | e1' e2' e3' e4' [G Y c]] | 
+  [destruct p as [e1' e2' | e1' e2' e3' | e1' e2' e3' e4' [G Y c]] |
    destruct s as [[G Y c]]];
   (* Format for simplification. *)
   cbn; autorewrite with rlist;
@@ -361,7 +361,7 @@ Proof.
   (* Cases with cs can be prooved by induction. *)
   [clear_h | apply IHc | clear_h];
   (* For dpackets, we make a new induction. *)
-  [induction dpkt as [ | ?? Y' ??? b dpkt ? sb] | 
+  [induction dpkt as [ | ?? Y' ??? b dpkt ? sb] |
    induction dpkt as [ | ?? Y' ??? pb dpkt ? b]];
   (* Hole cases are trivial. *)
   try reflexivity;
@@ -371,7 +371,7 @@ Proof.
   rewrite IHdpkt;
   (* Remove dpackets in front cases. *)
   [apply (f_equal (fun l => l ++ _)) |
-  (* Remove dpackets in rear cases. *) 
+  (* Remove dpackets in rear cases. *)
   apply (f_equal (fun l => _ ++ l))];
   (* Clear anything related to dpackets. *)
   clear_h);
@@ -386,9 +386,9 @@ Proof.
   (* Clear the hypothesis. *)
   clear_h;
   (* We prove the remaining by induction on the right prodN elements. *)
-  (match goal with 
+  (match goal with
   | _ : _ |- _ = concat (map element_seq (prodN_seq ?p)) => induction p
-  end); 
+  end);
   (* Finish the 900 goals with hauto. *)
   cbn; hauto db:rlist.
 Qed.
@@ -413,17 +413,17 @@ cempty with deque.empty => {
 
 (* Functions *)
 
-(* Takes a green prefix, a child and a suffix and returns the green steque 
+(* Takes a green prefix, a child and a suffix and returns the green steque
    corresponding. *)
 
-Equations make_green {A lvl C} 
+Equations make_green {A lvl C}
     (p : prefix A lvl green)
     (cs : csteque A (S lvl) C)
     (s : suffix A lvl) :
-    { cs' : csteque A lvl green | 
+    { cs' : csteque A lvl green |
         csteque_seq cs' = prefix_seq p ++ csteque_seq cs ++ suffix_seq s } :=
 make_green p (Small s') s := ? Big (Triple p Hole s) (Small s') eq_refl CCGreen;
-make_green p (Big pkt cs' eq_refl CCGreen) s := 
+make_green p (Big pkt cs' eq_refl CCGreen) s :=
     ? Big (Triple p Hole s) (Big pkt cs' eq_refl CCGreen) eq_refl CCGreen;
 make_green p (Big pkt cs' eq_refl CCYellow) s :=
     ? Big (Triple p pkt s) cs' _ CCGreen;
@@ -432,14 +432,14 @@ make_green p (Big pkt cs' eq_refl CCOrange) s :=
 make_green p (Big pkt cs' eq_refl CCRed) s :=
     ? Big (Triple p Hole s) (Big pkt cs' eq_refl CCRed) eq_refl CCGreen.
 
-(* Takes a yellow prefix, a child and a suffix and returns the yellow steque 
-   corresponding. *) 
+(* Takes a yellow prefix, a child and a suffix and returns the yellow steque
+   corresponding. *)
 
 Equations make_yellow {A lvl G Y}
     (p : prefix A lvl yellow)
     (cs : csteque A (S lvl) (Mix G Y NoRed))
-    (s : suffix A lvl) : 
-    { cs' : csteque A lvl yellow | 
+    (s : suffix A lvl) :
+    { cs' : csteque A lvl yellow |
         csteque_seq cs' = prefix_seq p ++ csteque_seq cs ++ suffix_seq s } :=
 make_yellow p (Small s') s := ? Big (Triple p Hole s) (Small s') eq_refl CCYellow;
 make_yellow p (Big pkt cs' eq_refl CCGreen) s :=
@@ -454,11 +454,11 @@ Equations make_orange {A lvl}
     (p : prefix A lvl yellow)
     (cs : any_csteque A (S lvl))
     (s : suffix A lvl) :
-    { cs' : any_csteque A lvl | 
+    { cs' : any_csteque A lvl |
         any_csteque_seq cs' = prefix_seq p ++ any_csteque_seq cs ++ suffix_seq s } :=
-make_orange p (Any_csteque (Small s')) s := 
+make_orange p (Any_csteque (Small s')) s :=
     ? Any_csteque (Big (Triple p Hole s) (Small s') eq_refl CCYellow);
-make_orange p (Any_csteque (Big pkt cs' eq_refl CCGreen)) s := 
+make_orange p (Any_csteque (Big pkt cs' eq_refl CCGreen)) s :=
     ? Any_csteque (Big (Triple p Hole s) (Big pkt cs' eq_refl CCGreen) eq_refl CCYellow);
 make_orange p (Any_csteque (Big pkt cs' eq_refl CCYellow)) s :=
     ? Any_csteque (Big (Triple p pkt s) cs' _ CCYellow);
@@ -467,7 +467,7 @@ make_orange p (Any_csteque (Big pkt cs' eq_refl CCOrange)) s :=
 make_orange p (Any_csteque (Big pkt cs' eq_refl CCRed)) s :=
     ? Any_csteque (Big (Triple p Hole s) (Big pkt cs' eq_refl CCRed) eq_refl CCOrange).
 
-(* Takes a red prefix, a child and a suffix and returns the red steque 
+(* Takes a red prefix, a child and a suffix and returns the red steque
    corresponding. *)
 
 Equations make_red {A lvl G Y}
@@ -479,12 +479,12 @@ Equations make_red {A lvl G Y}
 make_red p (Small s') s := ? Big (Triple p Hole s) (Small s') eq_refl CCRed;
 make_red p (Big pkt cs' eq_refl CCGreen) s :=
     ? Big (Triple p Hole s) (Big pkt cs' eq_refl CCGreen) eq_refl CCRed;
-make_red p (Big pkt cs' eq_refl CCYellow) s := 
+make_red p (Big pkt cs' eq_refl CCYellow) s :=
     ? Big (Triple p pkt s) cs' _ CCRed.
 
 (* Pushes on a green prefix. *)
 
-Equations green_prefix_push {A lvl} 
+Equations green_prefix_push {A lvl}
     (e : element A lvl)
     (p : prefix A lvl green) :
     { p' : prefix A lvl green | prefix_seq p' = element_seq e ++ prefix_seq p } :=
@@ -513,7 +513,7 @@ red_prefix_push e (Pre2 e1 e2) := ? Pre3 e e1 e2.
 Equations prefix_push2 {A lvl C}
     (e1 e2 : element A lvl)
     (p : prefix A lvl C) :
-    { p' : prefix A lvl green | 
+    { p' : prefix A lvl green |
         prefix_seq p' = element_seq e1 ++ element_seq e2 ++ prefix_seq p } :=
 prefix_push2 e1 e2 (Pre2 e3 e4) with deque.empty => {
   | ? d := ? Pre4 e1 e2 e3 e4 d };
@@ -529,7 +529,7 @@ prefix_push2 e1 e2 (Pre4 e3 e4 e5 e6 d) with deque.push e6 d => {
 Equations push_gy {A lvl C}
     (e : element A lvl)
     (cs : csteque A lvl C) :
-    { cs' : gy_csteque A lvl | 
+    { cs' : gy_csteque A lvl |
         gy_csteque_seq cs' = element_seq e ++ csteque_seq cs } :=
 push_gy e (Small (Suff d)) with deque.push e d => {
     | ? d' := ? GY_csteque (Small (Suff d')) };
@@ -547,7 +547,7 @@ push_gy e (Big (Triple p pkt s) cs eq_refl CCRed) with red_prefix_push e p => {
 Equations any_push_gy {A lvl}
     (e : element A lvl)
     (cs : any_csteque A lvl) :
-    { cs' : gy_csteque A lvl | 
+    { cs' : gy_csteque A lvl |
         gy_csteque_seq cs' = element_seq e ++ any_csteque_seq cs } :=
 any_push_gy e (Any_csteque cs) := push_gy e cs.
 
@@ -556,7 +556,7 @@ any_push_gy e (Any_csteque cs) := push_gy e cs.
 Equations any_push_any {A lvl}
     (e : element A lvl)
     (cs : any_csteque A lvl) :
-    { cs' : any_csteque A lvl | 
+    { cs' : any_csteque A lvl |
         any_csteque_seq cs' = element_seq e ++ any_csteque_seq cs } :=
 any_push_any e acs with any_push_gy e acs => {
     | ? GY_csteque cs' := ? Any_csteque cs' }.
@@ -582,20 +582,20 @@ push a (T cs) with gy_push_gy (ZElt a) (GY_csteque cs) => {
 Equations cinject {A lvl C}
     (cs : csteque A lvl C)
     (e : element A lvl) :
-    { cs' : csteque A lvl C | 
+    { cs' : csteque A lvl C |
         csteque_seq cs' = csteque_seq cs ++ element_seq e } :=
 cinject (Small (Suff d)) e with deque.inject d e => {
     | ? d' := ? Small (Suff d') };
-cinject (Big (Triple p pkt (Suff d)) cs eq_refl CCGreen) e 
+cinject (Big (Triple p pkt (Suff d)) cs eq_refl CCGreen) e
   with deque.inject d e => {
     | ? d' := ? Big (Triple p pkt (Suff d')) cs eq_refl CCGreen };
-cinject (Big (Triple p pkt (Suff d)) cs eq_refl CCYellow) e 
+cinject (Big (Triple p pkt (Suff d)) cs eq_refl CCYellow) e
   with deque.inject d e => {
     | ? d' := ? Big (Triple p pkt (Suff d')) cs eq_refl CCYellow };
-cinject (Big (Triple p pkt (Suff d)) cs eq_refl CCOrange) e 
+cinject (Big (Triple p pkt (Suff d)) cs eq_refl CCOrange) e
   with deque.inject d e => {
     | ? d' := ? Big (Triple p pkt (Suff d')) cs eq_refl CCOrange };
-cinject (Big (Triple p pkt (Suff d)) cs eq_refl CCRed) e 
+cinject (Big (Triple p pkt (Suff d)) cs eq_refl CCRed) e
   with deque.inject d e => {
     | ? d' := ? Big (Triple p pkt (Suff d')) cs eq_refl CCRed }.
 
@@ -610,8 +610,8 @@ inject (T cs) a with cinject cs (ZElt a) => {
 
 Equations suffix_to_prefix {A lvl}
     (e1 e2 : element A lvl)
-    (s : suffix A lvl) : 
-    { p : any_prefix A lvl | 
+    (s : suffix A lvl) :
+    { p : any_prefix A lvl |
         any_prefix_seq p = element_seq e1 ++ element_seq e2 ++ suffix_seq s } :=
 suffix_to_prefix e1 e2 (Suff d) with deque.pop d => {
   | ? None := ? Any_prefix (Pre2 e1 e2);
@@ -623,7 +623,7 @@ suffix_to_prefix e1 e2 (Suff d) with deque.pop d => {
    child steque and steque of any color that contains the elements of the suffix
    in the right order. *)
 
-Equations remove_suffix {A lvl C} 
+Equations remove_suffix {A lvl C}
     (child : csteque A (S lvl) C)
     (s : suffix A lvl)
     (cs2 : any_csteque A lvl) :
@@ -642,41 +642,41 @@ remove_suffix child (Suff d) cs2 with deque.pop d => {
 (* Takes a packet and a green or red steque, and returns a steque of any color
    made of the packet followed by the argument steque. *)
 
-Equations split_any {A lvl len nlvl G Y R} 
+Equations split_any {A lvl len nlvl G Y R}
     (pkt : packet A lvl len (Mix NoGreen Y NoRed))
     (cs : csteque A nlvl (Mix G NoYellow R)) :
     nlvl = len + lvl ->
-    { cs' : any_csteque A lvl | any_csteque_seq cs' = packet_front_seq pkt ++ 
-                                                      csteque_seq cs ++ 
-                                                      packet_rear_seq pkt } :=
+    { cs' : any_csteque A lvl | any_csteque_seq cs' = packet_left_seq pkt ++
+                                                      csteque_seq cs ++
+                                                      packet_right_seq pkt } :=
 split_any Hole cs eq_refl := ? Any_csteque cs;
-split_any (Y := SomeYellow) (Triple p pkt s) (Small suff) eq_refl := 
+split_any (Y := SomeYellow) (Triple p pkt s) (Small suff) eq_refl :=
   ? Any_csteque (Big (Triple p pkt s) (Small suff) eq_refl CCYellow);
-split_any (Y := SomeYellow) (Triple p pkt s) (Big pkt' cs' eq_refl CCGreen) eq_refl := 
+split_any (Y := SomeYellow) (Triple p pkt s) (Big pkt' cs' eq_refl CCGreen) eq_refl :=
   ? Any_csteque (Big (Triple p pkt s) (Big pkt' cs' eq_refl CCGreen) eq_refl CCYellow);
-split_any (Y := SomeYellow) (Triple p pkt s) (Big pkt' cs' eq_refl CCRed) eq_refl := 
+split_any (Y := SomeYellow) (Triple p pkt s) (Big pkt' cs' eq_refl CCRed) eq_refl :=
   ? Any_csteque (Big (Triple p pkt s) (Big pkt' cs' eq_refl CCRed) eq_refl CCOrange).
 
-(* Takes a packet and a green steque, and returns the green or yellow steque 
+(* Takes a packet and a green steque, and returns the green or yellow steque
    made of the packet followed by the argument steque. *)
 
-Equations split_gy {A lvl len nlvl Y} 
+Equations split_gy {A lvl len nlvl Y}
     (pkt : packet A lvl len (Mix NoGreen Y NoRed))
     (cs : csteque A nlvl green) :
     nlvl = len + lvl ->
-    { cs' : gy_csteque A lvl | gy_csteque_seq cs' = packet_front_seq pkt ++ 
-                                                    csteque_seq cs ++ 
-                                                    packet_rear_seq pkt } :=
+    { cs' : gy_csteque A lvl | gy_csteque_seq cs' = packet_left_seq pkt ++
+                                                    csteque_seq cs ++
+                                                    packet_right_seq pkt } :=
 split_gy Hole cs eq_refl := ? GY_csteque cs;
-split_gy (Y := SomeYellow) (Triple p pkt s) (Small suff) eq_refl := 
+split_gy (Y := SomeYellow) (Triple p pkt s) (Small suff) eq_refl :=
     ? GY_csteque (Big (Triple p pkt s) (Small suff) eq_refl CCYellow);
-split_gy (Y := SomeYellow) (Triple p pkt s) (Big pkt' cs' eq_refl CCGreen) eq_refl := 
+split_gy (Y := SomeYellow) (Triple p pkt s) (Big pkt' cs' eq_refl CCGreen) eq_refl :=
     ? GY_csteque (Big (Triple p pkt s) (Big pkt' cs' eq_refl CCGreen) eq_refl CCYellow).
 
-(* Handles the first case of concatenation, when the first steque is a triple. 
-   If [s] contains at least two elements, it is considered a prefix and can be 
-   pushed in [child]. Otherwise, if [s] contains one elements, we push it on 
-   [cs2]. If [cs2] is a triple, we inject its prefix and child in [child]. The 
+(* Handles the first case of concatenation, when the first steque is a triple.
+   If [s] contains at least two elements, it is considered a prefix and can be
+   pushed in [child]. Otherwise, if [s] contains one elements, we push it on
+   [cs2]. If [cs2] is a triple, we inject its prefix and child in [child]. The
    result of concat is then prefix(cs1) (not in the arguments), child and
    suffix(cs2). *)
 
@@ -710,35 +710,35 @@ Equations partitioned {A lvl} (cs : any_csteque A lvl) :
 partitioned (Any_csteque (Small s)) := ? PSmall s;
 partitioned (Any_csteque (Big (Triple p Hole s) cs eq_refl _)) :=
     ? PBig p cs s;
-partitioned (Any_csteque 
-  (Big (Triple (Y := SomeYellow) p (Triple p' pkt s') s) 
+partitioned (Any_csteque
+  (Big (Triple (Y := SomeYellow) p (Triple p' pkt s') s)
     (Small suff) eq_refl CCGreen)) :=
       ? PBig p (Big (Triple p' pkt s') (Small suff) _ CCYellow) s;
-partitioned (Any_csteque 
-  (Big (Triple (Y := SomeYellow) p (Triple p' pkt s') s) 
+partitioned (Any_csteque
+  (Big (Triple (Y := SomeYellow) p (Triple p' pkt s') s)
     (Big pkt' cs' eq_refl CCGreen) eq_refl CCGreen)) :=
       ? PBig p (Big (Triple p' pkt s') (Big pkt' cs' eq_refl CCGreen) _ CCYellow) s;
-partitioned (Any_csteque 
-  (Big (Triple (Y := SomeYellow) p (Triple p' pkt s') s) 
+partitioned (Any_csteque
+  (Big (Triple (Y := SomeYellow) p (Triple p' pkt s') s)
     (Big pkt' cs' eq_refl CCRed) eq_refl CCGreen)) :=
       ? PBig p (Big (Triple p' pkt s') (Big pkt' cs' eq_refl CCRed) _ CCOrange) s;
-partitioned (Any_csteque 
+partitioned (Any_csteque
   (Big (Triple (Y := SomeYellow) p (Triple p' pkt s') s) cs eq_refl CCYellow)) :=
     ? PBig p (Big (Triple p' pkt s') cs _ CCYellow) s;
-partitioned (Any_csteque 
+partitioned (Any_csteque
   (Big (Triple (Y := SomeYellow) p (Triple p' pkt s') s) cs eq_refl CCOrange)) :=
     ? PBig p (Big (Triple p' pkt s') cs _ CCOrange) s;
-partitioned (Any_csteque 
+partitioned (Any_csteque
   (Big (Triple (Y := SomeYellow) p (Triple p' pkt s') s) cs eq_refl CCRed)) :=
     ? PBig p (Big (Triple p' pkt s') cs _ CCYellow) s.
 
-(* Concatenates a colored steque and a steque of any color and returns a steque 
+(* Concatenates a colored steque and a steque of any color and returns a steque
    of any color. *)
 
 Equations concat_any {A lvl C}
     (cs1 : csteque A lvl C)
     (cs2 : any_csteque A lvl) :
-    { cs3 : any_csteque A lvl | 
+    { cs3 : any_csteque A lvl |
         any_csteque_seq cs3 = csteque_seq cs1 ++ any_csteque_seq cs2 } :=
 concat_any (Small (Suff d)) cs2 with deque.pop d => {
   | ? None := ? cs2;
@@ -752,30 +752,30 @@ concat_any (Small (Suff d)) cs2 with deque.pop d => {
           | ? cs3'' with any_push_any x cs3'' => {
             | ? cs3' with any_push_any w cs3' => { | ? cs3 := ? cs3 } } };
         | ? Some (z, d4) with partitioned cs2, cempty => {
-          | ? PSmall s2, ? cs := 
-            ? Any_csteque 
+          | ? PSmall s2, ? cs :=
+            ? Any_csteque
               (Big (Triple (Pre4 w x y z d4) Hole s2) cs eq_refl CCGreen);
-          | ? PBig p2 child2 s2, ? cs 
+          | ? PBig p2 child2 s2, ? cs
             with any_push_gy (SElt p2 cs) (Any_csteque child2) => {
-              | ? GY_csteque child2' 
+              | ? GY_csteque child2'
                 with make_green (Pre4 w x y z d4) child2' s2 => {
                   | ? cs3 := ? Any_csteque cs3 } } } } } } };
-concat_any (Big (Triple p pkt s) cs eq_refl CCGreen) cs2 
+concat_any (Big (Triple p pkt s) cs eq_refl CCGreen) cs2
   with split_any pkt cs _ => {
     | ? Any_csteque child with join child s cs2 => {
       | ? (child', s') with make_green p child' s' => {
         | ? cs3 := ? Any_csteque cs3 } } };
-concat_any (Big (Triple p pkt s) cs eq_refl CCYellow) cs2 
+concat_any (Big (Triple p pkt s) cs eq_refl CCYellow) cs2
   with split_gy pkt cs _ => {
     | ? GY_csteque child with join child s cs2 => {
       | ? (child', s') with make_yellow p child' s' => {
         | ? cs3 := ? Any_csteque cs3 } } };
-concat_any (Big (Triple p pkt s) cs eq_refl CCOrange) cs2 
+concat_any (Big (Triple p pkt s) cs eq_refl CCOrange) cs2
   with split_any pkt cs _ => {
     | ? Any_csteque child with join child s cs2 => {
       | ? (child', s') with make_orange p (Any_csteque child') s' => {
         | ? cs3 := ? cs3 } } };
-concat_any (Big (Triple p pkt s) cs eq_refl CCRed) cs2 
+concat_any (Big (Triple p pkt s) cs eq_refl CCRed) cs2
   with split_gy pkt cs _ => {
     | ? GY_csteque child with join child s cs2 => {
       | ? (child', s') with make_red p child' s' => {
@@ -788,31 +788,31 @@ Equations concat {A} (s1 : steque A) (s2 : steque A) :
 concat (T (Small (Suff d))) (T cs2) with deque.pop d => {
   | ? None := ? T cs2;
   | ? Some (w, d1) with deque.pop d1 => {
-    | ? None with gy_push_gy w (GY_csteque cs2) => { 
+    | ? None with gy_push_gy w (GY_csteque cs2) => {
       | ? GY_csteque cs3 := ? T cs3 };
     | ? Some (x, d2) with deque.pop d2 => {
       | ? None with gy_push_gy x (GY_csteque cs2) => {
-        | ? cs3' with gy_push_gy w cs3' => { 
+        | ? cs3' with gy_push_gy w cs3' => {
           | ? GY_csteque cs3 := ? T cs3 } };
       | ? Some (y, d3) with deque.pop d3 => {
         | ? None with gy_push_gy y (GY_csteque cs2) => {
           | ? cs3'' with gy_push_gy x cs3'' => {
-            | ? cs3' with gy_push_gy w cs3' => { 
+            | ? cs3' with gy_push_gy w cs3' => {
               | ? GY_csteque cs3 := ? T cs3 } } };
         | ? Some (z, d4) with partitioned (Any_csteque cs2), cempty => {
-          | ? PSmall s2, ? cs := 
+          | ? PSmall s2, ? cs :=
             ? T (Big (Triple (Pre4 w x y z d4) Hole s2) cs eq_refl CCGreen);
-          | ? PBig p2 child2 s2, ? cs 
+          | ? PBig p2 child2 s2, ? cs
             with any_push_gy (SElt p2 cs) (Any_csteque child2) => {
-              | ? GY_csteque child2' 
+              | ? GY_csteque child2'
                 with make_green (Pre4 w x y z d4) child2' s2 => {
                   | ? cs3 := ? T cs3 } } } } } } };
-concat (T (Big (Triple p pkt s) cs eq_refl CCGreen)) (T cs2) 
+concat (T (Big (Triple p pkt s) cs eq_refl CCGreen)) (T cs2)
   with split_any pkt cs _ => {
     | ? Any_csteque child with join child s (Any_csteque cs2) => {
       | ? (child', s') with make_green p child' s' => {
         | ? cs3 := ? T cs3 } } };
-concat (T (Big (Triple p pkt s) cs eq_refl CCYellow)) (T cs2) 
+concat (T (Big (Triple p pkt s) cs eq_refl CCYellow)) (T cs2)
   with split_gy pkt cs _ => {
     | ? GY_csteque child with join child s (Any_csteque cs2) => {
       | ? (child', s') with make_yellow p child' s' => {
@@ -821,8 +821,8 @@ concat (T (Big (Triple p pkt s) cs eq_refl CCYellow)) (T cs2)
 (* Pops from a green prefix. *)
 
 Equations green_prefix_pop {A lvl} (p : prefix A lvl green) :
-    { '(e, p') : element A lvl * gy_prefix A lvl | 
-        element_seq e ++ gy_prefix_seq p' = prefix_seq p } := 
+    { '(e, p') : element A lvl * gy_prefix A lvl |
+        element_seq e ++ gy_prefix_seq p' = prefix_seq p } :=
 green_prefix_pop (Pre4 e1 e2 e3 e4 ded) with deque.pop ded => {
   | ? None := ? (e1, GY_prefix (Pre3 e2 e3 e4));
   | ? Some (e5, deque') := ? (e1, GY_prefix (Pre4 e2 e3 e4 e5 deque')) }.
@@ -830,7 +830,7 @@ green_prefix_pop (Pre4 e1 e2 e3 e4 ded) with deque.pop ded => {
 (* Pops from a yellow prefix. *)
 
 Equations yellow_prefix_pop {A lvl Y} (p : prefix A lvl (Mix NoGreen Y NoRed)) :
-    { '(e, p') : element A lvl * prefix A lvl red | 
+    { '(e, p') : element A lvl * prefix A lvl red |
         element_seq e ++ prefix_seq p' = prefix_seq p } :=
 yellow_prefix_pop (Pre3 e1 e2 e3) := ? (e1, Pre2 e2 e3).
 
@@ -838,8 +838,8 @@ yellow_prefix_pop (Pre3 e1 e2 e3) := ? (e1, Pre2 e2 e3).
 
 Equations green_of_red {A lvl} (cs : csteque A lvl red) :
     { cs' : csteque A lvl green | csteque_seq cs' = csteque_seq cs } :=
-green_of_red 
-  (Big (Triple (Pre2 e1 e2) Hole (Suff s)) (Small (Suff child)) eq_refl CCRed) 
+green_of_red
+  (Big (Triple (Pre2 e1 e2) Hole (Suff s)) (Small (Suff child)) eq_refl CCRed)
     with deque.pop child => {
       | ? None with deque.push e2 s => {
         | ? s1 with deque.push e1 s1 => {
@@ -847,26 +847,26 @@ green_of_red
       | ? Some (SElt p cs2, child1) with prefix_push2 e1 e2 p => {
         | ? p1 with concat_any cs2 (Any_csteque (Small (Suff child1))) => {
             | ? Any_csteque child' with make_green p1 child' (Suff s) => {
-              | ? cs := ? cs } } } }; 
-green_of_red (Big (Triple (Pre2 e1 e2) Hole (Suff s1)) 
-  (Big (Triple p child s) cs eq_refl CCGreen) eq_refl CCRed) 
+              | ? cs := ? cs } } } };
+green_of_red (Big (Triple (Pre2 e1 e2) Hole (Suff s1))
+  (Big (Triple p child s) cs eq_refl CCGreen) eq_refl CCRed)
     with green_prefix_pop p => {
       | ? (SElt pref rest, GY_prefix p1) with prefix_push2 e1 e2 pref => {
         | ? pref1 with p1 => {
           | Pre4 a b c d deque
-            with concat_any rest (Any_csteque 
+            with concat_any rest (Any_csteque
               (Big (Triple (Pre4 a b c d deque) child s) cs _ CCGreen)) => {
-                | ? Any_csteque child1 
+                | ? Any_csteque child1
                   with make_green pref1 child1 (Suff s1) => {
                     | ? cs' := ? cs' } };
           | Pre3 a b c with split_any (Triple (Pre3 a b c) child s) cs _ => {
             | ? child1 with concat_any rest child1 => {
               | ? Any_csteque child2 with make_green pref1 child2 (Suff s1) => {
                 | ? cs' := ? cs' } } } } } };
-green_of_red (Big (Triple (Pre2 e1 e2) (Triple p child s) s1) cs eq_refl CCRed) 
+green_of_red (Big (Triple (Pre2 e1 e2) (Triple p child s) s1) cs eq_refl CCRed)
   with yellow_prefix_pop p => {
     | ? (SElt pref rest, p1) with prefix_push2 e1 e2 pref => {
-      | ? pref1 with concat_any rest (Any_csteque 
+      | ? pref1 with concat_any rest (Any_csteque
         (Big (Triple p1 child s) cs _ CCRed)) => {
           | ? Any_csteque child1 with make_green pref1 child1 s1 => {
             | ? cs' := ? cs' } } } }.
@@ -877,15 +877,15 @@ Equations ensure_green {A lvl G R} (cs : csteque A lvl (Mix G NoYellow R)) :
     { cs' : csteque A lvl green | csteque_seq cs' = csteque_seq cs } :=
 ensure_green (Small s) := ? Small s;
 ensure_green (Big pkt cs eq_refl CCGreen) := ? Big pkt cs eq_refl CCGreen;
-ensure_green (Big pkt cs eq_refl CCRed) 
+ensure_green (Big pkt cs eq_refl CCRed)
   with green_of_red (Big pkt cs eq_refl CCRed) => {
     | ? cs' := ? cs' }.
 
 (* Pops from a steque. *)
 
-Equations pop {A} (s : steque A) : 
-    { o : option (A * steque A) | 
-        steque_seq s = match o with 
+Equations pop {A} (s : steque A) :
+    { o : option (A * steque A) |
+        steque_seq s = match o with
             | None => []
             | Some (a, s') => [a] ++ steque_seq s' end } :=
 pop (T (Small (Suff d))) with deque.pop d => {
@@ -894,9 +894,9 @@ pop (T (Small (Suff d))) with deque.pop d => {
 pop (T (Big (Triple p child s) cs eq_refl CCGreen)) with green_prefix_pop p => {
   | ? (ZElt a, GY_prefix p') with p' => {
     | Pre3 b c d with ensure_green cs => {
-      | ? cs' := 
+      | ? cs' :=
         ? Some (a, T (Big (Triple (Pre3 b c d) child s) cs' eq_refl CCYellow)) };
-    | Pre4 b c d e deque := 
+    | Pre4 b c d e deque :=
       ? Some (a, T (Big (Triple (Pre4 b c d e deque) child s) cs eq_refl CCGreen)) } };
 pop (T (Big (Triple p child s) cs eq_refl CCYellow)) with yellow_prefix_pop p => {
   | ? (ZElt a, p') with green_of_red (Big (Triple p' child s) cs eq_refl CCRed) => {

@@ -23,7 +23,7 @@ Opaque singleton.
 #[export] Hint Rewrite app_nil_r : rlist.
 #[export] Hint Rewrite map_app : rlist.
 #[export] Hint Rewrite concat_app : rlist.
-      
+
 #[export] Hint Rewrite path_children : rlist.
 #[export] Hint Rewrite stored_triple_ground : rlist.
 #[export] Hint Rewrite stored_triple_small : rlist.
@@ -43,14 +43,14 @@ Opaque singleton.
 
 Opaque path_seq.
 Opaque stored_triple_seq.
-Opaque triple_front_seq.
-Opaque triple_rear_seq.
+Opaque triple_left_seq.
+Opaque triple_right_seq.
 
 #[export] Hint Rewrite empty_buffer : rlist.
 
 #[local] Obligation Tactic :=
-  try first [ done | 
-    cbn; intros; 
+  try first [ done |
+    cbn; intros;
     try simp triple_seq in *;
     autorewrite with rlist;
     try simp buffer_seq in *;
@@ -58,29 +58,29 @@ Opaque triple_rear_seq.
 
 Notation "? x" := (@exist _ _ x _) (at level 100).
 
-Equations push_seq_equality {A lvl len K1 K2 C} 
+Equations push_seq_equality {A lvl len K1 K2 C}
   (x : stored_triple A lvl)
   (t1 t2 : triple A lvl len false K1 K2 C) : Prop :=
-push_seq_equality (C := Mix _ NoYellow NoOrange _) x t1 t2 := 
+push_seq_equality (C := Mix _ NoYellow NoOrange _) x t1 t2 :=
   triple_seq t2 = stored_triple_seq x ++ triple_seq t1;
 push_seq_equality (C := Mix NoGreen _ _ NoRed) x t1 t2 :=
-  triple_front_seq t2 = stored_triple_seq x ++ triple_front_seq t1 
-  /\ triple_rear_seq t2 = triple_rear_seq t1.
+  triple_left_seq t2 = stored_triple_seq x ++ triple_left_seq t1
+  /\ triple_right_seq t2 = triple_right_seq t1.
 Transparent push_seq_equality.
 
-Equations inject_seq_equality {A lvl len K1 K2 C} 
+Equations inject_seq_equality {A lvl len K1 K2 C}
   (t1 : triple A lvl len false K1 K2 C)
   (x : stored_triple A lvl)
   (t2 : triple A lvl len false K1 K2 C) : Prop :=
-inject_seq_equality (C := Mix _ NoYellow NoOrange _) t1 x t2 := 
+inject_seq_equality (C := Mix _ NoYellow NoOrange _) t1 x t2 :=
   triple_seq t2 = triple_seq t1 ++ stored_triple_seq x;
 inject_seq_equality (C := Mix NoGreen _ _ NoRed) t1 x t2 :=
-  triple_front_seq t2 = triple_front_seq t1 /\
-  triple_rear_seq t2 = triple_rear_seq t1 ++ stored_triple_seq x.
+  triple_left_seq t2 = triple_left_seq t1 /\
+  triple_right_seq t2 = triple_right_seq t1 ++ stored_triple_seq x.
 Transparent inject_seq_equality.
 
 Equations push_only_triple {A lvl len K C}
-  (x : stored_triple A lvl) 
+  (x : stored_triple A lvl)
   (t : only_triple A lvl len false K C) :
   { t' : only_triple A lvl len false K C | push_seq_equality x t t' } :=
 push_only_triple x (Small p s Only_small_sizes) with buffer.push x p => {
@@ -109,8 +109,8 @@ inject_only_triple (Orange p pkt s Only_big_sizes) x with buffer.inject s x => {
 inject_only_triple (Red p cd s Only_big_sizes) x with buffer.inject s x => {
   | ? s' := ? Red p cd s' Only_big_sizes }.
 
-Equations push_only_path {A lvl C} 
-  (x : stored_triple A lvl) 
+Equations push_only_path {A lvl C}
+  (x : stored_triple A lvl)
   (p : path A lvl Only C) :
   { p' : path A lvl Only C | path_seq p' = stored_triple_seq x ++ path_seq p } :=
 push_only_path x (Children Hole natural eq_refl) with push_only_triple x natural => {
@@ -142,8 +142,8 @@ push_left_triple x (Orange p pkt s Left_big_sizes) with buffer.push x p => {
 push_left_triple x (Red p cd s Left_big_sizes) with buffer.push x p => {
   | ? p' := ? Red p' cd s Left_big_sizes }.
 
-Equations inject_right_triple {A lvl len K C} 
-  (t : right_triple A lvl len false K C) 
+Equations inject_right_triple {A lvl len K C}
+  (t : right_triple A lvl len false K C)
   (x : stored_triple A lvl) :
   { t' : right_triple A lvl len false K C | inject_seq_equality t x t' } :=
 inject_right_triple (Small p s Right_small_sizes) x with buffer.inject s x => {
@@ -157,7 +157,7 @@ inject_right_triple (Orange p pkt s Right_big_sizes) x with buffer.inject s x =>
 inject_right_triple (Red p cd s Right_big_sizes) x with buffer.inject s x => {
   | ? s' := ? Red p cd s' Right_big_sizes }.
 
-Equations push_left_path {A lvl C} 
+Equations push_left_path {A lvl C}
   (x : stored_triple A lvl)
   (p : path A lvl Left C) :
   { p' : path A lvl Left C | path_seq p' = stored_triple_seq x ++ path_seq p } :=
@@ -175,8 +175,8 @@ inject_right_path (Children Hole natural eq_refl) x with inject_right_triple nat
 inject_right_path (Children natural adoptive eq_refl) x with inject_right_triple natural x => {
   | ? natural' := ? Children natural' adoptive eq_refl }.
 
-Equations push_ne_cdeque {A lvl C} 
-  (x : stored_triple A lvl) 
+Equations push_ne_cdeque {A lvl C}
+  (x : stored_triple A lvl)
   (cd : non_empty_cdeque A lvl C) :
   { cd' : non_empty_cdeque A lvl C | ne_cdeque_seq cd' = stored_triple_seq x ++ ne_cdeque_seq cd } :=
 push_ne_cdeque x (Only_path p) with push_only_path x p => {
@@ -207,10 +207,10 @@ only_single x with single_triple x => { | ? t := ? Only_path (Children Hole t eq
 
 Equations single {A lvl} (x : stored_triple A lvl) :
   {cd : cdeque A lvl green | cdeque_seq cd = stored_triple_seq x } :=
-single x with only_single x => { | ? cd := ? NonEmpty cd }. 
+single x with only_single x => { | ? cd := ? NonEmpty cd }.
 
-Equations push_cdeque {A lvl C} 
-  (x : stored_triple A lvl) 
+Equations push_cdeque {A lvl C}
+  (x : stored_triple A lvl)
   (cd : cdeque A lvl C) :
   { cd' : cdeque A lvl C | cdeque_seq cd' = stored_triple_seq x ++ cdeque_seq cd } :=
 push_cdeque x Empty with single x => { | ? cd := ? cd };
@@ -223,7 +223,7 @@ Equations inject_cdeque {A lvl C}
 inject_cdeque Empty x with single x => { | ? cd := ? cd };
 inject_cdeque (NonEmpty cd) x with inject_ne_cdeque cd x => { | ? cd' := ? NonEmpty cd' }.
 
-Equations push_semi {A lvl} 
+Equations push_semi {A lvl}
   (x : stored_triple A lvl)
   (sd : sdeque A lvl) :
   { sd' : sdeque A lvl | sdeque_seq sd' = stored_triple_seq x ++ sdeque_seq sd } :=
@@ -235,7 +235,7 @@ Equations inject_semi {A lvl}
   { sd' : sdeque A lvl | sdeque_seq sd' = sdeque_seq sd ++ stored_triple_seq x } :=
 inject_semi (Sd cd) x with inject_cdeque cd x => { | ? cd' := ? Sd cd' }.
 
-Equations push_vector {A lvl n C} 
+Equations push_vector {A lvl n C}
   (v : vector (stored_triple A lvl) n)
   (cd : cdeque A lvl C) :
   { cd' : cdeque A lvl C |
@@ -244,8 +244,8 @@ push_vector V0 cd1 := ? cd1;
 push_vector (V1 a1) cd with push_cdeque a1 cd => { | ? cd1 := ? cd1 };
 push_vector (V2 a1 a2) cd with push_cdeque a2 cd => {
   | ? cd2 with push_cdeque a1 cd2 => { | ? cd1 := ? cd1 } };
-push_vector (V3 a1 a2 a3) cd with push_cdeque a3 cd => { 
-  | ? cd3 with push_cdeque a2 cd3 => { | ? cd2 with push_cdeque a1 cd2 => { 
+push_vector (V3 a1 a2 a3) cd with push_cdeque a3 cd => {
+  | ? cd3 with push_cdeque a2 cd3 => { | ? cd2 with push_cdeque a1 cd2 => {
     | ? cd1 := ? cd1 } } };
 push_vector (V4 a1 a2 a3 a4) cd with push_cdeque a4 cd => {
   | ? cd4 with push_cdeque a3 cd4 => { | ? cd3 with push_cdeque a2 cd3 => {
@@ -259,7 +259,7 @@ push_vector (V6 a1 a2 a3 a4 a5 a6) cd with push_cdeque a6 cd => {
     | ? cd4 with push_cdeque a3 cd4 => { | ? cd3 with push_cdeque a2 cd3 => {
       | ? cd2 with push_cdeque a1 cd2 => { | ? cd1 := ? cd1 } } } } } }.
 
-Equations inject_vector {A lvl n C} 
+Equations inject_vector {A lvl n C}
   (cd : cdeque A lvl C)
   (v : vector (stored_triple A lvl) n) :
   { cd' : cdeque A lvl C |
@@ -268,8 +268,8 @@ inject_vector cd0 V0 := ? cd0;
 inject_vector cd (V1 a1) with inject_cdeque cd a1 => { | ? cd1 := ? cd1 };
 inject_vector cd (V2 a1 a2) with inject_cdeque cd a1 => {
   | ? cd1 with inject_cdeque cd1 a2 => { | ? cd2 := ? cd2 } };
-inject_vector cd (V3 a1 a2 a3) with inject_cdeque cd a1 => { 
-  | ? cd1 with inject_cdeque cd1 a2 => { | ? cd2 with inject_cdeque cd2 a3 => { 
+inject_vector cd (V3 a1 a2 a3) with inject_cdeque cd a1 => {
+  | ? cd1 with inject_cdeque cd1 a2 => { | ? cd2 with inject_cdeque cd2 a3 => {
     | ? cd3 := ? cd3 } } };
 inject_vector cd (V4 a1 a2 a3 a4) with inject_cdeque cd a1 => {
   | ? cd1 with inject_cdeque cd1 a2 => { | ? cd2 with inject_cdeque cd2 a3 => {
@@ -284,37 +284,37 @@ inject_vector cd (V6 a1 a2 a3 a4 a5 a6) with inject_cdeque cd a1 => {
       | ? cd5 with inject_cdeque cd5 a6 => { | ? cd6 := ? cd6 } } } } } }.
 
 #[local] Obligation Tactic :=
-  try first [ done | 
-    cbn beta iota delta zeta; intros; 
+  try first [ done |
+    cbn beta iota delta zeta; intros;
     autorewrite with rlist;
     try simp buffer_seq in *;
     hauto db:rlist ].
 
-Equations to_pref_left {A lvl C} (cd : non_empty_cdeque A lvl C) : 
+Equations to_pref_left {A lvl C} (cd : non_empty_cdeque A lvl C) :
   { pl : pref_left A lvl | pref_left_seq pl = ne_cdeque_seq cd } :=
-to_pref_left (Only_path (Children natur adopt eq_refl)) := 
+to_pref_left (Only_path (Children natur adopt eq_refl)) :=
   ? Pref_left (Only_child natur) adopt eq_refl;
-to_pref_left (Pair_green (Children natur adopt eq_refl) pr) := 
+to_pref_left (Pair_green (Children natur adopt eq_refl) pr) :=
   ? Pref_left (Left_child natur pr) adopt eq_refl;
-to_pref_left (Pair_red (Children natur adopt eq_refl) pr) := 
+to_pref_left (Pair_red (Children natur adopt eq_refl) pr) :=
   ? Pref_left (Left_child natur pr) adopt eq_refl.
 
-Equations to_pref_right {A lvl len nlvl K} 
+Equations to_pref_right {A lvl len nlvl K}
   (pkt : packet A lvl len Preferred_left K)
   (t : triple A nlvl 0 false K K green) :
-  nlvl = len + lvl -> 
-  { pr : pref_right A lvl | 
-    pref_right_seq pr = packet_front_seq pkt ++ triple_seq t ++ packet_rear_seq pkt } :=
+  nlvl = len + lvl ->
+  { pr : pref_right A lvl |
+    pref_right_seq pr = packet_left_seq pkt ++ triple_seq t ++ packet_right_seq pkt } :=
 to_pref_right (Only_child t1) t2 eq_refl:= ? Pref_right (Only_child t1) t2 eq_refl;
-to_pref_right (Left_child t1 (Children natur adopt eq_refl)) t2 eq_refl := 
+to_pref_right (Left_child t1 (Children natur adopt eq_refl)) t2 eq_refl :=
   ? Pref_right (Right_child (Children t1 t2 eq_refl) natur) adopt eq_refl.
 
 Equations no_pref {A lvl len nlvl K}
   (pkt : packet A lvl len Preferred_right K)
   (t : triple A nlvl 0 false K K green) :
   nlvl = len + lvl ->
-  { cd : non_empty_cdeque A lvl green | 
-    ne_cdeque_seq cd = packet_front_seq pkt ++ triple_seq t ++ packet_rear_seq pkt } :=
+  { cd : non_empty_cdeque A lvl green |
+    ne_cdeque_seq cd = packet_left_seq pkt ++ triple_seq t ++ packet_right_seq pkt } :=
 no_pref (Only_child t1) t2 eq_refl := ? Only_path (Children t1 t2 eq_refl);
 no_pref (Right_child pl t1) t2 eq_refl := ? Pair_green pl (Children t1 t2 eq_refl).
 
@@ -322,8 +322,8 @@ Equations make_child {A lvl len nlvl pref K G R}
   (pkt : packet A lvl len pref K)
   (t : triple A nlvl 0 false K K (Mix G NoYellow NoOrange R)) :
   nlvl = len + lvl ->
-  { sd : sdeque A lvl | 
-    sdeque_seq sd = packet_front_seq pkt ++ triple_seq t ++ packet_rear_seq pkt } :=
+  { sd : sdeque A lvl |
+    sdeque_seq sd = packet_left_seq pkt ++ triple_seq t ++ packet_right_seq pkt } :=
 make_child (Only_child t1) t2 eq_refl :=
   ? Sd (NonEmpty (Only_path (Children t1 t2 eq_refl)));
 make_child (Left_child t1 pr) t2 eq_refl :=
@@ -332,17 +332,17 @@ make_child (G := SomeGreen) (R := NoRed) (Right_child pl t1) t2 eq_refl :=
   ? Sd (NonEmpty (Pair_green pl (Children t1 t2 eq_refl)));
 make_child (G := NoGreen) (R := SomeRed) (Right_child pl t1) t2 eq_refl :=
   ? Sd (NonEmpty (Pair_red pl (Children t1 t2 eq_refl))).
- 
-Equations push_child {A lvl len nlvl pref K G R} 
-  (x : stored_triple A lvl) 
-  (pkt : packet A lvl len pref K) 
+
+Equations push_child {A lvl len nlvl pref K G R}
+  (x : stored_triple A lvl)
+  (pkt : packet A lvl len pref K)
   (t : triple A nlvl 0 false K K (Mix G NoYellow NoOrange R)) :
   nlvl = len + lvl ->
-  { '(pkt', t') : packet A lvl len pref K * 
-                  triple A nlvl 0 false K K (Mix G NoYellow NoOrange R) | 
-    packet_front_seq pkt' ++ triple_seq t' ++ packet_rear_seq pkt' =
-      stored_triple_seq x ++ 
-      packet_front_seq pkt ++ triple_seq t ++ packet_rear_seq pkt } :=
+  { '(pkt', t') : packet A lvl len pref K *
+                  triple A nlvl 0 false K K (Mix G NoYellow NoOrange R) |
+    packet_left_seq pkt' ++ triple_seq t' ++ packet_right_seq pkt' =
+      stored_triple_seq x ++
+      packet_left_seq pkt ++ triple_seq t ++ packet_right_seq pkt } :=
 push_child x (Only_child Hole) t eq_refl with push_only_triple x t => {
   | ? t' := ? (Only_child Hole, t') };
 push_child x (Only_child t1) t2 eq_refl with push_only_triple x t1 => {
@@ -354,15 +354,15 @@ push_child x (Left_child t1 pr) t2 eq_refl with push_left_triple x t1 => {
 push_child x (Right_child pl t1) t2 eq_refl with push_left_path x pl => {
   | ? pl' := ? (Right_child pl' t1, t2) }.
 
-Equations inject_child {A lvl len nlvl pref K G R} 
+Equations inject_child {A lvl len nlvl pref K G R}
   (pkt : packet A lvl len pref K)
-  (t : triple A nlvl 0 false K K (Mix G NoYellow NoOrange R)) 
+  (t : triple A nlvl 0 false K K (Mix G NoYellow NoOrange R))
   (x : stored_triple A lvl) :
   nlvl = len + lvl ->
-  { '(pkt', t') : packet A lvl len pref K * 
-                  triple A nlvl 0 false K K (Mix G NoYellow NoOrange R) | 
-    packet_front_seq pkt' ++ triple_seq t' ++ packet_rear_seq pkt' =
-      packet_front_seq pkt ++ triple_seq t ++ packet_rear_seq pkt ++
+  { '(pkt', t') : packet A lvl len pref K *
+                  triple A nlvl 0 false K K (Mix G NoYellow NoOrange R) |
+    packet_left_seq pkt' ++ triple_seq t' ++ packet_right_seq pkt' =
+      packet_left_seq pkt ++ triple_seq t ++ packet_right_seq pkt ++
       stored_triple_seq x } :=
 inject_child (Only_child Hole) t x eq_refl with inject_only_triple t x => {
   | ? t' := ? (Only_child Hole, t') };
@@ -375,13 +375,13 @@ inject_child (Right_child pl Hole) t x eq_refl with inject_right_triple t x => {
 inject_child (Right_child pl t1) t2 x eq_refl with inject_right_triple t1 x => {
   | ? t1' := ? (Right_child pl t1', t2) }.
 
-Equations stored_left {A lvl q C} 
+Equations stored_left {A lvl q C}
   (p : prefix A lvl (5 + q))
-  (cd : cdeque A (S lvl) C) 
+  (cd : cdeque A (S lvl) C)
   (s : suffix A lvl 2)
   (b : buffer_12 A lvl) :
-  { '(p', x) : prefix A lvl 2 * stored_triple A (S lvl) | 
-    buffer_seq p' ++ stored_triple_seq x = 
+  { '(p', x) : prefix A lvl 2 * stored_triple A (S lvl) |
+    buffer_seq p' ++ stored_triple_seq x =
       buffer_seq p ++ cdeque_seq cd ++ buffer_seq s ++ buffer_12_seq b } :=
 stored_left p cd s (x, v) with buffer.inject s x => {
   | ? s1 with buffer.inject_vector s1 v => {
@@ -389,12 +389,12 @@ stored_left p cd s (x, v) with buffer.inject s x => {
       | ? (x1, x2, p1) with buffer.pair x1 x2 => {
         | ? p2 := ? (p2, ST_triple p1 cd s2) } } } }.
 
-Equations stored_right {A lvl q C} 
+Equations stored_right {A lvl q C}
   (b : buffer_12 A lvl)
   (p : prefix A lvl 2)
   (cd : cdeque A (S lvl) C)
   (s : suffix A lvl (5 + q)) :
-  { '(x, s') : stored_triple A (S lvl) * suffix A lvl 2 | 
+  { '(x, s') : stored_triple A (S lvl) * suffix A lvl 2 |
     stored_triple_seq x ++ buffer_seq s' =
       buffer_12_seq b ++ buffer_seq p ++ cdeque_seq cd ++ buffer_seq s } :=
 stored_right (x, v) p cd s with buffer.push_vector v p => {
@@ -404,26 +404,26 @@ stored_right (x, v) p cd s with buffer.push_vector v p => {
         | ? s2 := ? (ST_triple p2 cd s1, s2) } } } }.
 
 Local Ltac rewrite_seq :=
-  repeat 
-  match goal with 
+  repeat
+  match goal with
   | H : _ = seq _ |- _ => rewrite <-H
   end.
 
 #[local] Obligation Tactic :=
-  try first [ done | 
-    cbn beta iota delta zeta; intros; 
+  try first [ done |
+    cbn beta iota delta zeta; intros;
     autorewrite with rlist;
     try simp triple_seq in *;
     autorewrite with rlist in *;
     hauto db:rlist ].
 
-Equations extract_stored_left {A lvl C} 
+Equations extract_stored_left {A lvl C}
   (p : path A lvl Left C) (b : buffer_12 A lvl) :
-  { '(s, x) : suffix A lvl 2 * stored_triple A (S lvl) | 
+  { '(s, x) : suffix A lvl 2 * stored_triple A (S lvl) |
     buffer_seq s ++ stored_triple_seq x = path_seq p ++ buffer_12_seq b } :=
 extract_stored_left (Children Hole (Small p s Left_small_sizes) eq_refl) b
   with stored_left p Empty s b => { | ? (s', x) := ? (s', x) };
-extract_stored_left (Children Hole (Green p cd s Left_big_sizes) eq_refl) b 
+extract_stored_left (Children Hole (Green p cd s Left_big_sizes) eq_refl) b
   with stored_left p (NonEmpty cd) s b => { | ? (s', x) := ? (s', x) };
 extract_stored_left (Children (Yellow p pkt s Left_big_sizes) t eq_refl) b
   with make_child pkt t _ => {
@@ -436,11 +436,11 @@ extract_stored_left (Children Hole (Red p cd s Left_big_sizes) eq_refl) b
 
 Equations extract_stored_right {A lvl C}
   (b : buffer_12 A lvl) (p : path A lvl Right C) :
-  { '(x, s) : stored_triple A (S lvl) * suffix A lvl 2 | 
+  { '(x, s) : stored_triple A (S lvl) * suffix A lvl 2 |
     stored_triple_seq x ++ buffer_seq s = buffer_12_seq b ++ path_seq p } :=
 extract_stored_right b (Children Hole (Small p s Right_small_sizes) eq_refl)
   with stored_right b p Empty s => { | ? (x, s') := ? (x, s') };
-extract_stored_right b (Children Hole (Green p cd s Right_big_sizes) eq_refl) 
+extract_stored_right b (Children Hole (Green p cd s Right_big_sizes) eq_refl)
   with stored_right b p (NonEmpty cd) s => { | ? (x, s') := ? (x, s') };
 extract_stored_right b (Children (Yellow p pkt s Right_big_sizes) t eq_refl)
   with make_child pkt t _ => {
@@ -452,14 +452,14 @@ extract_stored_right b (Children Hole (Red p cd s Right_big_sizes) eq_refl)
   with stored_right b p (NonEmpty cd) s => { | ? (x, s') := ? (x, s') }.
 
 #[local] Obligation Tactic :=
-  try first [ done | 
-    cbn beta iota delta zeta; intros; 
+  try first [ done |
+    cbn beta iota delta zeta; intros;
     autorewrite with rlist;
     try simp triple_seq in *;
     autorewrite with rlist in *;
     try simp buffer_seq in *;
     hauto db:rlist ];
-  cbn beta iota delta zeta; intros; 
+  cbn beta iota delta zeta; intros;
   autorewrite with rlist;
   try simp triple_seq in *;
   autorewrite with rlist in *;
@@ -468,7 +468,7 @@ extract_stored_right b (Children Hole (Red p cd s Right_big_sizes) eq_refl)
 Equations left_of_pair {A lvl C1 C2}
   (pl : path A lvl Left C1) (pr : path A lvl Right C2) :
   { p : path A lvl Left C1 | path_seq p = path_seq pl ++ path_seq pr } :=
-left_of_pair (Children Hole (Small p s Left_small_sizes) eq_refl) pr 
+left_of_pair (Children Hole (Small p s Left_small_sizes) eq_refl) pr
   with buffer.two s => { | ? (x1, x2) with buffer.inject p x1 => {
     | ? p' with extract_stored_right (x2, V0) pr => {
       | ? (stored, s') with single_triple stored => {
@@ -477,7 +477,7 @@ left_of_pair (Children Hole (Green p cd s Left_big_sizes) eq_refl) pr
   with buffer.two s => { | ? (x1, x2) with extract_stored_right (x1, V1 x2) pr => {
     | ? (stored, s') with inject_ne_cdeque cd stored => {
       | ? cd' := ? Children Hole (Green p cd' s' Left_big_sizes) eq_refl } } };
-left_of_pair (Children (Yellow p pkt s Left_big_sizes) t eq_refl) pr 
+left_of_pair (Children (Yellow p pkt s Left_big_sizes) t eq_refl) pr
   with buffer.two s => { | ? (x1, x2) with extract_stored_right (x1, V1 x2) pr => {
     | ? (stored, s') with inject_child pkt t stored _ => {
       | ? (pkt', t') := ? Children (Yellow p pkt' s' Left_big_sizes) t' eq_refl } } };
@@ -485,7 +485,7 @@ left_of_pair (Children (Orange p pkt s Left_big_sizes) t eq_refl) pr
   with buffer.two s => { | ? (x1, x2) with extract_stored_right (x1, V1 x2) pr => {
     | ? (stored, s') with inject_child pkt t stored _ => {
       | ? (pkt', t') := ? Children (Orange p pkt' s' Left_big_sizes) t' eq_refl } } };
-left_of_pair (Children Hole (Red p cd s Left_big_sizes) eq_refl) pr 
+left_of_pair (Children Hole (Red p cd s Left_big_sizes) eq_refl) pr
   with buffer.two s => { | ? (x1, x2) with extract_stored_right (x1, V1 x2) pr => {
     | ? (stored, s') with inject_ne_cdeque cd stored => {
       | ? cd' := ? Children Hole (Red p cd' s' Left_big_sizes) eq_refl } } }.
@@ -497,10 +497,10 @@ Next Obligation.
   aac_rewrite y1; rewrite <-y; hauto db:rlist.
 Qed.
 
-Equations right_of_pair {A lvl C1 C2} 
+Equations right_of_pair {A lvl C1 C2}
   (pl : path A lvl Left C1) (pr : path A lvl Right C2) :
   { p : path A lvl Right C2 | path_seq p = path_seq pl ++ path_seq pr } :=
-right_of_pair pl (Children Hole (Small p s Right_small_sizes) eq_refl) 
+right_of_pair pl (Children Hole (Small p s Right_small_sizes) eq_refl)
   with buffer.two p => { | ? (x1, x2) with buffer.push x2 s => {
     | ? s' with extract_stored_left pl (x1, V0) => {
       | ? (p', stored) with single_triple stored => {
@@ -539,16 +539,16 @@ Qed.
 
 Equations left_of_only {A lvl C} (p : path A lvl Only C) :
   { p' : path_attempt A lvl Left C | path_attempt_seq p' = path_seq p } :=
-left_of_only (Children Hole (Small p _ Only_small_sizes) eq_refl) 
+left_of_only (Children Hole (Small p _ Only_small_sizes) eq_refl)
   with buffer.has5p2 p => {
     | ? inl v := ? ZeroSix v;
     | ? inr (p', x1, x2) with buffer.pair x1 x2 => {
       | ? s := ? Ok (Children Hole (Small p' s Left_small_sizes) eq_refl) } };
-left_of_only (Children Hole (Green p cd s Only_big_sizes) eq_refl) 
+left_of_only (Children Hole (Green p cd s Only_big_sizes) eq_refl)
   with buffer.eject2 s => { | ? (s1, x1, x2) with buffer.pair x1 x2 => {
     | ? s' with inject_ne_cdeque cd (ST_small s1) => {
       | ? cd' := ? Ok (Children Hole (Green p cd' s' Left_big_sizes) eq_refl) } } };
-left_of_only (Children (Yellow p pkt s Only_big_sizes) t eq_refl) 
+left_of_only (Children (Yellow p pkt s Only_big_sizes) t eq_refl)
   with buffer.eject2 s => { | ? (s1, x1, x2) with buffer.pair x1 x2 => {
     | ? s' with inject_child pkt t (ST_small s1) _ => {
       | ? (pkt', t') := ? Ok (Children (Yellow p pkt' s' Left_big_sizes) t' eq_refl) } } };
@@ -569,12 +569,12 @@ Qed.
 
 Equations right_of_only {A lvl C} (p : path A lvl Only C) :
   { p' : path_attempt A lvl Right C | path_attempt_seq p' = path_seq p } :=
-right_of_only (Children Hole (Small p _ Only_small_sizes) eq_refl) 
+right_of_only (Children Hole (Small p _ Only_small_sizes) eq_refl)
   with buffer.has2p5 p => {
     | ? inl v := ? ZeroSix v;
     | ? inr (x1, x2, s') with buffer.pair x1 x2 => {
       | ? p' := ? Ok (Children Hole (Small p' s' Right_small_sizes) eq_refl) } };
-right_of_only (Children Hole (Green p cd s Only_big_sizes) eq_refl) 
+right_of_only (Children Hole (Green p cd s Only_big_sizes) eq_refl)
   with buffer.pop2 p => { | ? (x1, x2, p1) with buffer.pair x1 x2 => {
     | ? p' with push_ne_cdeque (ST_small p1) cd => {
       | ? cd' := ? Ok (Children Hole (Green p' cd' s Right_big_sizes) eq_refl) } } };
@@ -582,7 +582,7 @@ right_of_only (Children (Yellow p pkt s Only_big_sizes) t eq_refl)
   with buffer.pop2 p => { | ? (x1, x2, p1) with buffer.pair x1 x2 => {
     | ? p' with push_child (ST_small p1) pkt t _ => {
       | ? (pkt', t') := ? Ok (Children (Yellow p' pkt' s Right_big_sizes) t' eq_refl) } } };
-right_of_only (Children (Orange p pkt s Only_big_sizes) t eq_refl) 
+right_of_only (Children (Orange p pkt s Only_big_sizes) t eq_refl)
   with buffer.pop2 p => { | ? (x1, x2, p1) with buffer.pair x1 x2 => {
     | ? p' with push_child (ST_small p1) pkt t _ => {
       | ? (pkt', t') := ? Ok (Children (Orange p' pkt' s Right_big_sizes) t' eq_refl) } } };
@@ -632,40 +632,40 @@ concat_semi (Sd cd1) (Sd cd2) with make_left cd1 => {
     | ? Any pr := ? Sd (NonEmpty (Pair_red pl pr)) } }.
 
 (* #[local] Obligation Tactic :=
-  try first [ done | 
-    cbn beta iota delta zeta; intros; 
+  try first [ done |
+    cbn beta iota delta zeta; intros;
     autorewrite with rlist;
     try simp triple_seq in *;
-    try simp packet_front_seq packet_rear_seq in *;
+    try simp packet_left_seq packet_right_seq in *;
     autorewrite with rlist in *;
     try simp buffer_seq in *;
     try rewrite_seq;
     hauto db:rlist ];
   cbn; intros; autorewrite with rlist;
   try simp triple_seq in *;
-  try simp packet_front_seq packet_rear_seq in *;
+  try simp packet_left_seq packet_right_seq in *;
   autorewrite with rlist in *;
   try simp buffer_seq in *. *)
 
-Equations semi_of_left {A lvl C} 
-  (p : path A lvl Left C) 
+Equations semi_of_left {A lvl C}
+  (p : path A lvl Left C)
   (x1 x2 x3 x4 x5 x6 : stored_triple A lvl) :
-  { sd : sdeque A lvl | 
-    sdeque_seq sd = path_seq p ++ stored_triple_seq x1 ++ stored_triple_seq x2 ++ 
-                                  stored_triple_seq x3 ++ stored_triple_seq x4 ++ 
+  { sd : sdeque A lvl |
+    sdeque_seq sd = path_seq p ++ stored_triple_seq x1 ++ stored_triple_seq x2 ++
+                                  stored_triple_seq x3 ++ stored_triple_seq x4 ++
                                   stored_triple_seq x5 ++ stored_triple_seq x6 } :=
-semi_of_left (Children Hole (Small p s Left_small_sizes) eq_refl) x1 x2 x3 x4 x5 x6 
+semi_of_left (Children Hole (Small p s Left_small_sizes) eq_refl) x1 x2 x3 x4 x5 x6
   with buffer.two s => { | ? (y1, y2) with buffer.inject2 p y1 y2 => {
     | ? p1 with buffer.inject6 p1 x1 x2 x3 x4 x5 x6, buffer.empty => {
-      | ? p2, ? s2 := 
+      | ? p2, ? s2 :=
       ? Sd (NonEmpty (Only_path (Children Hole (Small p2 s2 Only_small_sizes) eq_refl))) } } };
-semi_of_left (Children Hole (Green p cd s Left_big_sizes) eq_refl) x1 x2 x3 x4 x5 x6 
+semi_of_left (Children Hole (Green p cd s Left_big_sizes) eq_refl) x1 x2 x3 x4 x5 x6
   with buffer.inject6 s x1 x2 x3 x4 x5 x6 => {
-    | ? s' := 
+    | ? s' :=
     ? Sd (NonEmpty (Only_path (Children Hole (Green p cd s' Only_big_sizes) eq_refl))) };
-semi_of_left (Children (Yellow p pkt s Left_big_sizes) t eq_refl) x1 x2 x3 x4 x5 x6 
+semi_of_left (Children (Yellow p pkt s Left_big_sizes) t eq_refl) x1 x2 x3 x4 x5 x6
   with buffer.inject6 s x1 x2 x3 x4 x5 x6 => {
-    | ? s' := 
+    | ? s' :=
     ? Sd (NonEmpty (Only_path (Children (Yellow p pkt s' Only_big_sizes) t eq_refl))) };
 semi_of_left (Children (Orange p pkt s Left_big_sizes) t eq_refl) x1 x2 x3 x4 x5 x6
   with buffer.inject6 s x1 x2 x3 x4 x5 x6 => {
@@ -673,29 +673,29 @@ semi_of_left (Children (Orange p pkt s Left_big_sizes) t eq_refl) x1 x2 x3 x4 x5
     ? Sd (NonEmpty (Only_path (Children (Orange p pkt s' Only_big_sizes) t eq_refl))) };
 semi_of_left (Children Hole (Red p cd s Left_big_sizes) eq_refl) x1 x2 x3 x4 x5 x6
   with buffer.inject6 s x1 x2 x3 x4 x5 x6 => {
-    | ? s' := 
+    | ? s' :=
     ? Sd (NonEmpty (Only_path (Children Hole (Red p cd s' Only_big_sizes) eq_refl))) }.
-Next Obligation. 
+Next Obligation.
   rewrite <-y; hauto db:rlist.
 Qed.
 
-Equations semi_of_right {A lvl C} 
-  (x1 x2 x3 x4 x5 x6 : stored_triple A lvl) 
+Equations semi_of_right {A lvl C}
+  (x1 x2 x3 x4 x5 x6 : stored_triple A lvl)
   (p : path A lvl Right C) :
-  { sd : sdeque A lvl | 
+  { sd : sdeque A lvl |
     sdeque_seq sd = stored_triple_seq x1 ++ stored_triple_seq x2 ++
                     stored_triple_seq x3 ++ stored_triple_seq x4 ++
                     stored_triple_seq x5 ++ stored_triple_seq x6 ++ path_seq p } :=
-semi_of_right x1 x2 x3 x4 x5 x6 (Children Hole (Small p s Right_small_sizes) eq_refl) 
+semi_of_right x1 x2 x3 x4 x5 x6 (Children Hole (Small p s Right_small_sizes) eq_refl)
   with buffer.two p => { | ? (y1, y2) with buffer.push2 y1 y2 s => {
     | ? s1 with buffer.push6 x1 x2 x3 x4 x5 x6 s1, buffer.empty => {
-      | ? p2, ? s2 := 
+      | ? p2, ? s2 :=
       ? Sd (NonEmpty (Only_path (Children Hole (Small p2 s2 Only_small_sizes) eq_refl))) } } };
 semi_of_right x1 x2 x3 x4 x5 x6 (Children Hole (Green p cd s Right_big_sizes) eq_refl)
   with buffer.push6 x1 x2 x3 x4 x5 x6 p => {
     | ? p' :=
     ? Sd (NonEmpty (Only_path (Children Hole (Green p' cd s Only_big_sizes) eq_refl))) };
-semi_of_right x1 x2 x3 x4 x5 x6 (Children (Yellow p pkt s Right_big_sizes) t eq_refl) 
+semi_of_right x1 x2 x3 x4 x5 x6 (Children (Yellow p pkt s Right_big_sizes) t eq_refl)
   with buffer.push6 x1 x2 x3 x4 x5 x6 p => {
     | ? p' :=
     ? Sd (NonEmpty (Only_path (Children (Yellow p' pkt s Only_big_sizes) t eq_refl))) };
@@ -705,30 +705,30 @@ semi_of_right x1 x2 x3 x4 x5 x6 (Children (Orange p pkt s Right_big_sizes) t eq_
     ? Sd (NonEmpty (Only_path (Children (Orange p' pkt s Only_big_sizes) t eq_refl))) };
 semi_of_right x1 x2 x3 x4 x5 x6 (Children Hole (Red p cd s Right_big_sizes) eq_refl)
   with buffer.push6 x1 x2 x3 x4 x5 x6 p => {
-    | ? p' := 
+    | ? p' :=
     ? Sd (NonEmpty (Only_path (Children Hole (Red p' cd s Only_big_sizes) eq_refl))) }.
 
 Equations pop_green_left {A lvl} (p : path A lvl Left green) :
-  { '(x, p') : stored_triple A lvl * path_uncolored A lvl Left | 
+  { '(x, p') : stored_triple A lvl * path_uncolored A lvl Left |
     stored_triple_seq x ++ path_uncolored_seq p' = path_seq p } :=
-pop_green_left (Children Hole (Small p s Left_small_sizes) eq_refl) 
+pop_green_left (Children Hole (Small p s Left_small_sizes) eq_refl)
   with buffer.pop p => { | ? (x, p1) with buffer.has5 p1 => {
-    | ? inl (x1, x2, x3, x4) with buffer.two s => { | ? (x5, x6) := 
+    | ? inl (x1, x2, x3, x4) with buffer.two s => { | ? (x5, x6) :=
       ? (x, Six x1 x2 x3 x4 x5 x6) };
     | ? inr p2 := ? (x, AnyColor (Children Hole (Small p2 s Left_small_sizes) eq_refl)) } };
 pop_green_left (Children Hole (Green p cd s Left_big_sizes) eq_refl)
   with buffer.pop p => { | ? (x, p1) with to_pref_left cd => {
-    | ? Pref_left pkt t eq_refl := 
+    | ? Pref_left pkt t eq_refl :=
       ? (x, AnyColor (Children (Yellow p1 pkt s Left_big_sizes) t _)) } };
-pop_green_left (Children (Yellow p pkt s Left_big_sizes) t eq_refl) 
+pop_green_left (Children (Yellow p pkt s Left_big_sizes) t eq_refl)
   with buffer.pop p => { | ? (x, p1) with to_pref_right pkt t _ => {
-    | ? Pref_right pkt' t' eq_refl := 
+    | ? Pref_right pkt' t' eq_refl :=
       ? (x, AnyColor (Children (Orange p1 pkt' s Left_big_sizes) t' _)) } };
 pop_green_left (Children (Orange p pkt s Left_big_sizes) t eq_refl)
   with buffer.pop p => { | ? (x, p1) with no_pref pkt t _ => {
     | ? cd := ? (x, AnyColor (Children Hole (Red p1 cd s Left_big_sizes) eq_refl)) } }.
 Next Obligation. Qed.
-Next Obligation. 
+Next Obligation.
   aac_rewrite e; hauto db:rlist.
 Qed.
 
@@ -737,16 +737,16 @@ Equations eject_green_right {A lvl} (p : path A lvl Right green) :
     path_uncolored_seq p' ++ stored_triple_seq x = path_seq p } :=
 eject_green_right (Children Hole (Small p s Right_small_sizes) eq_refl)
   with buffer.eject s => { | ? (s1, x) with buffer.has5 s1 => {
-    | ? inl (x3, x4, x5, x6) with buffer.two p => { | ? (x1, x2) := 
+    | ? inl (x3, x4, x5, x6) with buffer.two p => { | ? (x1, x2) :=
       ? (Six x1 x2 x3 x4 x5 x6, x) };
     | ? inr s2 := ? (AnyColor (Children Hole (Small p s2 Right_small_sizes) eq_refl), x) } };
 eject_green_right (Children Hole (Green p cd s Right_big_sizes) eq_refl)
   with buffer.eject s => { | ? (s1, x) with to_pref_left cd => {
-    | ? Pref_left pkt t eq_refl := 
+    | ? Pref_left pkt t eq_refl :=
       ? (AnyColor (Children (Yellow p pkt s1 Right_big_sizes) t _), x) } };
 eject_green_right (Children (Yellow p pkt s Right_big_sizes) t eq_refl)
   with buffer.eject s => { | ? (s1, x) with to_pref_right pkt t _ => {
-    | ? Pref_right pkt' t' eq_refl := 
+    | ? Pref_right pkt' t' eq_refl :=
       ? (AnyColor (Children (Orange p pkt' s1 Right_big_sizes) t' _), x) } };
 eject_green_right (Children (Orange p pkt s Right_big_sizes) t eq_refl)
   with buffer.eject s => { | ? (s1, x) with no_pref pkt t _ => {
@@ -757,12 +757,12 @@ Next Obligation.
 Qed.
 
 Equations pop_green {A lvl} (cd : non_empty_cdeque A lvl green) :
-  { '(x, sd) : stored_triple A lvl * sdeque A lvl | 
+  { '(x, sd) : stored_triple A lvl * sdeque A lvl |
     stored_triple_seq x ++ sdeque_seq sd = ne_cdeque_seq cd } :=
-pop_green (Only_path (Children Hole (Small p s Only_small_sizes) eq_refl)) 
+pop_green (Only_path (Children Hole (Small p s Only_small_sizes) eq_refl))
   with buffer.pop p => { | ? (x, p1) with buffer.has1 p1 => {
     | ? None := ? (x, Sd Empty);
-    | ? Some p2 := 
+    | ? Some p2 :=
     ? (x, Sd (NonEmpty (Only_path (Children Hole (Small p2 s Only_small_sizes) eq_refl)))) } };
 pop_green (Only_path (Children Hole (Green p cd s Only_big_sizes) eq_refl))
   with buffer.pop p => { | ? (x, p1) with to_pref_left cd => {
@@ -773,8 +773,8 @@ pop_green (Only_path (Children (Yellow p pkt s Only_big_sizes) t eq_refl))
     | ? Pref_right pkt' t' eq_refl :=
     ? (x, Sd (NonEmpty (Only_path (Children (Orange p1 pkt' s Only_big_sizes) t' _)))) } };
 pop_green (Only_path (Children (Orange p pkt s Only_big_sizes) t eq_refl))
-  with buffer.pop p => { | ? (x, p1) with no_pref pkt t _ => 
-    | ? cd := 
+  with buffer.pop p => { | ? (x, p1) with no_pref pkt t _ =>
+    | ? cd :=
     ? (x, Sd (NonEmpty (Only_path (Children Hole (Red p1 cd s Only_big_sizes) eq_refl)))) };
 pop_green (Pair_green pl pr) with pop_green_left pl => {
   | ? (x, Six x1 x2 x3 x4 x5 x6) with semi_of_right x1 x2 x3 x4 x5 x6 pr => {
@@ -786,12 +786,12 @@ Next Obligation.
 Qed.
 
 Equations eject_green {A lvl} (cd : non_empty_cdeque A lvl green) :
-  { '(sd, x) : sdeque A lvl * stored_triple A lvl | 
+  { '(sd, x) : sdeque A lvl * stored_triple A lvl |
     sdeque_seq sd ++ stored_triple_seq x = ne_cdeque_seq cd } :=
-eject_green (Only_path (Children Hole (Small p s Only_small_sizes) eq_refl)) 
+eject_green (Only_path (Children Hole (Small p s Only_small_sizes) eq_refl))
   with buffer.eject p => { | ? (p1, x) with buffer.has1 p1 => {
     | ? None := ? (Sd Empty, x);
-    | ? Some p2 := 
+    | ? Some p2 :=
     ? (Sd (NonEmpty (Only_path (Children Hole (Small p2 s Only_small_sizes) eq_refl))), x) } };
 eject_green (Only_path (Children Hole (Green p cd s Only_big_sizes) eq_refl))
   with buffer.eject s => { | ? (s1, x) with to_pref_left cd => {
@@ -799,24 +799,24 @@ eject_green (Only_path (Children Hole (Green p cd s Only_big_sizes) eq_refl))
     ? (Sd (NonEmpty (Only_path (Children (Yellow p pkt s1 Only_big_sizes) t _))), x) } };
 eject_green (Only_path (Children (Yellow p pkt s Only_big_sizes) t eq_refl))
   with buffer.eject s => { | ? (s1, x) with to_pref_right pkt t _ => {
-    | ? Pref_right pkt' t' eq_refl := 
+    | ? Pref_right pkt' t' eq_refl :=
     ? (Sd (NonEmpty (Only_path (Children (Orange p pkt' s1 Only_big_sizes) t' _))), x) } };
-eject_green (Only_path (Children (Orange p pkt s Only_big_sizes) t eq_refl)) 
+eject_green (Only_path (Children (Orange p pkt s Only_big_sizes) t eq_refl))
   with buffer.eject s => { | ? (s1, x) with no_pref pkt t _ => {
-    | ? cd := 
+    | ? cd :=
     ? (Sd (NonEmpty (Only_path (Children Hole (Red p cd s1 Only_big_sizes) eq_refl))), x) } };
 eject_green (Pair_green pl pr) with eject_green_right pr => {
   | ? (Six x1 x2 x3 x4 x5 x6, x) with semi_of_left pl x1 x2 x3 x4 x5 x6 => {
     | ? sd := ? (sd, x) };
   | ? (AnyColor pr', x) := ? (Sd (NonEmpty (Pair_red pl pr')), x) }.
 Next Obligation. Qed.
-Next Obligation. 
+Next Obligation.
   aac_rewrite e; hauto db:rlist.
 Qed.
 
 Equations pop_stored {A lvl} (cd : non_empty_cdeque A (S lvl) green) :
-  { uns : unstored A lvl | 
-    unstored_front_seq uns ++ unstored_rear_seq uns = ne_cdeque_seq cd } :=
+  { uns : unstored A lvl |
+    unstored_left_seq uns ++ unstored_right_seq uns = ne_cdeque_seq cd } :=
 pop_stored cd with pop_green cd => {
   | ? (ST_small p, sd) := ? Unstored p sd
   | ? (ST_triple p cd1 s, sd) with push_semi (ST_small s) sd => {
@@ -824,8 +824,8 @@ pop_stored cd with pop_green cd => {
       | ? sd2 := ? Unstored p sd2 } } }.
 
 Equations eject_stored {A lvl} (cd : non_empty_cdeque A (S lvl) green) :
-  { uns : unstored A lvl | 
-    unstored_rear_seq uns ++ unstored_front_seq uns = ne_cdeque_seq cd } :=
+  { uns : unstored A lvl |
+    unstored_right_seq uns ++ unstored_left_seq uns = ne_cdeque_seq cd } :=
 eject_stored cd with eject_green cd => {
   | ? (sd, ST_small p) := ? Unstored p sd
   | ? (sd, ST_triple p cd1 s) with inject_semi sd (ST_small p) => {
@@ -834,29 +834,29 @@ eject_stored cd with eject_green cd => {
 
 Equations unsandwich_green {A lvl} (cd : non_empty_cdeque A lvl green) :
   { s : sandwich A lvl | sandwich_seq s = ne_cdeque_seq cd } :=
-unsandwich_green (Only_path (Children Hole (Small p s Only_small_sizes) eq_refl)) 
+unsandwich_green (Only_path (Children Hole (Small p s Only_small_sizes) eq_refl))
   with buffer.pop p => { | ? (x1, p1) with buffer.has1 p1 => {
     | ? None := ? Alone x1;
     | ? Some p2 with buffer.eject p2 => { | ? (p3, x2) with buffer.has1 p3 => {
       | ? None := ? Sandwich x1 (Sd Empty) x2;
-      | ? Some p4 := 
-        let only := Only_path (Children Hole (Small p4 s Only_small_sizes) eq_refl) in 
+      | ? Some p4 :=
+        let only := Only_path (Children Hole (Small p4 s Only_small_sizes) eq_refl) in
         ? Sandwich x1 (Sd (NonEmpty only)) x2 } } } };
 unsandwich_green (Only_path (Children Hole (Green p cd s Only_big_sizes) eq_refl))
-  with buffer.pop p => { | ? (x1, p1) with buffer.eject s => { 
-    | ? (s1, x2) with to_pref_left cd => { | ? Pref_left pkt t eq_refl := 
-    (* If we remove eq_refl, equations fail with "Constructor is applied to too 
+  with buffer.pop p => { | ? (x1, p1) with buffer.eject s => {
+    | ? (s1, x2) with to_pref_left cd => { | ? Pref_left pkt t eq_refl :=
+    (* If we remove eq_refl, equations fail with "Constructor is applied to too
        many arguments", when in fact it is the opposite. *)
-      let only := Only_path (Children (Yellow p1 pkt s1 Only_big_sizes) t _) in 
+      let only := Only_path (Children (Yellow p1 pkt s1 Only_big_sizes) t _) in
       ? Sandwich x1 (Sd (NonEmpty only)) x2 } } };
 unsandwich_green (Only_path (Children (Yellow p pkt s Only_big_sizes) t eq_refl))
   with buffer.pop p => { | ? (x1, p1) with buffer.eject s => {
-    | ? (s1, x2) with to_pref_right pkt t _ => { | ? Pref_right pkt' t' eq_refl := 
-      let only := Only_path (Children (Orange p1 pkt' s1 Only_big_sizes) t' _) in 
+    | ? (s1, x2) with to_pref_right pkt t _ => { | ? Pref_right pkt' t' eq_refl :=
+      let only := Only_path (Children (Orange p1 pkt' s1 Only_big_sizes) t' _) in
       ? Sandwich x1 (Sd (NonEmpty only)) x2 } } };
 unsandwich_green (Only_path (Children (Orange p pkt s Only_big_sizes) t eq_refl))
   with buffer.pop p => { | ? (x1, p1) with buffer.eject s => {
-    | ? (s1, x2) with no_pref pkt t _ => { | ? cd := 
+    | ? (s1, x2) with no_pref pkt t _ => { | ? cd :=
       let only := Only_path (Children Hole (Red p1 cd s1 Only_big_sizes) eq_refl) in
       ? Sandwich x1 (Sd (NonEmpty only)) x2 } } };
 unsandwich_green (Pair_green pl pr) with pop_green_left pl => {
@@ -864,7 +864,7 @@ unsandwich_green (Pair_green pl pr) with pop_green_left pl => {
     | ? (Six x8 x9 x10 x11 x12 x13, x14) with buffer.empty => {
       | ? b with buffer.push6 x8 x9 x10 x11 x12 x13 b => {
         | ? b1 with buffer.push6 x2 x3 x4 x5 x6 x7 b1 => {
-          | ? b2 := 
+          | ? b2 :=
             let only := Only_path (Children Hole (Small b2 b Only_small_sizes) eq_refl) in
             ? Sandwich x1 (Sd (NonEmpty only)) x14 } } };
     | ? (AnyColor pr1, x8) with semi_of_right x2 x3 x4 x5 x6 x7 pr1 => {
@@ -872,7 +872,7 @@ unsandwich_green (Pair_green pl pr) with pop_green_left pl => {
   | ? (x1, AnyColor pl1) with eject_green_right pr => {
     | ? (Six x2 x3 x4 x5 x6 x7, x8) with semi_of_left pl1 x2 x3 x4 x5 x6 x7 => {
       | ? sd := ? Sandwich x1 sd x8 };
-    | ? (AnyColor pr1, x2) := 
+    | ? (AnyColor pr1, x2) :=
       ? Sandwich x1 (Sd (NonEmpty (Pair_red pl1 pr1))) x2 } }.
 Next Obligation.
   pose (buffer.empty_buffer s) as H; rewrite H; cbn.
@@ -893,26 +893,26 @@ unsandwich_stored cd with unsandwich_green cd => {
   | ? Alone (ST_small p) := ? Unstored_alone p;
   | ? Alone (ST_triple p cd1 s) := ? Unstored_sandwich p (Sd cd1) s;
   | ? Sandwich (ST_small p) sd (ST_small s) := ? Unstored_sandwich p sd s;
-  | ? Sandwich (ST_small p) sd (ST_triple p1 cd1 s) 
+  | ? Sandwich (ST_small p) sd (ST_triple p1 cd1 s)
     with inject_semi sd (ST_small p1) => { | ? sd1 with concat_semi sd1 (Sd cd1) => {
       | ? sd2 := ? Unstored_sandwich p sd2 s } };
-  | ? Sandwich (ST_triple p cd1 s1) sd (ST_small s) 
+  | ? Sandwich (ST_triple p cd1 s1) sd (ST_small s)
     with push_semi (ST_small s1) sd => { | ? sd1 with concat_semi (Sd cd1) sd1 => {
       | ? sd2 := ? Unstored_sandwich p sd2 s } };
-  | ? Sandwich (ST_triple p cdl sl) sd (ST_triple pr cdr s) 
-    with push_semi (ST_small sl) sd => { 
+  | ? Sandwich (ST_triple p cdl sl) sd (ST_triple pr cdr s)
+    with push_semi (ST_small sl) sd => {
       | ? sd1 with inject_semi sd1 (ST_small pr) => {
-        | ? sd2 with concat_semi (Sd cdl) sd2 => { 
+        | ? sd2 with concat_semi (Sd cdl) sd2 => {
           | ? sd3 with concat_semi sd3 (Sd cdr) => {
             | ? sd4 := ? Unstored_sandwich p sd4 s } } } } }.
 
-Equations only_small {A lvl qp qs} 
-  (p : prefix A lvl (8 + qp)) 
+Equations only_small {A lvl qp qs}
+  (p : prefix A lvl (8 + qp))
   (s : suffix A lvl (8 + qs)) :
-  { t : triple A lvl 0 false Only Only green | 
+  { t : triple A lvl 0 false Only Only green |
     triple_seq t = buffer_seq p ++ buffer_seq s } :=
 only_small p s with buffer.has3p8 s => {
-  | ? inl (x1, x2, x3, x4, x5, x6, x7, x8, v) 
+  | ? inl (x1, x2, x3, x4, x5, x6, x7, x8, v)
     with buffer.inject8 p x1 x2 x3 x4 x5 x6 x7 x8 => {
       | ? p1 with buffer.inject_vector p1 v, buffer.empty => {
           | ? p2, ? s2 := ? Small p2 s2 Only_small_sizes } };
@@ -920,34 +920,34 @@ only_small p s with buffer.has3p8 s => {
     | ? b with only_single (ST_small b) => {
       | ? cd := ? Green p cd s1 Only_big_sizes } } }.
 
-Equations only_green {A lvl qp qs} 
+Equations only_green {A lvl qp qs}
   (p : prefix A lvl (8 + qp))
   (sd : sdeque A (S lvl))
   (s : suffix A lvl (8 + qs)) :
-  { t : triple A lvl 0 false Only Only green | 
+  { t : triple A lvl 0 false Only Only green |
     triple_seq t = buffer_seq p ++ sdeque_seq sd ++ buffer_seq s } :=
 only_green p (Sd Empty) s with only_small p s => { | ? t := ? t };
 only_green p (Sd (NonEmpty cd)) s := ? Green p cd s Only_big_sizes.
 
-#[local] Obligation Tactic := 
+#[local] Obligation Tactic :=
   cbn; intros; autorewrite with rlist;
   try simp triple_seq in *;
-  try simp packet_front_seq packet_rear_seq in *;
+  try simp packet_left_seq packet_right_seq in *;
   autorewrite with rlist in *;
-  try simp buffer_seq in *; 
-  try (rewrite_seq; hauto db:rlist). 
-  
+  try simp buffer_seq in *;
+  try (rewrite_seq; hauto db:rlist).
+
   (* Returns an error for obligations : hauto failed. *)
 
 Equations green_of_red_only {A lvl} (t : triple A lvl 0 false Only Only red) :
   { t' : triple A lvl 0 false Only Only green | triple_seq t' = triple_seq t } :=
 green_of_red_only (Red p cd s Only_big_sizes) with buffer.has8 p, buffer.has8 s => {
-  | ? inl (x1, x2, x3, x4, x5, vp), ? inl (y1, y2, y3, y4, y5, vs) 
+  | ? inl (x1, x2, x3, x4, x5, vp), ? inl (y1, y2, y3, y4, y5, vs)
     with unsandwich_stored cd => {
       | ? Unstored_alone center with buffer.push5_vector x1 x2 x3 x4 x5 vp center => {
         | ? center1 with buffer.inject5_vector center1 y1 y2 y3 y4 y5 vs, buffer.empty => {
             | ? center2, ? empty := ? Small center2 empty Only_small_sizes } };
-      | ? Unstored_sandwich p1 sd s1 
+      | ? Unstored_sandwich p1 sd s1
         with buffer.push5_vector x1 x2 x3 x4 x5 vp p1 => {
           | ? p2 with buffer.inject5_vector s1 y1 y2 y3 y4 y5 vs => {
             | ? s2 with only_green p2 sd s2 => { | ? t := ? t } } } };
@@ -969,7 +969,7 @@ green_of_red_left (Red p cd s Left_big_sizes) with buffer.has8 p => {
   | ? inl (x1, x2, x3, x4, x5, vp) with pop_stored cd => {
     | ? Unstored p1 (Sd cd1) with buffer.push5_vector x1 x2 x3 x4 x5 vp p1 => {
       | ? p2 with cd1 => {
-        | Empty := ? Small p2 s Left_small_sizes; 
+        | Empty := ? Small p2 s Left_small_sizes;
         | NonEmpty cd1' := ? Green p2 cd1' s Left_big_sizes } } };
   | ? inr p1 := ? Green p1 cd s Left_big_sizes }.
 
@@ -986,18 +986,18 @@ Next Obligation. Qed.
 Next Obligation. Qed.
 
 #[local] Obligation Tactic :=
-  try first [ done | 
-    cbn beta iota delta zeta; intros; 
+  try first [ done |
+    cbn beta iota delta zeta; intros;
     try simp triple_seq in *;
     autorewrite with rlist;
     try simp buffer_seq in *;
     hauto db:rlist ].
 
-Equations ensure_green {A lvl} (K : kind) (G : green_hue) (R : red_hue) 
+Equations ensure_green {A lvl} (K : kind) (G : green_hue) (R : red_hue)
   (t : triple A lvl 0 false K K (Mix G NoYellow NoOrange R)) :
   { t' : triple A lvl 0 false K K green | triple_seq t' = triple_seq t } :=
 ensure_green _ SomeGreen NoRed t := ? t;
-ensure_green Only NoGreen SomeRed t with green_of_red_only t => { 
+ensure_green Only NoGreen SomeRed t with green_of_red_only t => {
   | ? t' := ? t' };
 ensure_green Left NoGreen SomeRed t with green_of_red_left t => {
   | ? t' := ? t' };
@@ -1015,11 +1015,11 @@ Equations ensure_green_cdeque {A lvl C} (cd : non_empty_cdeque A lvl C) :
 ensure_green_cdeque (Only_path p) with ensure_green_path p => {
   | ? p' := ? Only_path p' };
 ensure_green_cdeque (Pair_green pl pr) := ? Pair_green pl pr;
-ensure_green_cdeque (Pair_red pl pr) 
+ensure_green_cdeque (Pair_red pl pr)
   with ensure_green_path pl, ensure_green_path pr => {
     | ? pl', ? pr' := ? Pair_green pl' pr' }.
 
-Equations regular_of_semi {A} (sd : sdeque A 0) : 
+Equations regular_of_semi {A} (sd : sdeque A 0) :
   { d : deque A | deque_seq d = sdeque_seq sd } :=
 regular_of_semi (Sd Empty) := ? T Empty;
 regular_of_semi (Sd (NonEmpty cd)) with ensure_green_cdeque cd => {

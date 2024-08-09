@@ -1,7 +1,7 @@
 (library
  (name cdeque)
- (libraries sdeque))
+ (libraries sdeque color))
 
 (coq.theory
  (name Cdeque)
- (theories Equations Hammer AAC_tactics Deque))
+ (theories Equations Hammer AAC_tactics Sdeque Color))

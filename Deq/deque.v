@@ -9,21 +9,21 @@ Import Instances.Lists.
 
 (* Types *)
 
-(* Here, [green_hue], [yellow_hue], and [red_hue] will be utilized to generate 
-   the colors essential for our program. They function as boolean variables, 
+(* Here, [green_hue], [yellow_hue], and [red_hue] will be utilized to generate
+   the colors essential for our program. They function as boolean variables,
    indicating whether or not a specific hue is present in our color. *)
 
 Inductive green_hue  : Type := SomeGreen  | NoGreen.
 Inductive yellow_hue : Type := SomeYellow | NoYellow.
 Inductive red_hue    : Type := SomeRed    | NoRed.
 
-(* Colors are generated through the constructor [Mix], which accepts amount 
+(* Colors are generated through the constructor [Mix], which accepts amount
    of each hue as arguments. *)
 
 Inductive color : Type :=
   | Mix : green_hue -> yellow_hue -> red_hue -> color.
 
-(* In order for [Equations] to work on hues and colors, instances of 
+(* In order for [Equations] to work on hues and colors, instances of
    [NoConfusion] are added to these types. *)
 
 Derive NoConfusion for green_hue.
@@ -40,20 +40,20 @@ Notation uncolored := (Mix NoGreen NoYellow NoRed).
 
 (* A type for iterated products. *)
 
-Inductive prodN (A : Type) : nat -> Type := 
-  | prodZ : A -> prodN A 0 
+Inductive prodN (A : Type) : nat -> Type :=
+  | prodZ : A -> prodN A 0
   | prodS {n : nat} : prodN A n -> prodN A n -> prodN A (S n).
 Arguments prodZ {A}.
 Arguments prodS {A n}.
 
-(* In the following types, an integer parameter is introduced : the [lvl] of 
-   the type. The level contains information on the type of elements stored in 
-   the structure encoded. As elements stored in our different structure are 
-   iterated pairs of a type A, the level is simply the number of times we 
+(* In the following types, an integer parameter is introduced : the [lvl] of
+   the type. The level contains information on the type of elements stored in
+   the structure encoded. As elements stored in our different structure are
+   iterated pairs of a type A, the level is simply the number of times we
    iterated the product on A.
-   
-   For example, a buffer of level 0 will contain elements of A, a buffer of 
-   level 1 will contain elements of A * A, a buffer of level 2 will contain 
+
+   For example, a buffer of level 0 will contain elements of A, a buffer of
+   level 1 will contain elements of A * A, a buffer of level 2 will contain
    elements of (A * A) * (A * A), and so on ... *)
 
 (* A type for leveled buffers. *)
@@ -88,9 +88,9 @@ Arguments Any {A lvl C}.
 
 (* A relation between the prefix, suffix and packet colors. *)
 
-Inductive packet_color : color -> color -> color -> Type := 
+Inductive packet_color : color -> color -> color -> Type :=
   | PCGreen : packet_color green green green
-  | PCYellow {G1 Y1 G2 Y2} : packet_color (Mix G1 Y1 NoRed) (Mix G2 Y2 NoRed) yellow 
+  | PCYellow {G1 Y1 G2 Y2} : packet_color (Mix G1 Y1 NoRed) (Mix G2 Y2 NoRed) yellow
   | PCRed {C1 C2 : color} : packet_color C1 C2 red.
 
 (* A type for leveled packet. *)
@@ -108,21 +108,21 @@ Arguments Triple {A lvl len Y C1 C2 C3}.
 
 (* A relation between the head packet and the following deque colors. *)
 
-Inductive cdeque_color : color -> color -> Type := 
+Inductive cdeque_color : color -> color -> Type :=
   | CCGreen {G R} : cdeque_color green (Mix G NoYellow R)
-  | CCYellow : cdeque_color yellow green 
+  | CCYellow : cdeque_color yellow green
   | CCRed : cdeque_color red green.
 
 (* A type for leveled colored deque. *)
 
 Inductive lvl_cdeque (A : Type) (lvl : nat) : color -> Type :=
-  | Small {C : color} : 
-      buffer A lvl C -> 
+  | Small {C : color} :
+      buffer A lvl C ->
       lvl_cdeque A lvl green
   | Big {len nlvl : nat} {C1 C2 : color} :
-      lvl_packet A lvl len C1 -> 
+      lvl_packet A lvl len C1 ->
       lvl_cdeque A nlvl C2 ->
-      nlvl = len + lvl -> 
+      nlvl = len + lvl ->
       cdeque_color C1 C2 ->
       lvl_cdeque A lvl C1.
 Arguments Small {A lvl C}.
@@ -153,9 +153,9 @@ Arguments Sandwich {A lvl C}.
 
 (* A type for deque. *)
 
-Inductive deque (A : Type) : Type := 
-  T : forall (G : green_hue) (Y : yellow_hue), 
-      cdeque A (Mix G Y NoRed) -> 
+Inductive deque (A : Type) : Type :=
+  T : forall (G : green_hue) (Y : yellow_hue),
+      cdeque A (Mix G Y NoRed) ->
       deque A.
 Arguments T {A G Y}.
 
@@ -179,7 +179,7 @@ Opaque singleton.
 
 (* Returns the sequence contained in a product. *)
 
-Equations prodN_seq {A} (n : nat) : prodN A n -> list A := 
+Equations prodN_seq {A} (n : nat) : prodN A n -> list A :=
 prodN_seq 0 (prodZ a) := [a];
 prodN_seq (S n) (prodS p1 p2) := prodN_seq n p1 ++ prodN_seq n p2.
 Arguments prodN_seq {A n}.
@@ -210,30 +210,30 @@ yellow_buffer_seq (Yellowish buf) := buffer_seq buf.
 Equations any_buffer_seq {A lvl} : any_buffer A lvl -> list A :=
 any_buffer_seq (Any buf) := buffer_seq buf.
 
-(* Returns the sequence of elements stored in prefix buffers along a 
+(* Returns the sequence of elements stored in prefix buffers along a
    packet. *)
 
-Equations packet_front_seq {A lvl len C} : lvl_packet A lvl len C -> list A :=
-packet_front_seq Hole := [];
-packet_front_seq (Triple buf1 p _ _) := 
-  buffer_seq buf1 ++ packet_front_seq p.
+Equations packet_left_seq {A lvl len C} : lvl_packet A lvl len C -> list A :=
+packet_left_seq Hole := [];
+packet_left_seq (Triple buf1 p _ _) :=
+  buffer_seq buf1 ++ packet_left_seq p.
 
-(* Returns the sequence of elements stored in suffix buffers along a 
+(* Returns the sequence of elements stored in suffix buffers along a
    packet. *)
 
-Equations packet_rear_seq {A lvl len C} : lvl_packet A lvl len C -> list A :=
-packet_rear_seq Hole := [];
-packet_rear_seq (Triple _ p buf2 _) := 
-  packet_rear_seq p ++ buffer_seq buf2.
+Equations packet_right_seq {A lvl len C} : lvl_packet A lvl len C -> list A :=
+packet_right_seq Hole := [];
+packet_right_seq (Triple _ p buf2 _) :=
+  packet_right_seq p ++ buffer_seq buf2.
 
 (* Returns the sequence contained in a leveled colored deque. *)
 
 Equations cdeque_seq {A lvl C} : lvl_cdeque A lvl C -> list A :=
 cdeque_seq (Small buf) := buffer_seq buf;
-cdeque_seq (Big p cd _ _) := 
-    packet_front_seq p ++
+cdeque_seq (Big p cd _ _) :=
+    packet_left_seq p ++
     cdeque_seq cd ++
-    packet_rear_seq p.
+    packet_right_seq p.
 
 (* Returns the sequence of non-excess elements of an object of type decompose. *)
 
@@ -278,12 +278,12 @@ empty with cempty => { | ? cd := ? T cd }.
 
 (* Functions *)
 
-(* A new tactic [destruct_prod] is introduced. It destructs all elements of 
+(* A new tactic [destruct_prod] is introduced. It destructs all elements of
    higher level into elements of lower levels. *)
 
 Local Ltac destruct_prod :=
-  repeat 
-  match goal with 
+  repeat
+  match goal with
   | a : prodN _ 0 |- _ => dependent destruction a
   | ab : prodN _ (S _) |- _ => dependent destruction ab
   | p : _ * _ |- _ => destruct p
@@ -293,12 +293,12 @@ Local Ltac destruct_prod :=
 (* Test emptyness for deque. *)
 
 #[local] Obligation Tactic :=
-  try first [ done | 
+  try first [ done |
   intros * H; destruct_prod;
   apply (f_equal (@List.length _)) in H;
   apply (Nat.neq_succ_0 _ H) ].
 
-Equations is_empty {A} (d : deque A) : 
+Equations is_empty {A} (d : deque A) :
     { b : bool | if b then deque_seq d = [] else deque_seq d <> [] } :=
 is_empty (T (Small B0)) := ? true;
 is_empty (T (Small (B1 a))) := ? false;
@@ -312,7 +312,7 @@ Next Obligation.
   cbn. intros * H.
   dependent destruction pkt.
   dependent destruction p.
-  simp packet_front_seq in H.
+  simp packet_left_seq in H.
   dependent destruction b;
   destruct_prod;
   simp buffer_seq in H;
@@ -324,7 +324,7 @@ Next Obligation.
   cbn. intros * H.
   dependent destruction pkt.
   dependent destruction p.
-  simp packet_front_seq in H.
+  simp packet_left_seq in H.
   dependent destruction b;
   destruct_prod;
   simp buffer_seq in H;
@@ -421,8 +421,8 @@ buffer_push x (B1 a) := ? Small (B2 x a);
 buffer_push x (B2 a b) := ? Small (B3 x a b);
 buffer_push x (B3 a b c) := ? Small (B4 x a b c);
 buffer_push x (B4 a b c d) := ? Small (B5 x a b c d);
-buffer_push x (B5 a b c d e) := 
-    ? Big (Triple (B3 x a b) Hole (B3 c d e) PCGreen) (Small B0) eq_refl CCGreen. 
+buffer_push x (B5 a b c d e) :=
+    ? Big (Triple (B3 x a b) Hole (B3 c d e) PCGreen) (Small B0) eq_refl CCGreen.
 
 (* Injecting on a buffer. *)
 
@@ -433,11 +433,11 @@ buffer_inject (B1 a) x := ? Small (B2 a x);
 buffer_inject (B2 a b) x := ? Small (B3 a b x);
 buffer_inject (B3 a b c) x := ? Small (B4 a b c x);
 buffer_inject (B4 a b c d) x := ? Small (B5 a b c d x);
-buffer_inject (B5 a b c d e) x := 
+buffer_inject (B5 a b c d e) x :=
     ? Big (Triple (B3 a b c) Hole (B3 d e x) PCGreen)(Small B0) eq_refl CCGreen.
 
 (* Poping from a buffer. *)
-  
+
 Equations buffer_pop {A lvl C} (b : buffer A lvl C) :
   { o : option (prodN A lvl * any_buffer A lvl) |
     buffer_seq b =
@@ -507,8 +507,8 @@ Equations suffix12 {A lvl} (x : prodN A lvl) (o : option (prodN A lvl)) :
 suffix12 x None := ? B1 x;
 suffix12 x (Some y) := ? B2 x y.
 
-(* Returns the decomposed version of a buffer. Here, it is a prefix 
-   decomposition: when the buffer is overflowed, elements at the end are 
+(* Returns the decomposed version of a buffer. Here, it is a prefix
+   decomposition: when the buffer is overflowed, elements at the end are
    removed. *)
 
 Equations prefix_decompose {A lvl C} (b : buffer A lvl C) :
@@ -547,7 +547,7 @@ buffer_unsandwich (B5 a b c d e) := ? Sandwich a (B3 b c d) e.
 (* In the following, when talking about structures, we will write n-struct for
    a structure of level n. *)
 
-(* Translates a n-buffer to a (n+1)-buffer. An additional option type is 
+(* Translates a n-buffer to a (n+1)-buffer. An additional option type is
    returned to handle cases where the buffer contains an odd number of elements. *)
 
 Equations buffer_halve {A lvl C} (b : buffer A lvl C) :
@@ -560,8 +560,8 @@ buffer_halve (B3 a b c) := ? (Some a, Any (B1 (prodS b c)));
 buffer_halve (B4 a b c d) := ? (None, Any (B2 (prodS a b) (prodS c d)));
 buffer_halve (B5 a b c d e) := ? (Some a, Any (B2 (prodS b c) (prodS d e))).
 
-(* Takes any n-buffer and a green (n+1)-buffer, and rearranges elements 
-   contained in the two buffers to return a green n-buffer and a yellow 
+(* Takes any n-buffer and a green (n+1)-buffer, and rearranges elements
+   contained in the two buffers to return a green n-buffer and a yellow
    (n+1)-buffer. The order of elements is preserved. *)
 
 Equations green_prefix_concat {A lvl C}
@@ -581,8 +581,8 @@ green_prefix_concat buf1 buf2 with prefix_decompose buf1 => {
     ? (buf, Yellowish suffix)
 }.
 
-(* Takes a green (n+1)-buffer and any n-buffer, and rearranges elements 
-   contained in the two buffers to return a yellow (n+1)-buffer and a green 
+(* Takes a green (n+1)-buffer and any n-buffer, and rearranges elements
+   contained in the two buffers to return a yellow (n+1)-buffer and a green
    n-buffer. The order of elements is preserved. *)
 
 Equations green_suffix_concat {A lvl C}
@@ -602,8 +602,8 @@ green_suffix_concat buf1 buf2 with suffix_decompose buf2 => {
     ? (Yellowish prefix, buf)
 }.
 
-(* Takes any n-buffer and a yellow (n+1)-buffer, and rearranges elements 
-   contained in the two buffers to return a green n-buffer and any (n+1)-buffer. 
+(* Takes any n-buffer and a yellow (n+1)-buffer, and rearranges elements
+   contained in the two buffers to return a green n-buffer and any (n+1)-buffer.
    The order of elements is preserved. *)
 
 Equations yellow_prefix_concat {A lvl C}
@@ -625,8 +625,8 @@ yellow_prefix_concat buf1 buf2 with prefix_decompose buf1 => {
     ? (buf, suffix)
 }.
 
-(* Takes a yellow (n+1)-buffer and any n-buffer, and rearranges elements 
-   contained in the two buffers to return any (n+1)-buffer and a green n-buffer. 
+(* Takes a yellow (n+1)-buffer and any n-buffer, and rearranges elements
+   contained in the two buffers to return any (n+1)-buffer and a green n-buffer.
    The order of elements is preserved. *)
 
 Equations yellow_suffix_concat {A lvl C}
@@ -648,7 +648,7 @@ yellow_suffix_concat buf1 buf2 with suffix_decompose buf2 => {
     ? (prefix, buf)
 }.
 
-(* Creates a green colored deque from three options, two of level n and one of 
+(* Creates a green colored deque from three options, two of level n and one of
    level n+1. *)
 
 Equations cdeque_of_opt3 {A lvl} (o1 : option (prodN A lvl)) (o2 : option (prodN A (S lvl))) (o3 : option (prodN A lvl)) :
@@ -667,7 +667,7 @@ cdeque_of_opt3 (Some a) (Some (prodS b c)) (Some d) := ? Small (B4 a b c d).
   cbn; intros; destruct_prod; try (unfold id); try hauto db:rlist.
 
 (* Takes a prefix buffer, a following buffer (when the next level is composed
-   of only one buffer), and a suffix buffer. It allows to rearrange all 
+   of only one buffer), and a suffix buffer. It allows to rearrange all
    elements contained in those buffers into a green cdeque. *)
 
 Equations make_small {A lvl C1 C2 C3}
@@ -695,7 +695,7 @@ make_small prefix1 buf suffix1 with (prefix_decompose prefix1), (suffix_decompos
   };
   | (? Underflow p1), (? Underflow s1) with buffer_unsandwich buf => {
     | ? Sandwich ab rest cd with prefix23 p1 ab, suffix23 cd s1 => {
-      | ? prefix, ? suffix := 
+      | ? prefix, ? suffix :=
         ? Big (Triple prefix Hole suffix PCGreen) (Small rest) _ _ };
     | ? Alone opt with cdeque_of_opt3 p1 opt s1 => { | ? cd := ? cd } }
   | (? Overflow p1 ab), (? Ok s1) with buffer_push ab buf => {
@@ -712,7 +712,7 @@ make_small prefix1 buf suffix1 with (prefix_decompose prefix1), (suffix_decompos
     | ? (x, Any rest) with suffix12 ab x => {
       | ? prefix => ? Big (Triple p1 (Triple prefix Hole (B1 cd) PCYellow) s1 PCGreen) (Small rest) _ _ } }
 }.
-Next Obligation.  
+Next Obligation.
   rewrite e1.
   aac_rewrite <-y.
   hauto db:rlist.
@@ -723,8 +723,8 @@ Next Obligation.
   hauto db:rlist.
 Qed.
 
-#[local] Obligation Tactic := 
-  try first [ done | hauto db:rlist | 
+#[local] Obligation Tactic :=
+  try first [ done | hauto db:rlist |
   (* Introduce all the hypothesis. *)
   cbn; intros * Hpref * Hsuff *;
   autorewrite with rlist;
@@ -753,7 +753,7 @@ green_of_red (Big (Triple p1 Hole s1 PCRed) (Big (Triple p2 child s2 PCGreen) cd
 Next Obligation. Qed.
 Next Obligation. Qed.
 
-#[local] Obligation Tactic := 
+#[local] Obligation Tactic :=
   try first [ done | hauto db:rlist ].
 
 (* Takes a green or red cdeque, and returns a green one representing
@@ -765,8 +765,8 @@ ensure_green (Small buf) := ? Small buf;
 ensure_green (Big x cd eq_refl CCGreen) := ? Big x cd _ CCGreen;
 ensure_green (Big x cd eq_refl CCRed) := green_of_red (Big x cd _ CCRed).
 
-(* Takes a yellow packet, as a prefix buffer, a child packet and a suffix 
-   buffer, and a green or red cdeque. Returns a deque starting with this packet 
+(* Takes a yellow packet, as a prefix buffer, a child packet and a suffix
+   buffer, and a green or red cdeque. Returns a deque starting with this packet
    and followed by the green version of the input colored deque. *)
 
 Equations make_yellow {A len} {G1 Y1 Y2 G3 Y3 G4 R4}
@@ -775,18 +775,18 @@ Equations make_yellow {A len} {G1 Y1 Y2 G3 Y3 G4 R4}
   (buf2 : buffer A 0 (Mix G3 Y3 NoRed))
   (cd : lvl_cdeque A (S len + 0) (Mix G4 NoYellow R4)) :
   { sq : deque A |
-    deque_seq sq = 
+    deque_seq sq =
                buffer_seq buf1 ++
-               packet_front_seq p ++
+               packet_left_seq p ++
                cdeque_seq cd ++
-               packet_rear_seq p ++
+               packet_right_seq p ++
                buffer_seq buf2 }
 :=
 make_yellow p1 child s1 cd with ensure_green cd => {
   | ? cd' => ? T (Big (Triple p1 child s1 PCYellow) cd' _ CCYellow) }.
 
 (* Takes a red packet, as a prefix buffer, a child packet and a suffix
-   buffer, and a green cdeque. Returns the green version of the colored deque 
+   buffer, and a green cdeque. Returns the green version of the colored deque
    made of the red packet followed by the green cdeque. *)
 
 Equations make_red {A len} {C1 Y2 C3}
@@ -795,11 +795,11 @@ Equations make_red {A len} {C1 Y2 C3}
   (buf2 : buffer A 0 C3)
   (cd : lvl_cdeque A (S len + 0) green) :
   { sq : deque A |
-    deque_seq sq = 
+    deque_seq sq =
                buffer_seq buf1 ++
-               packet_front_seq p ++
+               packet_left_seq p ++
                cdeque_seq cd ++
-               packet_rear_seq p ++
+               packet_right_seq p ++
                buffer_seq buf2 }
 :=
 make_red p1 child s1 cd with green_of_red (Big (Triple p1 child s1 PCRed) cd _ CCRed) => {

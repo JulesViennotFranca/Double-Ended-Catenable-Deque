@@ -93,91 +93,91 @@ val coq_FunctionalInduction_buffer_seq :
 
 val path_buffer_seq : nat -> nat -> 'a1 stored_triple t -> 'a1 list
 
-val triple_front_seq :
+val triple_left_seq :
   nat -> nat -> bool -> kind -> kind -> color -> 'a1 triple -> 'a1 list
 
-val packet_front_seq :
+val packet_left_seq :
   nat -> nat -> preferred_child -> kind -> 'a1 packet -> 'a1 list
 
-type 'a packet_front_seq_graph =
-| Coq_packet_front_seq_graph_equation_1 of nat * nat * preferred_child * 
+type 'a packet_left_seq_graph =
+| Coq_packet_left_seq_graph_equation_1 of nat * nat * preferred_child *
    kind * bool * yellow_hue * orange_hue * 'a triple
-| Coq_packet_front_seq_graph_equation_2 of nat * nat * kind * bool
+| Coq_packet_left_seq_graph_equation_2 of nat * nat * kind * bool
    * yellow_hue * orange_hue * color * 'a triple * 'a path
-| Coq_packet_front_seq_graph_equation_3 of nat * nat * kind * bool
+| Coq_packet_left_seq_graph_equation_3 of nat * nat * kind * bool
    * yellow_hue * orange_hue * 'a path * 'a triple
 
-val packet_front_seq_graph_rect :
+val packet_left_seq_graph_rect :
   (__ -> nat -> nat -> preferred_child -> kind -> bool -> yellow_hue ->
   orange_hue -> __ triple -> 'a1) -> (__ -> nat -> nat -> kind -> bool ->
   yellow_hue -> orange_hue -> color -> __ triple -> __ path -> 'a1) -> (__ ->
   nat -> nat -> kind -> bool -> yellow_hue -> orange_hue -> __ path -> __
   triple -> 'a1) -> nat -> nat -> preferred_child -> kind -> 'a2 packet ->
-  'a2 list -> 'a2 packet_front_seq_graph -> 'a1
+  'a2 list -> 'a2 packet_left_seq_graph -> 'a1
 
-val packet_front_seq_graph_correct :
+val packet_left_seq_graph_correct :
   nat -> nat -> preferred_child -> kind -> 'a1 packet -> 'a1
-  packet_front_seq_graph
+  packet_left_seq_graph
 
-val packet_front_seq_elim :
+val packet_left_seq_elim :
   (__ -> nat -> nat -> preferred_child -> kind -> bool -> yellow_hue ->
   orange_hue -> __ triple -> 'a1) -> (__ -> nat -> nat -> kind -> bool ->
   yellow_hue -> orange_hue -> color -> __ triple -> __ path -> 'a1) -> (__ ->
   nat -> nat -> kind -> bool -> yellow_hue -> orange_hue -> __ path -> __
   triple -> 'a1) -> nat -> nat -> preferred_child -> kind -> 'a2 packet -> 'a1
 
-val coq_FunctionalElimination_packet_front_seq :
+val coq_FunctionalElimination_packet_left_seq :
   (__ -> nat -> nat -> preferred_child -> kind -> bool -> yellow_hue ->
   orange_hue -> __ triple -> __) -> (__ -> nat -> nat -> kind -> bool ->
   yellow_hue -> orange_hue -> color -> __ triple -> __ path -> __) -> (__ ->
   nat -> nat -> kind -> bool -> yellow_hue -> orange_hue -> __ path -> __
   triple -> __) -> nat -> nat -> preferred_child -> kind -> __ packet -> __
 
-val coq_FunctionalInduction_packet_front_seq :
+val coq_FunctionalInduction_packet_left_seq :
   (__ -> nat -> nat -> preferred_child -> kind -> __ packet -> __ list)
   coq_FunctionalInduction
 
-val triple_rear_seq :
+val triple_right_seq :
   nat -> nat -> bool -> kind -> kind -> color -> 'a1 triple -> 'a1 list
 
-val packet_rear_seq :
+val packet_right_seq :
   nat -> nat -> preferred_child -> kind -> 'a1 packet -> 'a1 list
 
-type 'a packet_rear_seq_graph =
-| Coq_packet_rear_seq_graph_equation_1 of nat * nat * preferred_child * 
+type 'a packet_right_seq_graph =
+| Coq_packet_right_seq_graph_equation_1 of nat * nat * preferred_child *
    kind * bool * yellow_hue * orange_hue * 'a triple
-| Coq_packet_rear_seq_graph_equation_2 of nat * nat * kind * bool
+| Coq_packet_right_seq_graph_equation_2 of nat * nat * kind * bool
    * yellow_hue * orange_hue * color * 'a triple * 'a path
-| Coq_packet_rear_seq_graph_equation_3 of nat * nat * kind * bool
+| Coq_packet_right_seq_graph_equation_3 of nat * nat * kind * bool
    * yellow_hue * orange_hue * 'a path * 'a triple
 
-val packet_rear_seq_graph_rect :
+val packet_right_seq_graph_rect :
   (__ -> nat -> nat -> preferred_child -> kind -> bool -> yellow_hue ->
   orange_hue -> __ triple -> 'a1) -> (__ -> nat -> nat -> kind -> bool ->
   yellow_hue -> orange_hue -> color -> __ triple -> __ path -> 'a1) -> (__ ->
   nat -> nat -> kind -> bool -> yellow_hue -> orange_hue -> __ path -> __
   triple -> 'a1) -> nat -> nat -> preferred_child -> kind -> 'a2 packet ->
-  'a2 list -> 'a2 packet_rear_seq_graph -> 'a1
+  'a2 list -> 'a2 packet_right_seq_graph -> 'a1
 
-val packet_rear_seq_graph_correct :
+val packet_right_seq_graph_correct :
   nat -> nat -> preferred_child -> kind -> 'a1 packet -> 'a1
-  packet_rear_seq_graph
+  packet_right_seq_graph
 
-val packet_rear_seq_elim :
+val packet_right_seq_elim :
   (__ -> nat -> nat -> preferred_child -> kind -> bool -> yellow_hue ->
   orange_hue -> __ triple -> 'a1) -> (__ -> nat -> nat -> kind -> bool ->
   yellow_hue -> orange_hue -> color -> __ triple -> __ path -> 'a1) -> (__ ->
   nat -> nat -> kind -> bool -> yellow_hue -> orange_hue -> __ path -> __
   triple -> 'a1) -> nat -> nat -> preferred_child -> kind -> 'a2 packet -> 'a1
 
-val coq_FunctionalElimination_packet_rear_seq :
+val coq_FunctionalElimination_packet_right_seq :
   (__ -> nat -> nat -> preferred_child -> kind -> bool -> yellow_hue ->
   orange_hue -> __ triple -> __) -> (__ -> nat -> nat -> kind -> bool ->
   yellow_hue -> orange_hue -> color -> __ triple -> __ path -> __) -> (__ ->
   nat -> nat -> kind -> bool -> yellow_hue -> orange_hue -> __ path -> __
   triple -> __) -> nat -> nat -> preferred_child -> kind -> __ packet -> __
 
-val coq_FunctionalInduction_packet_rear_seq :
+val coq_FunctionalInduction_packet_right_seq :
   (__ -> nat -> nat -> preferred_child -> kind -> __ packet -> __ list)
   coq_FunctionalInduction
 
@@ -185,7 +185,7 @@ val triple_seq :
   nat -> nat -> bool -> kind -> kind -> color -> 'a1 triple -> 'a1 list
 
 type 'a triple_seq_graph =
-| Coq_triple_seq_graph_equation_1 of nat * nat * bool * kind * kind * 
+| Coq_triple_seq_graph_equation_1 of nat * nat * bool * kind * kind *
    color * 'a triple
 
 val triple_seq_graph_rect :
@@ -366,50 +366,50 @@ val coq_FunctionalElimination_sdeque_seq :
 val coq_FunctionalInduction_sdeque_seq :
   (__ -> nat -> __ sdeque -> __ list) coq_FunctionalInduction
 
-val unstored_front_seq : nat -> 'a1 unstored -> 'a1 list
+val unstored_left_seq : nat -> 'a1 unstored -> 'a1 list
 
-type 'a unstored_front_seq_graph =
-| Coq_unstored_front_seq_graph_equation_1 of nat * nat * 'a prefix * 'a sdeque
+type 'a unstored_left_seq_graph =
+| Coq_unstored_left_seq_graph_equation_1 of nat * nat * 'a prefix * 'a sdeque
 
-val unstored_front_seq_graph_rect :
+val unstored_left_seq_graph_rect :
   (__ -> nat -> nat -> __ prefix -> __ sdeque -> 'a1) -> nat -> 'a2 unstored
-  -> 'a2 list -> 'a2 unstored_front_seq_graph -> 'a1
+  -> 'a2 list -> 'a2 unstored_left_seq_graph -> 'a1
 
-val unstored_front_seq_graph_correct :
-  nat -> 'a1 unstored -> 'a1 unstored_front_seq_graph
+val unstored_left_seq_graph_correct :
+  nat -> 'a1 unstored -> 'a1 unstored_left_seq_graph
 
-val unstored_front_seq_elim :
+val unstored_left_seq_elim :
   (__ -> nat -> nat -> __ prefix -> __ sdeque -> 'a1) -> nat -> 'a2 unstored
   -> 'a1
 
-val coq_FunctionalElimination_unstored_front_seq :
+val coq_FunctionalElimination_unstored_left_seq :
   (__ -> nat -> nat -> __ prefix -> __ sdeque -> __) -> nat -> __ unstored ->
   __
 
-val coq_FunctionalInduction_unstored_front_seq :
+val coq_FunctionalInduction_unstored_left_seq :
   (__ -> nat -> __ unstored -> __ list) coq_FunctionalInduction
 
-val unstored_rear_seq : nat -> 'a1 unstored -> 'a1 list
+val unstored_right_seq : nat -> 'a1 unstored -> 'a1 list
 
-type 'a unstored_rear_seq_graph =
-| Coq_unstored_rear_seq_graph_equation_1 of nat * nat * 'a prefix * 'a sdeque
+type 'a unstored_right_seq_graph =
+| Coq_unstored_right_seq_graph_equation_1 of nat * nat * 'a prefix * 'a sdeque
 
-val unstored_rear_seq_graph_rect :
+val unstored_right_seq_graph_rect :
   (__ -> nat -> nat -> __ prefix -> __ sdeque -> 'a1) -> nat -> 'a2 unstored
-  -> 'a2 list -> 'a2 unstored_rear_seq_graph -> 'a1
+  -> 'a2 list -> 'a2 unstored_right_seq_graph -> 'a1
 
-val unstored_rear_seq_graph_correct :
-  nat -> 'a1 unstored -> 'a1 unstored_rear_seq_graph
+val unstored_right_seq_graph_correct :
+  nat -> 'a1 unstored -> 'a1 unstored_right_seq_graph
 
-val unstored_rear_seq_elim :
+val unstored_right_seq_elim :
   (__ -> nat -> nat -> __ prefix -> __ sdeque -> 'a1) -> nat -> 'a2 unstored
   -> 'a1
 
-val coq_FunctionalElimination_unstored_rear_seq :
+val coq_FunctionalElimination_unstored_right_seq :
   (__ -> nat -> nat -> __ prefix -> __ sdeque -> __) -> nat -> __ unstored ->
   __
 
-val coq_FunctionalInduction_unstored_rear_seq :
+val coq_FunctionalInduction_unstored_right_seq :
   (__ -> nat -> __ unstored -> __ list) coq_FunctionalInduction
 
 val sandwich_seq : nat -> 'a1 sandwich -> 'a1 list
