@@ -18,7 +18,7 @@ Inductive regularity : color -> color -> Type :=
   | R : regularity red    green.
 
 Inductive chain : color -> Type :=
-  | Ending : chain green
+  | Empty : chain green
   | Chain {C1 C2 : color} :
     regularity C1 C2 -> packet C1 -> chain C2 -> chain C1.
 
@@ -36,7 +36,7 @@ packet_nat (Yellow_digit pkt) n := 1 + 2 * packet_nat pkt n;
 packet_nat (Red_digit    pkt) n := 2 + 2 * packet_nat pkt n.
 
 Equations chain_nat {C : color} : chain C -> nat :=
-chain_nat Ending := 0;
+chain_nat Empty := 0;
 chain_nat (Chain _ pkt c) := packet_nat pkt (chain_nat c).
 
 Equations number_nat : number -> nat :=
@@ -48,19 +48,19 @@ Unset Equations Transparent.
 
 Notation "? x" := (@exist _ _ x _) (at level 100).
 
-Definition green_of_red (c : chain red) : chain green :=
+(* Definition green_of_red (c : chain red) : chain green :=
   match c with
-  | Chain R (Red_digit Hole) Ending =>
-      Chain G (Green_digit (Yellow_digit Hole)) Ending
+  | Chain R (Red_digit Hole) Empty =>
+      Chain G (Green_digit (Yellow_digit Hole)) Empty
   | Chain R (Red_digit Hole) (Chain G (Green_digit pkt) c) =>
       Chain G (Green_digit (Yellow_digit pkt)) c
   | Chain R (Red_digit (Yellow_digit pkt)) c =>
       Chain G (Green_digit Hole) (Chain R (Red_digit pkt) c)
-  end.
+  end. *)
 
 Equations green_of_red' : chain red -> chain green :=
-green_of_red' (Chain R (Red_digit Hole) Ending) :=
-  Chain G (Green_digit (Yellow_digit Hole)) Ending;
+green_of_red' (Chain R (Red_digit Hole) Empty) :=
+  Chain G (Green_digit (Yellow_digit Hole)) Empty;
 green_of_red' (Chain R (Red_digit Hole) (Chain G (Green_digit pkt) c)) :=
   Chain G (Green_digit (Yellow_digit pkt)) c;
 green_of_red' (Chain R (Red_digit (Yellow_digit pkt)) c) :=
@@ -90,8 +90,8 @@ Qed.
 
 Equations green_of_red (c : chain red) :
   { c' : chain green | chain_nat c' = chain_nat c} :=
-green_of_red (Chain R (Red_digit Hole) Ending) :=
-  ? Chain G (Green_digit (Yellow_digit Hole)) Ending;
+green_of_red (Chain R (Red_digit Hole) Empty) :=
+  ? Chain G (Green_digit (Yellow_digit Hole)) Empty;
 green_of_red (Chain R (Red_digit Hole) (Chain G (Green_digit pkt) c)) :=
   ? Chain G (Green_digit (Yellow_digit pkt)) c;
 green_of_red (Chain R (Red_digit (Yellow_digit pkt)) c) :=
@@ -99,10 +99,10 @@ green_of_red (Chain R (Red_digit (Yellow_digit pkt)) c) :=
 
 Equations ensure_green {G R} (c : chain (Mix G NoYellow R)) :
   { c' : chain green | chain_nat c' = chain_nat c } :=
-ensure_green Ending := ? Ending;
+ensure_green Empty := ? Empty;
 ensure_green (Chain G pkt c) := ? Chain G pkt c;
-ensure_green (Chain R (Red_digit Hole) Ending) :=
-  ? Chain G (Green_digit (Yellow_digit Hole)) Ending;
+ensure_green (Chain R (Red_digit Hole) Empty) :=
+  ? Chain G (Green_digit (Yellow_digit Hole)) Empty;
 ensure_green (Chain R (Red_digit Hole) (Chain G (Green_digit pkt) c)) :=
   ? Chain G (Green_digit (Yellow_digit pkt)) c;
 ensure_green (Chain R (Red_digit (Yellow_digit pkt)) c) :=
@@ -110,7 +110,7 @@ ensure_green (Chain R (Red_digit (Yellow_digit pkt)) c) :=
 
 Equations succ (n : number) :
   { n' : number | number_nat n' = S (number_nat n) } :=
-succ (T Ending) := ? T (Chain Y (Yellow_digit Hole) Ending);
+succ (T Empty) := ? T (Chain Y (Yellow_digit Hole) Empty);
 succ (T (Chain G (Green_digit pkt) c)) with ensure_green c => {
   | ? c' := ? T (Chain Y (Yellow_digit pkt) c') };
 succ (T (Chain Y (Yellow_digit pkt) c))

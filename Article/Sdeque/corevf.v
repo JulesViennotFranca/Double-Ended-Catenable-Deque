@@ -17,8 +17,8 @@ Import GYR.
 Inductive prodN (A : Type) : nat -> Type :=
   | prodZ : A -> prodN A 0
   | prodS {n : nat} : prodN A n -> prodN A n -> prodN A (S n).
-Arguments prodZ {A} a.
-Arguments prodS {A n} p1 p2.
+Arguments prodZ {A}.
+Arguments prodS {A n}.
 
 (* In the following types, an integer parameter is introduced : the [size] of
    the type. The size is simply the number of [prodN A lvl] that are stored in
@@ -29,41 +29,37 @@ Arguments prodS {A n} p1 p2.
 Inductive buffer (A : Type) (lvl : nat) : nat -> color -> Type :=
   | B0 : buffer A lvl 0 red
   | B1 : prodN A lvl -> buffer A lvl 1 yellow
-  | B2 : prodN A lvl -> prodN A lvl -> buffer A lvl 2 green
-  | B3 : prodN A lvl -> prodN A lvl -> prodN A lvl -> buffer A lvl 3 green
-  | B4 : prodN A lvl -> prodN A lvl ->
-         prodN A lvl -> prodN A lvl -> buffer A lvl 4 yellow
-  | B5 : prodN A lvl -> prodN A lvl -> prodN A lvl ->
-         prodN A lvl -> prodN A lvl -> buffer A lvl 5 red.
+  | B2 {G Y} : prodN A lvl -> prodN A lvl -> buffer A lvl 2 (Mix G Y NoRed)
+  | B3 {G Y} : prodN A lvl -> prodN A lvl -> prodN A lvl -> buffer A lvl 3 (Mix G Y NoRed)
+  | B4 : prodN A lvl -> prodN A lvl -> prodN A lvl -> prodN A lvl -> buffer A lvl 4 yellow
+  | B5 : prodN A lvl -> prodN A lvl -> prodN A lvl -> prodN A lvl -> prodN A lvl -> buffer A lvl 5 red.
 Arguments B0 {A lvl}.
-Arguments B1 {A lvl} a.
-Arguments B2 {A lvl} a b.
-Arguments B3 {A lvl} a b c.
-Arguments B4 {A lvl} a b c d.
-Arguments B5 {A lvl} a b c d e.
+Arguments B1 {A lvl}.
+Arguments B2 {A lvl G Y}.
+Arguments B3 {A lvl G Y}.
+Arguments B4 {A lvl}.
+Arguments B5 {A lvl}.
 
 (* A type for yellow buffers. *)
 
 Inductive yellow_buffer (A: Type) (lvl : nat) (size : nat) : Type :=
-  | Yellowish {G Y} :
-    buffer A lvl size (Mix G Y NoRed) -> yellow_buffer A lvl size.
-Arguments Yellowish {A lvl size G Y} b.
+  | Yellowish : forall {G Y},
+    buffer A lvl size (Mix G Y NoRed) ->
+    yellow_buffer A lvl size.
+Arguments Yellowish {A lvl size G Y}.
 
 (* A type for any buffers. *)
 
 Inductive any_buffer (A: Type) (lvl : nat) (size : nat) : Type :=
-  | Any {G Y R} :
-    buffer A lvl size (Mix G Y R) -> any_buffer A lvl size.
-Arguments Any {A lvl size G Y R} b.
+  | Any : forall {C}, buffer A lvl size C -> any_buffer A lvl size.
+Arguments Any {A lvl size C}.
 
 (* A relation between the prefix, suffix and packet colors. *)
 
 Inductive packet_color : color -> color -> color -> Type :=
   | PCGreen : packet_color green green green
-  | PCYellow {G1 Y1 G2 Y2} :
-    packet_color (Mix G1 Y1 NoRed) (Mix G2 Y2 NoRed) yellow
-  | PCRed {G1 Y1 R1 G2 Y2 R2} :
-    packet_color (Mix G1 Y1 R1) (Mix G2 Y2 R2) red.
+  | PCYellow {G1 Y1 G2 Y2} : packet_color (Mix G1 Y1 NoRed) (Mix G2 Y2 NoRed) yellow
+  | PCRed {C1 C2 : color} : packet_color C1 C2 red.
 
 (* A type for packet. As the level of the child packet is increased by one,
    it contains elements of type [prodN A (S lvl)] that account for two elements
@@ -71,15 +67,15 @@ Inductive packet_color : color -> color -> color -> Type :=
    in the size of our final packet of level [lvl]. *)
 
 Inductive packet (A : Type) (lvl : nat) : nat -> nat -> color -> Type :=
-  | Hole : packet A lvl lvl 0 uncolored
-  | Triple {tlvl psize pktsize ssize : nat} {Y} {C1 C2 C3 : color} :
+  | Hole : packet A lvl 0 0 uncolored
+  | Triple {len psize pktsize ssize : nat} {Y : yellow_hue} {C1 C2 C3 : color} :
       buffer A lvl psize C1 ->
-      packet A (S lvl) tlvl pktsize (Mix NoGreen Y NoRed) ->
+      packet A (S lvl) len pktsize (Mix NoGreen Y NoRed) ->
       buffer A lvl ssize C2 ->
       packet_color C1 C2 C3 ->
-      packet A lvl tlvl (psize + pktsize + pktsize + ssize) C3.
+      packet A lvl (S len) (psize + pktsize + pktsize + ssize) C3.
 Arguments Hole {A lvl}.
-Arguments Triple {A lvl tlvl psize pktsize ssize Y C1 C2 C3} p pkt s pc.
+Arguments Triple {A lvl len psize pktsize ssize Y C1 C2 C3}.
 
 (* [power2] computes 2 to the power of a natural number. *)
 
@@ -105,14 +101,15 @@ Inductive cdeque (A : Type) (lvl : nat) : nat -> color -> Type :=
   | Small {size : nat} {C : color} :
       buffer A lvl size C ->
       cdeque A lvl size green
-  | Big {tlvl pktsize nsize size : nat} {C1 C2 : color} :
-      packet A lvl tlvl pktsize C1 ->
-      cdeque A tlvl nsize C2 ->
-      size = pktsize + (power2 (tlvl - lvl)) * nsize ->
+  | Big {len pktsize nlvl nsize size : nat} {C1 C2 : color} :
+      packet A lvl len pktsize C1 ->
+      cdeque A nlvl nsize C2 ->
+      nlvl = len + lvl ->
+      size = pktsize + (power2 len) * nsize ->
       cdeque_color C1 C2 ->
       cdeque A lvl size C1.
-Arguments Small {A lvl size C} b.
-Arguments Big {A lvl tlvl pktsize nsize size C1 C2} pkt cd eqsize cc.
+Arguments Small {A lvl size C}.
+Arguments Big {A lvl len pktsize nlvl nsize size C1 C2}.
 
 (* This function compute the size of an option. 0 if it is [None], 1 if it is
    [Some _]. *)
@@ -125,31 +122,30 @@ Transparent size_option.
 (* The sized decompose type. *)
 
 Inductive decompose (A : Type) (lvl : nat) : nat -> Type :=
-  | Underflow (opt : option (prodN A lvl)) : decompose A lvl (size_option opt)
+  | Underflow : forall (o : option (prodN A lvl)), decompose A lvl (size_option o)
   | Ok {size : nat} : buffer A lvl size green -> decompose A lvl size
   | Overflow {size : nat} :
     buffer A lvl size green -> prodN A (S lvl) -> decompose A lvl (2 + size).
-Arguments Underflow {A lvl}.
-Arguments Ok {A lvl size} b.
-Arguments Overflow {A lvl size} b ab.
+Arguments Underflow {_ _}.
+Arguments Ok {_ _ _}.
+Arguments Overflow {_ _ _}.
 
 (* The sized sandwich type. *)
 
 Inductive sandwich (A : Type) (lvl : nat) : nat -> Type :=
-  | Alone (opt : option (prodN A lvl)) : sandwich A lvl (size_option opt)
-  | Sandwich {size : nat} {C : color} :
-    prodN A lvl -> buffer A lvl size C -> prodN A lvl ->
-    sandwich A lvl (2 + size).
+  | Alone : forall (o : option (prodN A lvl)), sandwich A lvl (size_option o)
+  | Sandwich {size C} :
+    prodN A lvl -> buffer A lvl size C -> prodN A lvl -> sandwich A lvl (2 + size).
 Arguments Alone {A lvl}.
-Arguments Sandwich {A lvl size C} ab b cd.
+Arguments Sandwich {A lvl size C}.
 
 (* A type for sized deque. *)
 
 Inductive deque (A : Type) (size : nat) : Type :=
-  | T {G : green_hue} {Y : yellow_hue} :
-    cdeque A 0 size (Mix G Y NoRed) ->
-    deque A size.
-Arguments T {A size G Y} cd.
+  T : forall (G : green_hue) (Y : yellow_hue),
+      cdeque A 0 size (Mix G Y NoRed) ->
+      deque A size.
+Arguments T {A size G Y}.
 
 (* Models *)
 
@@ -227,7 +223,7 @@ packet_right_seq (Triple _ p buf2 _) :=
 
 Equations cdeque_seq {A lvl size C} : cdeque A lvl size C -> list A :=
 cdeque_seq (Small buf) := buffer_seq buf;
-cdeque_seq (Big p cd _ _) :=
+cdeque_seq (Big p cd _ _ _) :=
     packet_left_seq p ++
     cdeque_seq cd ++
     packet_right_seq p.
@@ -297,7 +293,7 @@ Definition map_deque {T : Type -> nat -> Type} {A : Type}
       (cd : cdeque (T A lvlt) lvlp size C) {struct cd} : list A :=
     match cd with
     | Small b => buffer_seq b
-    | Big pkt cd _ _ =>
+    | Big pkt cd _ _ _ =>
       packet_left_seq pkt ++
       cdeque_seq cd ++
       packet_right_seq pkt
@@ -329,7 +325,7 @@ Proof.
   (* Destruction of the deque. *)
   destruct d as [G Y cd]; cbn;
   (* Induction on the cdeque. *)
-  induction cd as [lvlp size C b | lvlp len pktsize nsize size C1 C2 pkt cd IHcd esize cc];
+  induction cd as [lvlp size C b | lvlp len pktsize nlvl nsize size C1 C2 pkt cd IHcd elvl esize cc];
   (* Format for simplification. *)
   cbn; autorewrite with rlist;
   (* Handling the Big case, with packets and a following cdeque. *)
@@ -457,28 +453,6 @@ Proof.
   - rewrite IHn Nat.mul_add_distr_r; reflexivity.
 Qed.
 
-(* Proves that 2 ^ (n - m) is equal to 2 ^ n / 2 ^ m if m <= n. *)
-
-Lemma power2_sub {n m : nat} : m <= n -> power2 (n - m) = power2 n / power2 m.
-Proof.
-  revert m. induction n; simpl.
-  - intros m I%(Nat.le_0_r). subst. reflexivity.
-  - intros m I.
-    destruct m.
-    + simpl power2. rewrite Nat.div_1_r. reflexivity.
-    + simpl power2. etransitivity.
-      -- apply IHn, le_S_n. exact I.
-      -- symmetry.
-         assert (forall p, p + p = 2 * p). { lia. }
-         do 2 rewrite H.
-         apply Nat.Div0.div_mul_cancel_l.
-         lia.
-Qed.
-
-Lemma packet_lvl_ineq {A lvl tlvl size C} (pkt : packet A lvl tlvl size C) :
-  lvl <= tlvl.
-Proof. induction pkt; lia. Qed.
-
 (* Takes a colored deque and links its level and size to the length of its
    sequence. *)
 
@@ -487,11 +461,8 @@ Lemma cdeque_size {A lvl size C} (cd : cdeque A lvl size C) :
 Proof.
   induction cd; simp cdeque_seq.
   - apply buffer_size.
-  - rewrite app_assoc length_app_comm app_assoc app_length length_app_comm packet_size.
-    rewrite IHcd e.
-    rewrite power2_sub.
-    + eapply packet_lvl_ineq. exact p.
-    + admit.
+  - rewrite app_assoc length_app_comm app_assoc app_length length_app_comm packet_size;
+    rewrite IHcd e e0 power2_add; lia.
 Qed.
 
 (* Takes a deque and links its size to the length of its sequence. *)
