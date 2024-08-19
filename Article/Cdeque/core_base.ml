@@ -6,8 +6,8 @@ type 'a pr = out_channel -> 'a -> unit
 
 (* Support for natural number types. *)
 
-type    z = ZERO
-type 'a s = SUCC
+type    z
+type 'a s
 
 type 'a ge1 = 'a s
 type 'a ge2 = 'a s s
@@ -331,17 +331,17 @@ type ('a, 'n) suffix = ('a, 'n) Buffer.t
 
 (* Types for different kinds of triples and chains. *)
 
-type only   = ONLY
-type left   = LEFT
-type right  = RIGHT
+type only
+type left
+type right
 
-type single = SINGLE
-type pair   = PAIR
+type single
+type pair
 
 (* Types for ending parameters. *)
 
-type ie = IS_END
-type ne = NOT_END
+type ie
+type ne
 
 (** The coloring links a color to the size of a prefix and the size of a suffix. *)
 type ('sizep, 'sizes, 'c) coloring =
