@@ -2,65 +2,36 @@ open Color.GYR
 
 (** A type for colored buffers. *)
 type ('a, 'color) buffer =
-  | B0 :                           ('a, red   ) buffer
-  | B1 : 'a                     -> ('a, yellow) buffer
-  | B2 : 'a * 'a                -> ('a, green ) buffer
-  | B3 : 'a * 'a * 'a           -> ('a, green ) buffer
-  | B4 : 'a * 'a * 'a * 'a      -> ('a, yellow) buffer
-  | B5 : 'a * 'a * 'a * 'a * 'a -> ('a, red   ) buffer
+  | B0 :                           ('a, red            ) buffer
+  | B1 : 'a                     -> ('a, nogreen * _ * _) buffer
+  | B2 : 'a * 'a                -> ('a, _              ) buffer
+  | B3 : 'a * 'a * 'a           -> ('a, _              ) buffer
+  | B4 : 'a * 'a * 'a * 'a      -> ('a, nogreen * _ * _) buffer
+  | B5 : 'a * 'a * 'a * 'a * 'a -> ('a, red            ) buffer
 
-(** A type for yellow buffers. *)
-type 'a yellow_buffer =
-  Yellowish : ('a, _ * _ * nored) buffer -> 'a yellow_buffer
-
-(** A type for any buffers. *)
-type 'a any_buffer =
-  Any : ('a, _) buffer -> 'a any_buffer
-
-(** A type for packets. *)
+  (** A type for packets. *)
 type ('a, 'b, 'color) packet =
   (* The empty packet. *)
   | Hole : ('a, 'a, uncolored) packet
-
-  (* Packet starting with green. *)
-  | Green : ('a, green) buffer
-          * ('a * 'a, 'b, nogreen * _ * nored) packet
-          * ('a, green) buffer
-         -> ('a, 'b, green) packet
-
-  (* Packet starting with one. *)
-  | Yellow : ('a, _ * _ * nored) buffer
+  | Packet : ('a, 'c) buffer
            * ('a * 'a, 'b, nogreen * _ * nored) packet
-           * ('a, _ * _ * nored) buffer
-          -> ('a, 'b, yellow) packet
+           * ('a, 'c) buffer
+          -> ('a, 'b, 'c) packet
 
-  (* Packet starting with red. *)
-  | Red : ('a, _) buffer
-        * ('a * 'a, 'b, nogreen * _ * nored) packet
-        * ('a, _) buffer
-       -> ('a, 'b, red) packet
+type ('color_pkt, 'color_chain) regularity =
+  | G : (green , _ * noyellow * _) regularity
+  | Y : (yellow, green) regularity
+  | R : (red   , green) regularity
 
 (** A typed for colored deques. *)
 type ('a, 'color) chain =
   (* Colored deque made of only one buffer. *)
   | Ending : ('a, _) buffer -> ('a, green) chain
 
-  (* Colored deque starting with a green packet. *)
-  | G : ('a, 'b, green) packet
-      * ('b, _ * noyellow * _) chain
-     -> ('a, green) chain
-
-  (* Colored deque starting with a yellow packet. It must be followed by a green packet
-     in order to be regular. *)
-  | Y : ('a, 'b, yellow) packet
-      * ('b, green) chain
-     -> ('a, yellow) chain
-
-  (* Colored deque starting with a red packet. It must be followed by a green packet in
-     order to be semiregular. *)
-  | R : ('a, 'b, red) packet
-      * ('b, green) chain
-     -> ('a, red) chain
+  | Chain : ('c1, 'c2) regularity
+          * ('a, 'b, 'c1) packet
+          * ('b, 'c2) chain
+         -> ('a, 'c1) chain
 
 (** A type for deques. *)
 type 'a deque = T : ('a, _ * _ * nored) chain -> 'a deque
@@ -81,7 +52,7 @@ let buffer_push : type a c. a -> (a, c) buffer -> (a, green) chain
   | B3 (a, b, c) -> Ending (B4 (x, a, b, c))
   | B4 (a, b, c, d) -> Ending (B5 (x, a, b, c, d))
   | B5 (a, b, c, d, e) ->
-      G (Green (B3 (x, a, b), Hole, B3 (c, d, e)), Ending B0)
+      Chain (G, Packet (B3 (x, a, b), Hole, B3 (c, d, e)), Ending B0)
 
 (** Injects an element onto a buffer, and returns a green chain. *)
 let buffer_inject : type a c. (a, c) buffer -> a -> (a, green) chain
@@ -93,115 +64,115 @@ let buffer_inject : type a c. (a, c) buffer -> a -> (a, green) chain
   | B3 (a, b, c) -> Ending (B4 (a, b, c, x))
   | B4 (a, b, c, d) -> Ending (B5 (a, b, c, d, x))
   | B5 (a, b, c, d, e) ->
-      G (Green (B3 (a, b, c), Hole, B3 (d, e, x)), Ending B0)
+      Chain (G, Packet (B3 (a, b, c), Hole, B3 (d, e, x)), Ending B0)
 
 (** Pops an element from a buffer, when there is no elements in the buffer, an
     error is raised. Otherwise, it returns the removed element and the new
     buffer. *)
-let buffer_pop_unsafe : type a c. (a, c) buffer -> a * a any_buffer
+let buffer_pop_unsafe : type a c. (a, c) buffer -> a * (a, red) buffer
 = function
   | B0 -> assert false
-  | B1 a -> a, Any B0
-  | B2 (a, b) -> a, Any (B1 b)
-  | B3 (a, b, c) -> a, Any (B2 (b, c))
-  | B4 (a, b, c, d) -> a, Any (B3 (b, c, d))
-  | B5 (a, b, c, d, e) -> a, Any (B4 (b, c, d, e))
+  | B1 a -> a, B0
+  | B2 (a, b) -> a, (B1 b)
+  | B3 (a, b, c) -> a, (B2 (b, c))
+  | B4 (a, b, c, d) -> a, (B3 (b, c, d))
+  | B5 (a, b, c, d, e) -> a, (B4 (b, c, d, e))
 
 (** Pops an element from a buffer, if the buffer is empty, it returns [None],
     otherwise, it returns an option containing the removed element and the new
     buffer. *)
-let buffer_pop : type a c. (a, c) buffer -> (a * a any_buffer) option
+let buffer_pop : type a c. (a, c) buffer -> (a * (a, red) buffer) option
 = function
   | B0  -> None
   | buf -> Some (buffer_pop_unsafe buf)
 
 (** Ejects an element from a buffer, when there is no elements in the buffer, an
-   error is raised. Otherwise, it returns the new buffer and the removed
-   element. *)
-let buffer_eject_unsafe : type a c. (a, c) buffer -> a any_buffer * a
+    error is raised. Otherwise, it returns the new buffer and the removed
+    element. *)
+let buffer_eject_unsafe : type a c. (a, c) buffer -> (a, red) buffer * a
 = function
   | B0 -> assert false
-  | B1 a -> Any B0, a
-  | B2 (a, b) -> Any (B1 a), b
-  | B3 (a, b, c) -> Any (B2 (a, b)), c
-  | B4 (a, b, c, d) -> Any (B3 (a, b, c)), d
-  | B5 (a, b, c, d, e) -> Any (B4 (a, b, c, d)), e
+  | B1 a -> B0, a
+  | B2 (a, b) -> (B1 a), b
+  | B3 (a, b, c) -> (B2 (a, b)), c
+  | B4 (a, b, c, d) -> (B3 (a, b, c)), d
+  | B5 (a, b, c, d, e) -> (B4 (a, b, c, d)), e
 
 (** Ejects an element from a buffer, if the buffer is empty, it returns [None],
     otherwise, it returns an option containing the removed element and the new
     buffer. *)
-let buffer_eject : type a c. (a, c) buffer -> (a any_buffer * a) option
+let buffer_eject : type a c. (a, c) buffer -> ((a, red) buffer * a) option
 = function
   | B0  -> None
   | buf -> Some (buffer_eject_unsafe buf)
 
 (** Pushes an element onto a green buffer, returning a yellow one. *)
 let green_push
-: type a. a -> (a, green) buffer -> a yellow_buffer
+: type a. a -> (a, green) buffer -> (a, yellow) buffer
 = fun x buf ->
   match buf with
-  | B2 (a, b) -> Yellowish (B3 (x, a, b))
-  | B3 (a, b, c) -> Yellowish (B4 (x, a, b, c))
+  | B2 (a, b) -> B3 (x, a, b)
+  | B3 (a, b, c) -> B4 (x, a, b, c)
 
 (** Injects an element onto a green buffer, returning a yellow one. *)
 let green_inject
-: type a. (a, green) buffer -> a -> a yellow_buffer
+: type a. (a, green) buffer -> a -> (a, yellow) buffer
 = fun buf x ->
   match buf with
-  | B2 (a, b)    -> Yellowish (B3 (a, b, x))
-  | B3 (a, b, c) -> Yellowish (B4 (a, b, c, x))
+  | B2 (a, b)    -> B3 (a, b, x)
+  | B3 (a, b, c) -> B4 (a, b, c, x)
 
 (** Pops an element from a green buffer, returns the removed element and the
     new yellow buffer. *)
-let green_pop : type a. (a, green) buffer -> a * a yellow_buffer
+let green_pop : type a. (a, green) buffer -> a * (a, yellow) buffer
 = function
-  | B2 (a, b)    -> a, Yellowish (B1 b)
-  | B3 (a, b, c) -> a, Yellowish (B2 (b, c))
+  | B2 (a, b)    -> a, B1 b
+  | B3 (a, b, c) -> a, B2 (b, c)
 
 (** Ejects an element from a green buffer, returns the new yellow buffer and
     the removed element. *)
-let green_eject : type a. (a, green) buffer -> a yellow_buffer * a
+let green_eject : type a. (a, green) buffer -> (a, yellow) buffer * a
 = function
-  | B2 (a, b)    -> Yellowish (B1 a), b
-  | B3 (a, b, c) -> Yellowish (B2 (a, b)), c
+  | B2 (a, b)    -> B1 a, b
+  | B3 (a, b, c) -> B2 (a, b), c
 
 (** Pushes an element onto a yellow buffer, and returns the new buffer. *)
-let yellow_push : type a. a -> a yellow_buffer -> a any_buffer
-= fun x (Yellowish buf) ->
+let yellow_push : type a. a -> (a, yellow) buffer -> (a, red) buffer
+= fun x buf ->
   match buf with
-  | B1 a -> Any (B2 (x, a))
-  | B2 (a, b) -> Any (B3 (x, a, b))
-  | B3 (a, b, c) -> Any (B4 (x, a, b, c))
-  | B4 (a, b, c, d) -> Any (B5 (x, a, b, c, d))
+  | B1 a -> B2 (x, a)
+  | B2 (a, b) -> B3 (x, a, b)
+  | B3 (a, b, c) -> B4 (x, a, b, c)
+  | B4 (a, b, c, d) -> B5 (x, a, b, c, d)
 
 (** Injects an element onto a yellow buffer, and returns the new buffer. *)
-let yellow_inject : type a. a yellow_buffer -> a -> a any_buffer
-= fun (Yellowish buf) x ->
+let yellow_inject : type a. (a, yellow) buffer -> a -> (a, red) buffer
+= fun buf x ->
   match buf with
-  | B1 a -> Any (B2 (a, x))
-  | B2 (a, b) -> Any (B3 (a, b, x))
-  | B3 (a, b, c) -> Any (B4 (a, b, c, x))
-  | B4 (a, b, c, d) -> Any (B5 (a, b, c, d, x))
+  | B1 a -> B2 (a, x)
+  | B2 (a, b) -> B3 (a, b, x)
+  | B3 (a, b, c) -> B4 (a, b, c, x)
+  | B4 (a, b, c, d) -> B5 (a, b, c, d, x)
 
 (** Pops an element from a yellow buffer, returns the removed element and the
     new buffer. *)
-let yellow_pop : type a. a yellow_buffer -> a * a any_buffer
-= fun (Yellowish buf) ->
+let yellow_pop : type a. (a, yellow) buffer -> a * (a, red) buffer
+= fun buf ->
   match buf with
-  | B1 a            -> a, Any B0
-  | B2 (a, b)       -> a, Any (B1  b)
-  | B3 (a, b, c)    -> a, Any (B2 (b, c))
-  | B4 (a, b, c, d) -> a, Any (B3 (b, c, d))
+  | B1 a            -> a, B0
+  | B2 (a, b)       -> a, (B1  b)
+  | B3 (a, b, c)    -> a, (B2 (b, c))
+  | B4 (a, b, c, d) -> a, (B3 (b, c, d))
 
 (** Ejects an element from a yellow buffer, returns the new buffer and the
     removed element. *)
-let yellow_eject : type a. a yellow_buffer -> a any_buffer * a
-= fun (Yellowish buf) ->
+let yellow_eject : type a. (a, yellow) buffer -> (a, red) buffer * a
+= fun buf ->
   match buf with
-  | B1 a            -> Any B0,             a
-  | B2 (a, b)       -> Any (B1  a),        b
-  | B3 (a, b, c)    -> Any (B2 (a, b)),    c
-  | B4 (a, b, c, d) -> Any (B3 (a, b, c)), d
+  | B1 a            -> B0,             a
+  | B2 (a, b)       -> (B1  a),        b
+  | B3 (a, b, c)    -> (B2 (a, b)),    c
+  | B4 (a, b, c, d) -> (B3 (a, b, c)), d
 
 (** Performs a push then an eject. *)
 let prefix_rot : type a c. a -> (a, c) buffer -> (a, c) buffer * a
@@ -235,8 +206,8 @@ let suffix23 (a, b) opt = match opt with
 
 (** Create a yellow (or green) buffer by pushing an element onto an option. *)
 let suffix12 x opt = match opt with
-  | None   -> Yellowish (B1 x)
-  | Some y -> Yellowish (B2 (x, y))
+  | None   -> B1 x
+  | Some y -> B2 (x, y)
 
 (** Type ['a decompose] helps us describe a 'a buffer. A buffer with 0 or 1
     elements is considered [Underflow], it cannot be green unless we add
@@ -255,7 +226,7 @@ let prefix_decompose : type a c. (a, c) buffer -> a decompose
   (* No element, the buffer is underflowed. *)
   | B0   -> Underflow None
   (* One element, the buffer is underflowed. We keep track of the single
-     element as an option type. *)
+      element as an option type. *)
   | B1 x -> Underflow (Some x)
   (* The buffer is green, it's ok. *)
   | (B2 _) as b -> Ok b
@@ -272,7 +243,7 @@ let suffix_decompose : type a c. (a, c) buffer -> a decompose
   (* No element, the buffer is underflowed. *)
   | B0   -> Underflow None
   (* One element, the buffer is underflowed. We keep track of the single
-     element as an option type. *)
+      element as an option type. *)
   | B1 x -> Underflow (Some x)
   (* The buffer is green, it's ok. *)
   | (B2 _) as b -> Ok b
@@ -303,34 +274,50 @@ let buffer_unsandwich : type a c. (a, c) buffer -> a sandwich
 (** Translates a 'a buffer to a 'a * 'a buffer. A additional option type is
     returned to handle cases where the buffer contains an odd number of
     elements. *)
-let buffer_halve : type a c. (a, c) buffer -> a option * (a * a) any_buffer
+let buffer_halve : type a c. (a, c) buffer -> a option * (a * a, red) buffer
 = function
-  | B0                 -> None,   Any B0
-  | B1 a               -> Some a, Any B0
-  | B2 (a, b)          -> None,   Any (B1 (a, b))
-  | B3 (a, b, c)       -> Some a, Any (B1 (b, c))
-  | B4 (a, b, c, d)    -> None,   Any (B2 ((a, b), (c, d)))
-  | B5 (a, b, c, d, e) -> Some a, Any (B2 ((b, c), (d, e)))
+  | B0                 -> None,   B0
+  | B1 a               -> Some a, B0
+  | B2 (a, b)          -> None,   (B1 (a, b))
+  | B3 (a, b, c)       -> Some a, (B1 (b, c))
+  | B4 (a, b, c, d)    -> None,   (B2 ((a, b), (c, d)))
+  | B5 (a, b, c, d, e) -> Some a, (B2 ((b, c), (d, e)))
+
+let to_yellow : type a g y. (a, g * y * nored) buffer -> (a, yellow) buffer
+= function
+  | B1 a -> B1 a
+  | B2 (a, b) -> B2 (a, b)
+  | B3 (a, b, c) -> B3 (a, b, c)
+  | B4 (a, b, c, d) -> B4 (a, b, c, d)
+
+let to_red : type a c. (a, c) buffer -> (a, red) buffer
+= function
+  | B0 -> B0
+  | B1 a -> B1 a
+  | B2 (a, b) -> B2 (a, b)
+  | B3 (a, b, c) -> B3 (a, b, c)
+  | B4 (a, b, c, d) -> B4 (a, b, c, d)
+  | B5 (a, b, c, d, e) -> B5 (a, b, c, d, e)
 
 (** Takes any 'a buffer and a green ('a * 'a) one, and rearranges elements
     contained in the two buffers to return one green 'a buffer and a yellow
     ('a * 'a) buffer. The order of elements is preserved. *)
 let green_prefix_concat
 : type a c.
-     (a, c) buffer
+      (a, c) buffer
   -> (a * a, green) buffer
-  -> (a, green) buffer * (a * a) yellow_buffer
+  -> (a, green) buffer * ((a * a), yellow) buffer
 = fun buf1 buf2 ->
   match prefix_decompose buf1 with
   (* If the first one is already green, we have nothing to do. *)
-  | Ok buf1 -> buf1, Yellowish buf2
+  | Ok buf1 -> buf1, to_yellow buf2
   (* If the first buffer lacks elements, we pop a pair from the second one and
-     inject it onto the first one. *)
+      inject it onto the first one. *)
   | Underflow opt ->
       let ab, buf2 = green_pop buf2 in
       prefix23 opt ab, buf2
   (* If the first buffer has to much elements, we simply push them onto the
-     second one. *)
+      second one. *)
   | Overflow (buf1, ab) ->
       buf1, green_push ab buf2
 
@@ -339,12 +326,12 @@ let green_prefix_concat
     green 'a buffer. The order of elements is preserved. *)
 let green_suffix_concat
 : type a c.
-     (a * a, green) buffer
+      (a * a, green) buffer
   -> (a, c) buffer
-  -> (a * a) yellow_buffer * (a, green) buffer
+  -> ((a * a), yellow) buffer * (a, green) buffer
 = fun buf1 buf2 ->
   match suffix_decompose buf2 with
-  | Ok buf2 -> Yellowish buf1, buf2
+  | Ok buf2 -> to_yellow buf1, buf2
   | Underflow opt ->
       let buf1, ab = green_eject buf1 in
       buf1, suffix23 ab opt
@@ -358,15 +345,14 @@ let prefix_concat buf1 buf2 =
   match prefix_decompose buf1 with
   (* If the first one is already green, we have nothing to do. *)
   | Ok buf1 ->
-      let Yellowish buf2 = buf2 in
-      buf1, Any buf2
+      buf1, to_red buf2
   (* If the first buffer lacks elements, we pop a pair from the second one and
-     inject it onto the first one. *)
+      inject it onto the first one. *)
   | Underflow opt ->
       let ab, buf2 = yellow_pop buf2 in
       prefix23 opt ab, buf2
   (* If the first buffer has to much elements, we simply push them onto the
-     second one. *)
+      second one. *)
   | Overflow (buf1, ab) ->
       buf1, yellow_push ab buf2
 
@@ -377,8 +363,7 @@ let suffix_concat buf1 buf2 =
   (* The reasoning is the same as in the previous case. *)
   match suffix_decompose buf2 with
   | Ok buf2 ->
-      let Yellowish buf1 = buf1 in
-      Any buf1, buf2
+      to_red buf1, buf2
   | Underflow opt ->
       let buf1, ab = yellow_eject buf1 in
       buf1, suffix23 ab opt
@@ -392,25 +377,25 @@ let make_small
 = fun prefix1 buf suffix1 ->
   match prefix_decompose prefix1, suffix_decompose suffix1 with
   (* If the prefix and suffix are green, no changes are needed. In practice, this case
-     never occurs as we call the function on a red buffer. *)
+      never occurs as we call the function on a red buffer. *)
   | Ok p1, Ok s1 ->
-      G (Green (p1, Hole, s1), Ending buf)
+      Chain (G, Packet (p1, Hole, s1), Ending buf)
 
   (* Only the prefix is green. *)
   | Ok p1, Underflow opt ->
       begin match buffer_eject buf, opt with
       (* The suffix and the following buffer are empty. We can return a chain
-         containing only the prefix. *)
+          containing only the prefix. *)
       | None, None   -> Ending p1
       (* If the suffix contains one element and the following buffer is empty.
-         We simply inject this element in p1. In practice, this case never
-         occurs as we call the function on a red buffer. If the prefix is green,
-         the suffix must be red, as it is underflowed it is empty. *)
+          We simply inject this element in p1. In practice, this case never
+          occurs as we call the function on a red buffer. If the prefix is green,
+          the suffix must be red, as it is underflowed it is empty. *)
       | None, Some x -> buffer_inject p1 x
       (* If the following buffer is not empty, we can eject elements from it
-         and push them onto our suffix. *)
-      | Some (Any rest, cd), _ ->
-          G (Green (p1, Hole, suffix23 cd opt), Ending rest)
+          and push them onto our suffix. *)
+      | Some (rest, cd), _ ->
+          Chain (G, Packet (p1, Hole, suffix23 cd opt), Ending rest)
       end
 
   (* Only the suffix is green. This is symmetrical to the previous case. *)
@@ -418,21 +403,21 @@ let make_small
       begin match buffer_pop buf, opt with
       | None, None   -> Ending s1
       | None, Some x -> buffer_push x s1
-      | Some (cd, Any rest), _ ->
-          G (Green (prefix23 opt cd, Hole, s1), Ending rest)
+      | Some (cd, rest), _ ->
+          Chain (G, Packet (prefix23 opt cd, Hole, s1), Ending rest)
       end
 
   (* Both the prefix and the suffix are underflowed. *)
   | Underflow p1, Underflow s1 ->
       begin match buffer_unsandwich buf with
       (* If the following buffer has enough elements to be sandwich, we can
-         use the sandwiching elements and inject/push them onto our prefix/
-         suffix. *)
+          use the sandwiching elements and inject/push them onto our prefix/
+          suffix. *)
       | Sandwich (ab, rest, cd) ->
-          G (Green (prefix23 p1 ab, Hole, suffix23 cd s1), Ending rest)
+          Chain (G, Packet (prefix23 p1 ab, Hole, suffix23 cd s1), Ending rest)
       (* We don't have enough elements in our following buffer, we have to
-         treat our result case by case. It correspond to the "No-Buffer Case"
-         from Kaplan and Tarjan's paper. *)
+          treat our result case by case. It correspond to the "No-Buffer Case"
+          from Kaplan and Tarjan's paper. *)
       | Alone opt ->
           begin match p1, opt, s1 with
           | None,   None,        None   -> Ending B0
@@ -447,55 +432,55 @@ let make_small
       end
 
   (* If we have an overflowing prefix and a good suffix, we can simply push its
-     excess elements onto the following buffer. *)
+      excess elements onto the following buffer. *)
   | Overflow (p1, ab), Ok s1 ->
       let buf = buffer_push ab buf in
-      G (Green (p1, Hole, s1), buf)
+      Chain (G, Packet (p1, Hole, s1), buf)
 
   (* This is symmetrical to the previous case. *)
   | Ok p1, Overflow (s1, ab) ->
       let buf = buffer_inject buf ab in
-      G (Green (p1, Hole, s1), buf)
+      Chain (G, Packet (p1, Hole, s1), buf)
 
   (* If the prefix is underflowing and the suffix overflowing, we add the
-     suffix's excess elements to the following buffer, and retrieve its first
+      suffix's excess elements to the following buffer, and retrieve its first
     pair. This pair can be added to the prefix to make it green. *)
   | Underflow opt, Overflow (s1, ab) ->
       let cd, center = suffix_rot buf ab in
-      G (Green (prefix23 opt cd, Hole, s1), Ending center)
+      Chain (G, Packet (prefix23 opt cd, Hole, s1), Ending center)
 
   (* This is symmetrical to the previous case. *)
   | Overflow (p1, ab), Underflow opt ->
       let center, cd = prefix_rot ab buf in
-      G (Green (p1, Hole, suffix23 cd opt), Ending center)
+      Chain (G, Packet (p1, Hole, suffix23 cd opt), Ending center)
 
   (* If both the prefix and the suffix are overflowing, a new level is added,
-     all excess elements can be stored in a yellow packet. *)
+      all excess elements can be stored in a yellow packet. *)
   | Overflow (p1, ab), Overflow (s1, cd) ->
-      let x, Any rest = buffer_halve buf in
-      let Yellowish p2 = suffix12 ab x in
-      G (Green (p1, Yellow (p2, Hole, B1 cd), s1), Ending rest)
+      let x, rest = buffer_halve buf in
+      let p2 = suffix12 ab x in
+      Chain (G, Packet (p1, Packet (p2, Hole, B1 cd), s1), Ending rest)
 
 (** Takes a red chain and returns a green one representing the same set. *)
 let green_of_red
 : type a. (a, red) chain -> (a, green) chain
 = function
   (* If our red packet is at the end of the chain, we handle a lot of different
-     cases in the make_small function. *)
-  | R (Red (p1, Hole, s1), Ending buf) ->
+      cases in the make_small function. *)
+  | Chain (R, Packet (p1, Hole, s1), Ending buf) ->
       make_small p1 buf s1
   (* If our red packet is followed by a yellow one, we are in the "Two-Buffer
-     Case" from Kaplan and Tarjan's paper. *)
-  | R (Red (p1, Yellow (p2, child, s2), s1), chain) ->
-      let p1, Any p2 = prefix_concat p1 (Yellowish p2) in
-      let Any s2, s1 = suffix_concat (Yellowish s2) s1 in
-      G (Green (p1, Hole, s1), R (Red (p2, child, s2), chain))
+      Case" from Kaplan and Tarjan's paper. *)
+  | Chain (R, Packet (p1, Packet (p2, child, s2), s1), chain) ->
+      let p1, p2 = prefix_concat p1 (to_yellow p2) in
+      let s2, s1 = suffix_concat (to_yellow s2) s1 in
+      Chain (G, Packet (p1, Hole, s1), Chain (R, Packet (p2, child, s2), chain))
   (* If our red packet is followed by a green one, we are in the "Two-Buffer
-     Case" from Kaplan and Tarjan's paper. *)
-  | R (Red (p1, Hole, s1), G (Green (p2, child, s2), chain)) ->
-      let p1, Yellowish p2 = green_prefix_concat p1 p2 in
-      let Yellowish s2, s1 = green_suffix_concat s2 s1 in
-      G (Green (p1, Yellow (p2, child, s2), s1), chain)
+      Case" from Kaplan and Tarjan's paper. *)
+  | Chain (R, Packet (p1, Hole, s1), Chain (G, Packet (p2, child, s2), chain)) ->
+      let p1, p2 = green_prefix_concat p1 p2 in
+      let s2, s1 = green_suffix_concat s2 s1 in
+      Chain (G, Packet (p1, Packet (p2, child, s2), s1), chain)
 
 (** Takes a green or red chain, and returns a green one representing
     the same set. *)
@@ -503,39 +488,39 @@ let ensure_green
 : type a g r. (a, g * noyellow * r) chain -> (a, green) chain
 = function
   | Ending buf -> Ending buf
-  | G (x, k) -> G (x, k)
-  | R (x, k) -> green_of_red (R (x, k))
+  | Chain (G, x, k) -> Chain (G, x, k)
+  | Chain (R, x, k) -> green_of_red (Chain (R, x, k))
 
 (** Takes a yellow packet, [p1], [child], [s1], and a chain [chain]. Returns
     a deque starting with this packet and followed by the green version of
     [chain]. *)
 let yellow p1 child s1 chain =
-  T (Y (Yellow (p1, child, s1), ensure_green chain))
+  T (Chain (Y, Packet (to_yellow p1, child, to_yellow s1), ensure_green chain))
 
 (** Takes a red packet, [p1], [child], [s1], and a green chain [chain].
     Returns the green version of the chain made of the red packet followed by
     the green chain. *)
 let red p1 child s1 chain =
-  T (green_of_red (R (Red (p1, child, s1), chain)))
+  T (green_of_red (Chain (R, Packet (to_red p1, child, to_red s1), chain)))
 
 (** Pushes an element on a deque. *)
 let push x (T t) = match t with
   | Ending buf -> T (buffer_push x buf)
-  | G (Green (p1, child, s1), chain) ->
-      let Yellowish p1 = green_push x p1 in
+  | Chain (G, Packet (p1, child, s1), chain) ->
+      let p1 = green_push x p1 in
       yellow p1 child s1 chain
-  | Y (Yellow (p1, child, s1), chain) ->
-      let Any p1 = yellow_push x (Yellowish p1) in
+  | Chain (Y, Packet (p1, child, s1), chain) ->
+      let p1 = yellow_push x p1 in
       red p1 child s1 chain
 
 (** Injects an element on a deque. *)
 let inject (T t) x = match t with
   | Ending buf -> T (buffer_inject buf x)
-  | G (Green (p1, child, s1), chain) ->
-      let Yellowish s1 = green_inject s1 x in
+  | Chain (G, Packet (p1, child, s1), chain) ->
+      let s1 = green_inject s1 x in
       yellow p1 child s1 chain
-  | Y (Yellow (p1, child, s1), chain) ->
-      let Any s1 = yellow_inject (Yellowish s1) x in
+  | Chain (Y, Packet (p1, child, s1), chain) ->
+      let s1 = yellow_inject s1 x in
       red p1 child s1 chain
 
 (** Pops an element from a deque. If the deque is empty, it returns [None], if
@@ -544,13 +529,13 @@ let pop (T t) = match t with
   | Ending buf ->
     begin match buffer_pop buf with
     | None -> None
-    | Some (x, Any buf) -> Some (x, T (Ending buf))
+    | Some (x, buf) -> Some (x, T (Ending buf))
     end
-  | G (Green (p1, child, s1), chain) ->
-    let x, Yellowish p1 = green_pop p1 in
+  | Chain (G, Packet (p1, child, s1), chain) ->
+    let x, p1 = green_pop p1 in
     Some (x, yellow p1 child s1 chain)
-  | Y (Yellow (p1, child, s1), chain) ->
-    let x, Any p1 = yellow_pop (Yellowish p1) in
+  | Chain (Y, Packet (p1, child, s1), chain) ->
+    let x, p1 = yellow_pop p1 in
     Some (x, red p1 child s1 chain)
 
 (** Ejects an element from a deque. If the deque is empty, it returns [None], if
@@ -559,11 +544,11 @@ let eject (T t) = match t with
   | Ending buf ->
     begin match buffer_eject buf with
     | None -> None
-    | Some (Any buf, x) -> Some (T (Ending buf), x)
+    | Some (buf, x) -> Some (T (Ending buf), x)
     end
-  | G (Green (p1, child, s1), chain) ->
-    let Yellowish s1, x = green_eject s1 in
+  | Chain (G, Packet (p1, child, s1), chain) ->
+    let s1, x = green_eject s1 in
     Some (yellow p1 child s1 chain, x)
-  | Y (Yellow (p1, child, s1), chain) ->
-    let Any s1, x = yellow_eject (Yellowish s1) in
+  | Chain (Y, Packet (p1, child, s1), chain) ->
+    let s1, x = yellow_eject s1 in
     Some (red p1 child s1 chain, x)

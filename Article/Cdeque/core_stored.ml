@@ -331,9 +331,15 @@ type ('a, 'n) suffix = ('a, 'n) Buffer.t
 
 (* Types for different kinds of triples and chains. *)
 
-type only   = ONLY
-type left   = LEFT
-type right  = RIGHT
+type io = IS_ONLY
+type il = IS_LEFT
+type ir = IS_RIGHT
+type is = IS_STORED
+
+type only   = io * unit
+type left   = il * unit
+type right  = ir * unit
+type stored = unit * is
 
 type one    = ONE
 type two    = TWO
@@ -375,6 +381,9 @@ type ('a, 'kind, 'ending, 'c) node =
   | Right : (_, 'sizes, 'p, 'c) coloring
           * ('a, eq2) prefix * ('a, 'sizes ge5) suffix
          -> ('a, right, 'p, 'c) node
+  | Stored : ('a, _ ge3) prefix
+           * ('a, _ ge3) suffix
+          -> ('a, stored, _, green) node
 
 (** Regularity represents constraints between a node color and its child chain
     parameters. The last parameter keeps track of the color of the packet
@@ -388,12 +397,15 @@ type ('color_head, 'color_packet, 'pair, 'color_left, 'color_right) regularity =
 
 (** A stored triple is either small, and made of one buffer, or big, and made
     of prefix - child - suffix triple. *)
-type 'a stored_triple =
-  | Small : ('a, _ ge3) prefix -> 'a stored_triple
-  | Big : ('a, _ ge3) prefix
-        * ('a stored_triple, _, only, _, _) chain
-        * ('a, _ ge3) suffix
-       -> 'a stored_triple
+type ('a, 'kind, 'packet_color) triple =
+  | Small : ('a, _ ge3) prefix -> ('a, stored, green) triple
+  | Triple :
+       ('c, 'cpkt, 'p, 'cl, 'cr) regularity
+     * ('a, 'kind, 'p, 'c) node
+     * ('a stored_triple, 'p, only, 'cl, 'cr) chain
+    -> ('a, 'kind, 'cpkt) triple
+
+and 'a stored_triple = ('a, stored, green) triple
 
 (** A body represents a descending preferred path : it follows yellow and
     orange nodes according to the preferred child relation. A body always end
@@ -634,16 +646,6 @@ let inject (T c) x = match is_empty c, c with
   | Is_empty, Empty -> T (single_chain x)
   | Not_empty, c -> T (inject_ne_chain c x)
 
-(** A type for the triple representation of a non-empty deque. First comes the
-    regularity constraints, then the node as a node, then the child deque as
-    a chain. *)
-type ('a, 'kind, 'packet_color) triple =
-  | Triple :
-       ('c, 'cpkt, 'p, 'cl, 'cr) regularity
-     * ('a, 'kind, 'p, 'c) node
-     * ('a stored_triple, 'p, only, 'cl, 'cr) chain
-    -> ('a, 'kind, 'cpkt) triple
-
 let to_reg
 : type a k n y o.
      (a, k, n ge1, nogreen * y * o * nored as 'c) node
@@ -668,7 +670,7 @@ let triple_of_chain
 
 (** Returns the non-empty only chain associated to a triple. *)
 let chain_of_triple
-: type a k c. (a, k, c) triple -> (a, single, k, c, c) chain
+: type a k c. (a, k * unit, c) triple -> (a, single, k * unit, c, c) chain
 = function
   | Triple (G, hd, child) -> Single (G, Packet (Hole, hd), child)
   | Triple (Y, hd, Single (reg, Packet (bd, tl), child)) ->
@@ -730,7 +732,7 @@ let make_stored_suffix sleft p child s =
   let p = Buffer.inject2 sleft pelt in
   let s, y, x = Buffer.eject2 s in
   let sleft = Buffer.pair y x in
-  (Big (p, child, s), sleft)
+  (Triple (G, Stored (p, s), child), sleft)
 
 (** Takes a left prefix, a child chain, a left suffix and a prefix of at least
     one elements, and returns a right prefix and a stored_triple. *)
@@ -739,7 +741,7 @@ let make_prefix_stored p child s pright =
   let s = Buffer.push2 selt pright in
   let x, y, p = Buffer.pop2 p in
   let pright = Buffer.pair x y in
-  (pright, Big (p, child, s))
+  (pright, Triple (G, Stored (p, s), child))
 
 (** Takes a suffix of at least one element and a right triple and returns a
     stored triple and a left suffix. *)
@@ -1128,20 +1130,22 @@ type _ stored_buffer =
     regular deque form a new semi regular deque. *)
 let extract_prefix stored child = match stored with
   | Small p -> (Stored_buffer p, child)
-  | Big (p, stored_child, s) ->
+  | Triple (G, Stored (p, s), stored_child) ->
     let child = push_semi (Small s) child in
     let child = concat_semi (S stored_child) child in
     (Stored_buffer p, child)
+  | Triple (_, _, _) -> .
 
 (** Takes a semi regular deque of stored triples and a stored triple. Extracs
     the suffix of the stored triple, the semi regular deque and the remaining
     elements form a new semi regular deque. *)
 let extract_suffix child stored = match stored with
   | Small s -> (child, Stored_buffer s)
-  | Big (p, stored_child, s) ->
+  | Triple (G, Stored (p, s), stored_child) ->
     let child = inject_semi child (Small p) in
     let child = concat_semi child (S stored_child) in
     (child, Stored_buffer s)
+  | Triple (_, _, _) -> .
 
 (** Takes a prefix of at least 5 elements and a semi regular deque of stored
     triples. Rearranges elements of the semi regular deque to make the prefix
@@ -1207,10 +1211,11 @@ let green_of_red_only body (Only (Rc, p, s) : _ node) child =
       let p = Buffer.push_5vector eltp p in
       let s = Buffer.inject_5vector p elts in
       Single (G, Packet (body, Only_end s), Empty)
-    | Alone (Big (p, child, s)) ->
+    | Alone (Triple (G, Stored (p, s), child)) ->
       let p = Buffer.push_5vector eltp p in
       let s = Buffer.inject_5vector s elts in
       make_green_only body (p, S child, s)
+    | Alone (Triple (_, _, _)) -> .
     | Sandwich (storedl, child, storedr) ->
       let Stored_buffer p, child = extract_prefix storedl child in
       let child, Stored_buffer s = extract_suffix child storedr in
