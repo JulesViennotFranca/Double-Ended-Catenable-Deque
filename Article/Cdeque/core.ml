@@ -336,16 +336,16 @@ type left
 type right
 
 type empty  = z
-type single = z ge1
-type pair   = z ge2
+type single = eq1
+type pair   = eq2
 
 (** The coloring links a color to the size of a prefix and the size of a suffix. *)
-type ('sizep, 'sizes, 'ending, 'c) coloring =
+type ('prefix_size, 'suffix_size, 'nbr_child, 'color) coloring =
   | Gc : (_ ge3, _ ge3, _ ge1, green ) coloring
   | Yc : (_ ge2, _ ge2, _ ge1, yellow) coloring
   | Oc : (_ ge1, _ ge1, _ ge1, orange) coloring
   | Rc : (    _,     _, _ ge1, red   ) coloring
-  | Ec : (    _,     _, empty, green ) coloring
+  | Ec : (    _,     _,     z, green ) coloring
 
 (** A node represents a prefix - suffix pair.
 
@@ -357,22 +357,22 @@ type ('sizep, 'sizes, 'ending, 'c) coloring =
     of the prefix (suffix), the suffix (prefix) containing two elements. The
     prefix (suffix) of an ending left (right) node must contain at least
     five elements. *)
-type ('a, 'kind, 'ending, 'c) node =
-  | Only_end  : ('a, _ ge1) prefix -> ('a, only, empty, green) node
-  | Only  : ('sizep, 'sizes, 'n ge1, 'c) coloring
-          * ('a, 'sizep ge5) prefix * ('a, 'sizes ge5) suffix
-         -> ('a, only, 'n ge1, 'c) node
-  | Left  : ('sizep, _, 'p, 'c) coloring
-          * ('a, 'sizep ge5) prefix * ('a, eq2) suffix
-         -> ('a, left, 'p, 'c) node
-  | Right : (_, 'sizes, 'p, 'c) coloring
-          * ('a, eq2) prefix * ('a, 'sizes ge5) suffix
-         -> ('a, right, 'p, 'c) node
+type ('a, 'nbr_child, 'kind, 'color) node =
+  | Only_end  : ('a, _ ge1) prefix -> ('a, z, only, green) node
+  | Only  : ('psize, 'ssize, 'n ge1, 'c) coloring
+          * ('a, 'psize ge5) prefix * ('a, 'ssize ge5) suffix
+         -> ('a, 'n ge1, only, 'c) node
+  | Left  : ('psize, _, 'nc, 'c) coloring
+          * ('a, 'psize ge5) prefix * ('a, eq2) suffix
+         -> ('a, 'nc, left, 'c) node
+  | Right : (_, 'ssize, 'nc, 'c) coloring
+          * ('a, eq2) prefix * ('a, 'ssize ge5) suffix
+         -> ('a, 'nc, right, 'c) node
 
 (** Regularity represents constraints between a node color and its child chain
     parameters. The last parameter keeps track of the color of the packet
     starting at this node. *)
-type ('color_head, 'color_packet, 'pair, 'color_left, 'color_right) regularity =
+type ('color_head, 'color_pkt, 'ckind, 'color_left, 'color_right) regularity =
   | G  : (green , green, _, _, _) regularity
   | Y  : (yellow, 'cl, _ ge1, 'cl, _) regularity
   | OS : (orange, 'c, single, 'c, 'c) regularity
@@ -392,33 +392,33 @@ type 'a stored_triple =
     orange nodes according to the preferred child relation. A body always end
     with a [Hole]. Its parameters are its input and output types, and its
     input and output kinds. *)
-and ('a, 'b, 'head_kind, 'tail_kind) body =
-  | Hole : ('a, 'a, 'kind, 'kind) body
+and ('a, 'b, 'head_nkind, 'tail_nkind) body =
+  | Hole : ('a, 'a, 'nkind, 'nkind) body
   | Single_child :
-       ('a, 'head_kind, single, nogreen * _ * _ * nored) node
-     * ('a stored_triple, 'b, only, 'tail_kind) body
-    -> ('a, 'b, 'head_kind, 'tail_kind) body
+       ('a, single, 'head_nkind, nogreen * _ * _ * nored) node
+     * ('a stored_triple, 'b, only, 'tail_nkind) body
+    -> ('a, 'b, 'head_nkind, 'tail_nkind) body
   | Pair_yellow :
-       ('a, 'head_kind, pair, yellow) node
-     * ('a stored_triple, 'b, left, 'tail_kind) body
+       ('a, pair, 'head_nkind, yellow) node
+     * ('a stored_triple, 'b, left, 'tail_nkind) body
      * ('a stored_triple, single, right, 'c, 'c) chain
-    -> ('a, 'b, 'head_kind, 'tail_kind) body
+    -> ('a, 'b, 'head_nkind, 'tail_nkind) body
   | Pair_orange :
-       ('a, 'head_kind, pair, orange) node
+       ('a, pair, 'head_nkind, orange) node
      * ('a stored_triple, single, left, green, green) chain
-     * ('a stored_triple, 'b, right, 'tail_kind) body
-    -> ('a, 'b, 'head_kind, 'tail_kind) body
+     * ('a stored_triple, 'b, right, 'tail_nkind) body
+    -> ('a, 'b, 'head_nkind, 'tail_nkind) body
 
 (** A packet represents a preferred path and its last node. As the last node is
     not yellow or orange, it is necessarily green or red. The last node take
     the place of the body's hole. Its parameter are its input and output types,
     its input kind, wether or not its last node is an ending one, and the color
     of its last node. *)
-and ('a, 'b, 'pair, 'kind, 'color) packet =
+and ('a, 'b, 'ckind, 'nkind, 'color) packet =
   | Packet :
-       ('a, 'b, 'kind, 'tail_kind) body
-     * ('b, 'tail_kind, 'p, _ * noyellow * noorange * _ as 'c) node
-    -> ('a, 'b, 'p, 'kind, 'c) packet
+       ('a, 'b, 'nkind, 'tail_nkind) body
+     * ('b, 'ck, 'tail_nkind, _ * noyellow * noorange * _ as 'c) node
+    -> ('a, 'b, 'ck, 'nkind, 'c) packet
 
 (** A chain represents a semi regular deque with a lot of additional
     information. The first parameter is simply the input type of the deque.
@@ -444,12 +444,12 @@ and ('a, 'b, 'pair, 'kind, 'color) packet =
     chain, two colors are needed to know the color of the left path and the
     color of the right path. If the chain is only, the left and right colors
     are the same, the color of its only path. *)
-and ('a, 'pair, 'kind, 'color_left, 'color_right) chain =
+and ('a, 'ckind, 'nkind, 'color_left, 'color_right) chain =
   | Empty : ('a, empty, only, green, green) chain
-  | Single : ('c, 'c, 'p, 'cl, 'cr) regularity
-           * ('a, 'b, 'p, 'kind, 'c) packet
-           * ('b stored_triple, 'p, only, 'cl, 'cr) chain
-          -> ('a, single, 'kind, 'c, 'c) chain
+  | Single : ('c, 'c, 'ck, 'cl, 'cr) regularity
+           * ('a, 'b, 'ck, 'nk, 'c) packet
+           * ('b stored_triple, 'ck, only, 'cl, 'cr) chain
+          -> ('a, single, 'nk, 'c, 'c) chain
   | Pair : ('a, single, left , 'cl, 'cl) chain
          * ('a, single, right, 'cr, 'cr) chain
         -> ('a, pair, only , 'cl, 'cr) chain
@@ -470,7 +470,7 @@ let empty = T Empty
 
 (** Pushes on a left node. *)
 let push_left_storage
-: type a p c. a -> (a, left, p, c) node -> (a, left, p, c) node
+: type a ck c. a -> (a, ck, left, c) node -> (a, ck, left, c) node
 = fun x store ->
   match store with
   | Left (Gc, p, s) -> Left (Gc, Buffer.push x p, s)
@@ -481,7 +481,7 @@ let push_left_storage
 
 (** Injects on a right node. *)
 let inject_right_storage
-: type a p c. (a, right, p, c) node -> a -> (a, right, p, c) node
+: type a ck c. (a, ck, right, c) node -> a -> (a, ck, right, c) node
 = fun store x ->
   match store with
   | Right (Gc, p, s) -> Right (Gc, p, Buffer.inject s x)
@@ -492,7 +492,7 @@ let inject_right_storage
 
 (** Pushes on an only node. *)
 let push_only_storage
-: type a p c. a -> (a, only, p, c) node -> (a, only, p, c) node
+: type a ck c. a -> (a, ck, only, c) node -> (a, ck, only, c) node
 = fun x store ->
   match store with
   | Only_end p -> Only_end (Buffer.push x p)
@@ -503,7 +503,7 @@ let push_only_storage
 
 (** Injects on an only node. *)
 let inject_only_storage
-: type a p c. (a, only, p, c) node -> a -> (a, only, p, c) node
+: type a ck c. (a, ck, only, c) node -> a -> (a, ck, only, c) node
 = fun store x ->
   match store with
   | Only_end p -> Only_end (Buffer.inject p x)
@@ -514,7 +514,7 @@ let inject_only_storage
 
 (** Pushes on a left packet. *)
 let push_left_packet
-: type a b p c. a -> (a, b, p, left, c) packet -> (a, b, p, left, c) packet
+: type a b ck c. a -> (a, b, ck, left, c) packet -> (a, b, ck, left, c) packet
 = fun x (Packet (body, tail)) ->
   match body with
   | Hole -> Packet (Hole, push_left_storage x tail)
@@ -527,7 +527,7 @@ let push_left_packet
 
 (** Injects on a right packet. *)
 let inject_right_packet
-: type a b p c. (a, b, p, right, c) packet -> a -> (a, b, p, right, c) packet
+: type a b ck c. (a, b, ck, right, c) packet -> a -> (a, b, ck, right, c) packet
 = fun (Packet (body, tail)) x ->
   match body with
   | Hole -> Packet (Hole, inject_right_storage tail x)
@@ -540,7 +540,7 @@ let inject_right_packet
 
 (** Pushes on an only packet. *)
 let push_only_packet
-: type a b p c. a -> (a, b, p, only, c) packet -> (a, b, p, only, c) packet
+: type a b ck c. a -> (a, b, ck, only, c) packet -> (a, b, ck, only, c) packet
 = fun x (Packet (body, tail)) ->
   match body with
   | Hole -> Packet (Hole, push_only_storage x tail)
@@ -553,7 +553,7 @@ let push_only_packet
 
 (** Injects on an only packet. *)
 let inject_only_packet
-: type a b p c. (a, b, p, only, c) packet -> a -> (a, b, p, only, c) packet
+: type a b ck c. (a, b, ck, only, c) packet -> a -> (a, b, ck, only, c) packet
 = fun (Packet (body, tail)) x ->
   match body with
   | Hole -> Packet (Hole, inject_only_storage tail x)
@@ -603,7 +603,7 @@ type _ is_empty =
   | Is_empty : empty is_empty
   | Not_empty : (_ ge1) is_empty
 
-let is_empty : type a n k cl cr. (a, n, k, cl, cr) chain -> n is_empty
+let is_empty : type a ck nk cl cr. (a, ck, nk, cl, cr) chain -> ck is_empty
 = function Empty -> Is_empty
   | Single _ -> Not_empty | Pair _ -> Not_empty
 
@@ -630,16 +630,16 @@ let inject (T c) x = match is_empty c, c with
 (** A type for the triple representation of a non-empty deque. First comes the
     regularity constraints, then the node as a node, then the child deque as
     a chain. *)
-type ('a, 'kind, 'packet_color) triple =
+type ('a, 'nkind, 'packet_color) triple =
   | Triple :
-       ('c, 'cpkt, 'p, 'cl, 'cr) regularity
-     * ('a, 'kind, 'p, 'c) node
-     * ('a stored_triple, 'p, only, 'cl, 'cr) chain
-    -> ('a, 'kind, 'cpkt) triple
+       ('c, 'cpkt, 'ck, 'cl, 'cr) regularity
+     * ('a, 'ck, 'nk, 'c) node
+     * ('a stored_triple, 'ck, only, 'cl, 'cr) chain
+    -> ('a, 'nk, 'cpkt) triple
 
 let to_reg
-: type a k n y o.
-     (a, k, n ge1, nogreen * y * o * nored as 'c) node
+: type a n nk y o.
+     (a, n ge1, nk, nogreen * y * o * nored as 'c) node
   -> (nogreen * y * o * nored, _, single, _, _) regularity
 = function
   | Only  (Yc, _, _) -> Y | Only  (Oc, _, _) -> OS
@@ -661,7 +661,7 @@ let triple_of_chain
 
 (** Returns the non-empty only chain associated to a triple. *)
 let chain_of_triple
-: type a k c. (a, k, c) triple -> (a, single, k, c, c) chain
+: type a nk c. (a, nk, c) triple -> (a, single, nk, c, c) chain
 = function
   | Triple (G, hd, child) -> Single (G, Packet (Hole, hd), child)
   | Triple (Y, hd, Single (reg, Packet (bd, tl), child)) ->
@@ -756,7 +756,7 @@ let stored_of_left
   | Triple (_, Left (_, pl, sl), child) ->
     make_prefix_stored pl child sl pr
 
-let is_empty_color : type sp ss p c. (sp, ss, p, c) coloring -> p is_empty
+let is_empty_color : type sp ss ck c. (sp, ss, ck, c) coloring -> ck is_empty
 = function Ec -> Is_empty
   | Gc -> Not_empty | Yc -> Not_empty | Oc -> Not_empty | Rc -> Not_empty
 
@@ -800,7 +800,8 @@ let right_of_pair
 
 (** Makes a left [left_right_triple] out of a chain. *)
 let make_left
-: type a p cl cr. (a, p, only, cl, cr) chain -> (a, left, cl) left_right_triple
+: type a ck cl cr. (a, ck, only, cl, cr) chain
+                -> (a, left, cl) left_right_triple
 = function
   | Empty -> Not_enough V0
   | Single _ as c -> left_of_only (triple_of_chain c)
@@ -808,7 +809,8 @@ let make_left
 
 (** Makes a right [left_right_triple] out of a chain. *)
 let make_right
-: type a p cl cr. (a, p, only, cl, cr) chain -> (a, right, cr) left_right_triple
+: type a ck cl cr. (a, ck, only, cl, cr) chain
+                -> (a, right, cr) left_right_triple
 = function
   | Empty -> Not_enough V0
   | Single _ as c -> right_of_only (triple_of_chain c)
@@ -838,10 +840,10 @@ let concat (T c1) (T c2) =
     was an only triple. The [pair] parameter is used to differentiate between
     those two possible cases. It translates to : was the modified triple part
     of a pair or not. *)
-type ('a, 'pair, 'kind) partial_triple =
+type ('a, 'ckind, 'nkind) partial_triple =
   | Empty : ('a, single, _) partial_triple
   | End : 'a * 'a * 'a * 'a * 'a * 'a -> ('a, pair, _) partial_triple
-  | Ok : ('a, 'k, _) triple -> ('a, _, 'k) partial_triple
+  | Ok : ('a, 'nk, _) triple -> ('a, _, 'nk) partial_triple
 
 (** Returns the orange regularity cases required according to the following
     chain, i.e. if it is an only chain or a pair chain. *)
@@ -957,7 +959,8 @@ let sandwich_only_green
 
 (** Adapts a coloring to a prefix of 8 or more elements. *)
 let adapt_to_prefix
-: type sp sp1 ss1 p c. (sp1, ss1, p, c) coloring -> (sp ge3, ss1, p, c) coloring
+: type sp sp1 ss1 ck c.
+     (sp1, ss1, ck, c) coloring -> (sp ge3, ss1, ck, c) coloring
 = function Gc -> Gc | Yc -> Yc | Oc -> Oc | Rc -> Rc | Ec -> Ec
 
 (** Makes an only triple out of six elements and a right triple. *)
@@ -979,7 +982,8 @@ let only_of_right
 
 (** Adapts a coloring to a suffix of 8 or more elements. *)
 let adapt_to_suffix
-: type ss sp1 ss1 p c. (sp1, ss1, p, c) coloring -> (sp1, ss ge3, p, c) coloring
+: type ss sp1 ss1 ck c.
+     (sp1, ss1, ck, c) coloring -> (sp1, ss ge3, ck, c) coloring
 = function Gc -> Gc | Yc -> Yc | Oc -> Oc | Rc -> Rc | Ec -> Ec
 
 (** Makes an only triple out of a left triple and six elements. *)
@@ -1213,9 +1217,9 @@ let green_of_red_only body (Only (Rc, p, s) : _ node) child =
 
 (** Takes any chain and makes it green. *)
 let rec ensure_green
-: type a p k cl cr.
-     (a, p, k, cl, cr) chain
-  -> (a, p, k, green, green) chain
+: type a ck k cl cr.
+     (a, ck, k, cl, cr) chain
+  -> (a, ck, k, green, green) chain
 = function
   | Empty -> Empty
   | Single (G, pkt, c) -> Single (G, pkt, c)
