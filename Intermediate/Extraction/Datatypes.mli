@@ -1,4 +1,8 @@
 
+type bool =
+| Coq_true
+| Coq_false
+
 type nat =
 | O
 | S of nat

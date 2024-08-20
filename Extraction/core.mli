@@ -1,162 +1,243 @@
 open Datatypes
-(* open Nat *)
 open Buffer
 open Types
 
-val push_only_triple :
-  nat -> nat -> kind -> color -> 'a1 stored_triple -> 'a1 only_triple -> 'a1
-  only_triple
+val push_left_storage_obligations_obligation_2 : nat -> nat
 
-val inject_only_triple :
-  nat -> nat -> kind -> color -> 'a1 only_triple -> 'a1 stored_triple -> 'a1
-  only_triple
+val push_left_storage_obligations_obligation_4 : nat -> nat
 
-val push_only_path : nat -> color -> 'a1 stored_triple -> 'a1 path -> 'a1 path
+val push_left_storage_obligations_obligation_6 : nat -> nat
 
-val inject_only_path :
-  nat -> color -> 'a1 path -> 'a1 stored_triple -> 'a1 path
+val push_left_storage_obligations_obligation_8 : nat -> nat
 
-val push_left_triple :
-  nat -> nat -> kind -> color -> 'a1 stored_triple -> 'a1 left_triple -> 'a1
-  left_triple
+val push_left_storage :
+  nat -> ending -> color -> 'a1 stored_triple -> 'a1 storage -> 'a1 storage
 
-val inject_right_triple :
-  nat -> nat -> kind -> color -> 'a1 right_triple -> 'a1 stored_triple -> 'a1
-  right_triple
+val inject_right_storage_obligations_obligation_2 : nat -> nat
 
-val push_left_path : nat -> color -> 'a1 stored_triple -> 'a1 path -> 'a1 path
+val inject_right_storage_obligations_obligation_4 : nat -> nat
 
-val inject_right_path :
-  nat -> color -> 'a1 path -> 'a1 stored_triple -> 'a1 path
+val inject_right_storage_obligations_obligation_6 : nat -> nat
 
-val push_ne_cdeque :
-  nat -> color -> 'a1 stored_triple -> 'a1 non_empty_cdeque -> 'a1
-  non_empty_cdeque
+val inject_right_storage_obligations_obligation_8 : nat -> nat
 
-val inject_ne_cdeque :
-  nat -> color -> 'a1 non_empty_cdeque -> 'a1 stored_triple -> 'a1
-  non_empty_cdeque
+val inject_right_storage :
+  nat -> ending -> color -> 'a1 storage -> 'a1 stored_triple -> 'a1 storage
 
-val single_triple : nat -> 'a1 stored_triple -> 'a1 triple
+val push_only_storage :
+  nat -> ending -> color -> 'a1 stored_triple -> 'a1 storage -> 'a1 storage
 
-val only_single : nat -> 'a1 stored_triple -> 'a1 non_empty_cdeque
+val inject_only_storage :
+  nat -> ending -> color -> 'a1 storage -> 'a1 stored_triple -> 'a1 storage
 
-val single : nat -> 'a1 stored_triple -> 'a1 cdeque
+val push_left_packet :
+  nat -> nat -> ending -> color -> 'a1 stored_triple -> 'a1 packet -> 'a1
+  packet
 
-val push_cdeque :
-  nat -> color -> 'a1 stored_triple -> 'a1 cdeque -> 'a1 cdeque
+val inject_right_packet :
+  nat -> nat -> ending -> color -> 'a1 packet -> 'a1 stored_triple -> 'a1
+  packet
 
-val inject_cdeque :
-  nat -> color -> 'a1 cdeque -> 'a1 stored_triple -> 'a1 cdeque
+val push_only_packet :
+  nat -> nat -> ending -> color -> 'a1 stored_triple -> 'a1 packet -> 'a1
+  packet
 
-val push_semi : nat -> 'a1 stored_triple -> 'a1 sdeque -> 'a1 sdeque
+val inject_only_packet :
+  nat -> nat -> ending -> color -> 'a1 packet -> 'a1 stored_triple -> 'a1
+  packet
 
-val inject_semi : nat -> 'a1 sdeque -> 'a1 stored_triple -> 'a1 sdeque
+val single_storage : nat -> 'a1 stored_triple -> 'a1 storage
+
+val single_packet : nat -> 'a1 stored_triple -> 'a1 packet
+
+val single_chain : nat -> 'a1 stored_triple -> 'a1 chain
+
+val push_left_chain :
+  nat -> color -> 'a1 stored_triple -> 'a1 chain -> 'a1 chain
+
+val inject_right_chain :
+  nat -> color -> 'a1 chain -> 'a1 stored_triple -> 'a1 chain
+
+val push_chain :
+  nat -> kind -> ending -> color -> color -> 'a1 stored_triple -> 'a1 chain
+  -> 'a1 chain
+
+val inject_chain :
+  nat -> kind -> ending -> color -> color -> 'a1 chain -> 'a1 stored_triple
+  -> 'a1 chain
+
+val push_ne_chain :
+  nat -> kind -> color -> color -> 'a1 stored_triple -> 'a1 non_ending_chain
+  -> 'a1 non_ending_chain
+
+val inject_ne_chain :
+  nat -> kind -> color -> color -> 'a1 non_ending_chain -> 'a1 stored_triple
+  -> 'a1 non_ending_chain
 
 val push_vector :
-  nat -> nat -> color -> 'a1 stored_triple vector -> 'a1 cdeque -> 'a1 cdeque
+  nat -> nat -> kind -> color -> color -> 'a1 stored_triple vector -> 'a1
+  non_ending_chain -> 'a1 non_ending_chain
 
 val inject_vector :
-  nat -> nat -> color -> 'a1 cdeque -> 'a1 stored_triple vector -> 'a1 cdeque
+  nat -> nat -> kind -> color -> color -> 'a1 non_ending_chain -> 'a1
+  stored_triple vector -> 'a1 non_ending_chain
 
-val to_pref_left : nat -> color -> 'a1 non_empty_cdeque -> 'a1 pref_left
+val push_semi : nat -> 'a1 stored_triple -> 'a1 semi_deque -> 'a1 semi_deque
 
-val to_pref_right :
-  nat -> nat -> nat -> kind -> 'a1 packet -> 'a1 triple -> 'a1 pref_right
+val inject_semi : nat -> 'a1 semi_deque -> 'a1 stored_triple -> 'a1 semi_deque
 
-val no_pref :
-  nat -> nat -> nat -> kind -> 'a1 packet -> 'a1 triple -> 'a1
-  non_empty_cdeque
+val triple_of_chain : nat -> kind -> color -> 'a1 chain -> 'a1 triple
 
-val make_child :
-  nat -> nat -> nat -> preferred_child -> kind -> green_hue -> red_hue -> 'a1
-  packet -> 'a1 triple -> 'a1 sdeque
+val chain_of_triple : nat -> kind -> color -> 'a1 triple -> 'a1 chain
 
-val push_child :
-  nat -> nat -> nat -> preferred_child -> kind -> green_hue -> red_hue -> 'a1
-  stored_triple -> 'a1 packet -> 'a1 triple -> ('a1 packet, 'a1 triple) prod
+val left_of_only : nat -> color -> 'a1 triple -> 'a1 left_right_triple
 
-val inject_child :
-  nat -> nat -> nat -> preferred_child -> kind -> green_hue -> red_hue -> 'a1
-  packet -> 'a1 triple -> 'a1 stored_triple -> ('a1 packet, 'a1 triple) prod
+val right_of_only : nat -> color -> 'a1 triple -> 'a1 left_right_triple
 
-val stored_left :
-  nat -> nat -> color -> 'a1 prefix -> 'a1 cdeque -> 'a1 suffix -> 'a1
-  buffer_12 -> ('a1 prefix, 'a1 stored_triple) prod
+val make_stored_suffix :
+  nat -> nat -> nat -> kind -> ending -> color -> color -> 'a1 suffix -> 'a1
+  prefix -> 'a1 chain -> 'a1 suffix -> ('a1 stored_triple, 'a1 suffix) prod
 
-val stored_right :
-  nat -> nat -> color -> 'a1 buffer_12 -> 'a1 prefix -> 'a1 cdeque -> 'a1
-  suffix -> ('a1 stored_triple, 'a1 suffix) prod
+val make_prefix_stored :
+  nat -> nat -> nat -> kind -> ending -> color -> color -> 'a1 prefix -> 'a1
+  chain -> 'a1 suffix -> 'a1 prefix -> ('a1 prefix, 'a1 stored_triple) prod
 
-val extract_stored_left :
-  nat -> color -> 'a1 path -> 'a1 buffer_12 -> ('a1 suffix, 'a1
-  stored_triple) prod
-
-val extract_stored_right :
-  nat -> color -> 'a1 buffer_12 -> 'a1 path -> ('a1 stored_triple, 'a1
+val stored_of_right :
+  nat -> nat -> color -> 'a1 suffix -> 'a1 triple -> ('a1 stored_triple, 'a1
   suffix) prod
 
-val left_of_pair : nat -> color -> color -> 'a1 path -> 'a1 path -> 'a1 path
+val stored_of_left :
+  nat -> nat -> color -> 'a1 triple -> 'a1 prefix -> ('a1 prefix, 'a1
+  stored_triple) prod
 
-val right_of_pair : nat -> color -> color -> 'a1 path -> 'a1 path -> 'a1 path
+val left_of_pair_obligations_obligation_1 : nat -> nat
 
-val left_of_only : nat -> color -> 'a1 path -> 'a1 path_attempt
+val left_of_pair :
+  nat -> color -> color -> 'a1 triple -> 'a1 triple -> 'a1 triple
 
-val right_of_only : nat -> color -> 'a1 path -> 'a1 path_attempt
+val right_of_pair_obligations_obligation_1 : nat -> nat
 
-val make_left : nat -> color -> 'a1 cdeque -> 'a1 path_attempt
+val right_of_pair :
+  nat -> color -> color -> 'a1 triple -> 'a1 triple -> 'a1 triple
 
-val make_right : nat -> color -> 'a1 cdeque -> 'a1 path_attempt
+val make_left :
+  nat -> kind -> ending -> color -> color -> 'a1 chain -> 'a1
+  left_right_triple
 
-val concat_semi : nat -> 'a1 sdeque -> 'a1 sdeque -> 'a1 sdeque
+val make_right :
+  nat -> kind -> ending -> color -> color -> 'a1 chain -> 'a1
+  left_right_triple
 
-val semi_of_left :
-  nat -> color -> 'a1 path -> 'a1 stored_triple -> 'a1 stored_triple -> 'a1
-  stored_triple -> 'a1 stored_triple -> 'a1 stored_triple -> 'a1
-  stored_triple -> 'a1 sdeque
+val concat_semi : nat -> 'a1 semi_deque -> 'a1 semi_deque -> 'a1 semi_deque
 
-val semi_of_right :
-  nat -> color -> 'a1 stored_triple -> 'a1 stored_triple -> 'a1 stored_triple
-  -> 'a1 stored_triple -> 'a1 stored_triple -> 'a1 stored_triple -> 'a1 path
-  -> 'a1 sdeque
+val orange_reg : nat -> kind -> color -> 'a1 chain -> regularity
 
-val pop_green_left :
-  nat -> 'a1 path -> ('a1 stored_triple, 'a1 path_uncolored) prod
+val pop_left_green_obligations_obligation_3 : nat -> nat
 
-val eject_green_right :
-  nat -> 'a1 path -> ('a1 path_uncolored, 'a1 stored_triple) prod
+val pop_left_green_obligations_obligation_5 : nat -> nat
+
+val pop_left_green_obligations_obligation_7 : nat -> nat
+
+val pop_left_green_obligations_obligation_9 : nat -> nat
+
+val pop_left_green :
+  nat -> 'a1 triple -> ('a1 stored_triple, 'a1 partial_triple) prod
+
+val eject_right_green_obligations_obligation_3 : nat -> nat
+
+val eject_right_green_obligations_obligation_5 : nat -> nat
+
+val eject_right_green_obligations_obligation_7 : nat -> nat
+
+val eject_right_green_obligations_obligation_9 : nat -> nat
+
+val eject_right_green :
+  nat -> 'a1 triple -> ('a1 partial_triple, 'a1 stored_triple) prod
+
+val pop_only_green :
+  nat -> 'a1 triple -> ('a1 stored_triple, 'a1 partial_triple) prod
+
+val eject_only_green :
+  nat -> 'a1 triple -> ('a1 partial_triple, 'a1 stored_triple) prod
+
+val sandwich_only_green :
+  nat -> 'a1 triple -> ('a1 stored_triple, 'a1 partial_triple) sandwich
+
+val adapt_to_prefix : nat -> nat -> nat -> color -> coloring -> coloring
+
+val only_of_right :
+  nat -> color -> 'a1 six_stored_triple -> 'a1 triple -> 'a1 triple
+
+val adapt_to_suffix : nat -> nat -> nat -> color -> coloring -> coloring
+
+val only_of_left :
+  nat -> color -> 'a1 triple -> 'a1 six_stored_triple -> 'a1 triple
+
+val pop_pair_green :
+  nat -> 'a1 chain -> ('a1 stored_triple, 'a1 semi_deque) prod
+
+val eject_pair_green :
+  nat -> 'a1 chain -> ('a1 semi_deque, 'a1 stored_triple) prod
+
+val sandwich_pair_green :
+  nat -> 'a1 chain -> ('a1 stored_triple, 'a1 semi_deque) sandwich
 
 val pop_green :
-  nat -> 'a1 non_empty_cdeque -> ('a1 stored_triple, 'a1 sdeque) prod
+  nat -> kind -> 'a1 chain -> ('a1 stored_triple, 'a1 semi_deque) prod
 
 val eject_green :
-  nat -> 'a1 non_empty_cdeque -> ('a1 sdeque, 'a1 stored_triple) prod
+  nat -> kind -> 'a1 chain -> ('a1 semi_deque, 'a1 stored_triple) prod
 
-val pop_stored : nat -> 'a1 non_empty_cdeque -> 'a1 unstored
+val sandwich_green :
+  nat -> kind -> 'a1 chain -> ('a1 stored_triple, 'a1 semi_deque) sandwich
 
-val eject_stored : nat -> 'a1 non_empty_cdeque -> 'a1 unstored
+val make_green_prefix :
+  nat -> nat -> nat -> 'a1 prefix -> 'a1 prefix -> 'a1 semi_deque -> ('a1
+  green_buffer, 'a1 semi_deque) prod
 
-val unsandwich_green : nat -> 'a1 non_empty_cdeque -> 'a1 sandwich
+val make_green_suffix :
+  nat -> nat -> nat -> 'a1 semi_deque -> 'a1 suffix -> 'a1 suffix -> ('a1
+  semi_deque, 'a1 green_buffer) prod
 
-val unsandwich_stored : nat -> 'a1 non_empty_cdeque -> 'a1 unstored_sandwich
+val extract_prefix :
+  nat -> 'a1 stored_triple -> 'a1 semi_deque -> ('a1 stored_buffer, 'a1
+  semi_deque) prod
 
-val only_small : nat -> nat -> nat -> 'a1 prefix -> 'a1 suffix -> 'a1 triple
+val extract_suffix :
+  nat -> 'a1 semi_deque -> 'a1 stored_triple -> ('a1 semi_deque, 'a1
+  stored_buffer) prod
 
-val only_green :
-  nat -> nat -> nat -> 'a1 prefix -> 'a1 sdeque -> 'a1 suffix -> 'a1 triple
+val ensure_green_prefix :
+  nat -> nat -> kind -> 'a1 prefix -> 'a1 chain -> ('a1 green_buffer, 'a1
+  semi_deque) prod
 
-val green_of_red_only : nat -> 'a1 triple -> 'a1 triple
+val ensure_green_suffix :
+  nat -> nat -> kind -> 'a1 chain -> 'a1 suffix -> ('a1 semi_deque, 'a1
+  green_buffer) prod
 
-val green_of_red_left : nat -> 'a1 triple -> 'a1 triple
+val ensure_green_left_obligations_obligation_2 : nat -> nat
 
-val green_of_red_right : nat -> 'a1 triple -> 'a1 triple
+val ensure_green_left :
+  nat -> nat -> kind -> kind -> 'a1 body -> 'a1 storage -> 'a1 chain -> 'a1
+  chain
+
+val ensure_green_right_obligations_obligation_2 : nat -> nat
+
+val ensure_green_right :
+  nat -> nat -> kind -> kind -> 'a1 body -> 'a1 storage -> 'a1 chain -> 'a1
+  chain
+
+val make_green_only :
+  nat -> nat -> kind -> nat -> nat -> 'a1 body -> 'a1 prefix -> 'a1
+  semi_deque -> 'a1 prefix -> 'a1 chain
+
+val ensure_green_only :
+  nat -> nat -> kind -> kind -> 'a1 body -> 'a1 storage -> 'a1 chain -> 'a1
+  chain
+
+val ensure_green_obligations_obligation_4 : nat -> nat
+
+val ensure_green_obligations_obligation_6 : nat -> nat
 
 val ensure_green :
-  nat -> kind -> green_hue -> red_hue -> 'a1 triple -> 'a1 triple
-
-val ensure_green_path : nat -> kind -> color -> 'a1 path -> 'a1 path
-
-val ensure_green_cdeque :
-  nat -> color -> 'a1 non_empty_cdeque -> 'a1 non_empty_cdeque
-
-val regular_of_semi : 'a1 sdeque -> 'a1 deque
+  nat -> kind -> kind -> ending -> color -> color -> 'a1 chain -> 'a1 chain

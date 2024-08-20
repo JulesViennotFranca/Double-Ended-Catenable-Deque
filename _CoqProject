@@ -1,6 +1,6 @@
--Q _build/default/Deq Deq
--Q _build/default/Deque Deque
--Q _build/default/Article/Color Color
--Q _build/default/Article/BinCounting BinCounting
--Q _build/default/Article/Sdeque Sdeque
--Q _build/default/Article/Cdeque Cdeque
+-Q _build/default/Intermediate/Deq Deq
+-Q _build/default/Intermediate/Deque Deque
+-Q _build/default/Color Color
+-Q _build/default/BinCounting BinCounting
+-Q _build/default/Sdeque Sdeque
+-Q _build/default/Cdeque Cdeque

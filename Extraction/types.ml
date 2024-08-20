@@ -1,11 +1,12 @@
 open Datatypes
 open Buffer
 
-type preferred_child =
-| Preferred_left
-| Preferred_right
+type ending =
+| Is_end
+| Not_end
 
 type kind =
+| Pair
 | Only
 | Left
 | Right
@@ -33,93 +34,91 @@ type 'a prefix' = 'a t
 
 type 'a suffix' = 'a t
 
-type small_triple_sizes =
-| Only_small_sizes of nat
-| Left_small_sizes of nat
-| Right_small_sizes of nat
+type coloring =
+| G of nat * nat
+| Y of nat * nat
+| O of nat * nat
+| R of nat * nat
 
-type big_triple_sizes =
-| Only_big_sizes of nat * nat
-| Left_big_sizes of nat
-| Right_big_sizes of nat
+type 'a storage' =
+| Only_end of nat * 'a prefix'
+| Left_end of nat * 'a prefix' * 'a suffix'
+| Right_end of nat * 'a prefix' * 'a suffix'
+| Only_st of nat * nat * color * coloring * 'a prefix' * 'a suffix'
+| Left_st of nat * nat * color * coloring * 'a prefix' * 'a suffix'
+| Right_st of nat * nat * color * coloring * 'a prefix' * 'a suffix'
+
+type chain_regularity =
+| Green_chain of color * color
+| Red_chain
 
 type 'a stored_triple =
-| ST_ground of 'a
-| ST_small of nat * nat * 'a stored_triple prefix'
-| ST_triple of nat * nat * nat * color * 'a stored_triple prefix' * 'a cdeque
-   * 'a stored_triple suffix'
-and 'a triple =
+| Ground of 'a
+| Small of nat * nat * 'a stored_triple suffix'
+| Big of nat * nat * nat * kind * ending * color * color
+   * 'a stored_triple prefix' * 'a chain * 'a stored_triple suffix'
+and 'a body =
 | Hole of nat * kind
-| Small of nat * nat * nat * kind * 'a stored_triple prefix'
-   * 'a stored_triple suffix' * small_triple_sizes
-| Green of nat * nat * nat * kind * green_hue * red_hue
-   * 'a stored_triple prefix' * 'a non_empty_cdeque
-   * 'a stored_triple suffix' * big_triple_sizes
-| Yellow of nat * nat * nat * nat * kind * kind * 'a stored_triple prefix'
-   * 'a packet * 'a stored_triple suffix' * big_triple_sizes
-| Orange of nat * nat * nat * nat * kind * kind * 'a stored_triple prefix'
-   * 'a packet * 'a stored_triple suffix' * big_triple_sizes
-| Red of nat * nat * nat * kind * 'a stored_triple prefix'
-   * 'a non_empty_cdeque * 'a stored_triple suffix' * big_triple_sizes
+| Only_yellow of nat * nat * kind * kind * 'a stored_triple storage' * 'a body
+| Only_orange of nat * nat * kind * kind * 'a stored_triple storage' * 'a body
+| Pair_yellow of nat * nat * kind * kind * color * 'a stored_triple storage'
+   * 'a body * 'a chain
+| Pair_orange of nat * nat * kind * kind * 'a stored_triple storage'
+   * 'a chain * 'a body
 and 'a packet =
-| Only_child of nat * nat * bool * kind * yellow_hue * orange_hue
-   * preferred_child * 'a triple
-| Left_child of nat * nat * bool * kind * yellow_hue * orange_hue * color
-   * 'a triple * 'a path
-| Right_child of nat * nat * bool * kind * yellow_hue * orange_hue * 
-   'a path * 'a triple
-and 'a path =
-| Children of nat * nat * nat * bool * kind * kind * green_hue * yellow_hue
-   * orange_hue * red_hue * 'a triple * 'a triple
-and 'a non_empty_cdeque =
-| Only_path of nat * green_hue * red_hue * 'a path
-| Pair_green of nat * 'a path * 'a path
-| Pair_red of nat * color * color * 'a path * 'a path
-and 'a cdeque =
+| Packet of nat * nat * kind * kind * ending * green_hue * red_hue * 
+   'a body * 'a stored_triple storage'
+and 'a chain =
 | Empty of nat
-| NonEmpty of nat * green_hue * red_hue * 'a non_empty_cdeque
+| Only_chain of nat * nat * kind * kind * ending * color * color * color
+   * chain_regularity * 'a packet * 'a chain
+| Pair_chain of nat * color * color * 'a chain * 'a chain
 
 type 'a prefix = 'a stored_triple prefix'
 
 type 'a suffix = 'a stored_triple suffix'
 
-type 'a only_triple = 'a triple
+type 'a green_buffer =
+| Gbuf of nat * 'a stored_triple t
 
-type 'a left_triple = 'a triple
+type 'a stored_buffer =
+| Sbuf of nat * 'a stored_triple t
 
-type 'a right_triple = 'a triple
+type 'a storage = 'a stored_triple storage'
 
-type 'a pref_left =
-| Pref_left of nat * nat * kind * green_hue * red_hue * 'a packet * 'a triple
+type 'x non_ending_chain =
+| NE_chain of nat * kind * kind * ending * color * color * 'x chain
 
-type 'a pref_right =
-| Pref_right of nat * nat * kind * green_hue * red_hue * 'a packet * 'a triple
+type regularity =
+| Green of kind * ending * color * color
+| Yellow of kind * color * color
+| OrangeO of color
+| OrangeP of color
+| Red of kind * ending
 
-type 'a buffer_12 = ('a stored_triple, 'a stored_triple vector) prod
+type 'x triple =
+| Triple of nat * kind * kind * ending * color * color * color * color
+   * regularity * 'x storage * 'x chain
 
-type 'a path_attempt =
-| ZeroSix of kind * color * 'a stored_triple vector
-| Ok of kind * color * 'a path
-| Any of kind * color * 'a path
+type 'x left_right_triple =
+| Not_enough of nat * kind * 'x stored_triple vector
+| Ok_lrt of nat * kind * color * 'x triple
 
-type 'a path_uncolored =
-| Six of 'a stored_triple * 'a stored_triple * 'a stored_triple
-   * 'a stored_triple * 'a stored_triple * 'a stored_triple
-| AnyColor of color * 'a path
+type 'a six_stored_triple =
+  ((((('a stored_triple, 'a stored_triple) prod, 'a stored_triple) prod, 'a
+  stored_triple) prod, 'a stored_triple) prod, 'a stored_triple) prod
 
-type 'a sdeque =
-| Sd of color * 'a cdeque
+type 'x partial_triple =
+| Zero_element of nat * kind
+| Six_elements of nat * kind * 'x six_stored_triple
+| Ok_pt of nat * kind * kind * color * 'x triple
 
-type 'a unstored =
-| Unstored of nat * 'a prefix * 'a sdeque
+type ('x0, 'x) sandwich =
+| Alone of 'x0
+| Sandwich of 'x0 * 'x * 'x0
 
-type 'a sandwich =
-| Alone of 'a stored_triple
-| Sandwich of 'a stored_triple * 'a sdeque * 'a stored_triple
+type 'x semi_deque =
+| Semi of nat * kind * ending * color * color * 'x chain
 
-type 'a unstored_sandwich =
-| Unstored_alone of nat * 'a prefix
-| Unstored_sandwich of nat * nat * 'a prefix * 'a sdeque * 'a suffix
-
-type 'a deque = 'a cdeque
-  (* singleton inductive, whose constructor was T *)
+type 'x deque =
+| T of kind * ending * 'x chain
