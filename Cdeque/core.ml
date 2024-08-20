@@ -1,6 +1,6 @@
 open Color.GYOR
 
-module Deq = Sdeque.Core
+module Deque = Sdeque.Core
 
 type 'a pr = out_channel -> 'a -> unit
 
@@ -166,16 +166,16 @@ module Buffer : sig
   val has3p8 : ('a, _ ge8) t -> 'a has3p8
 
 end = struct
-  type ('a, 'quantity) t = 'a Deq.deque
+  type ('a, 'quantity) t = 'a Deque.deque
 
-  let empty = Deq.empty
-  let push x t = Deq.push x t
-  let inject t x = Deq.inject t x
+  let empty = Deque.empty
+  let push x t = Deque.push x t
+  let inject t x = Deque.inject t x
 
-  let pop t = match Deq.pop t with
+  let pop t = match Deque.pop t with
     | None -> assert false
     | Some (x, t') -> (x, t')
-  let eject t = match Deq.eject t with
+  let eject t = match Deque.eject t with
     | None -> assert false
     | Some (t', x) -> (t', x)
 
@@ -194,7 +194,7 @@ end = struct
 
   let two t =
     let x, y, t = pop2 t in
-    assert (Deq.is_empty t) ;
+    assert (Deque.is_empty t) ;
     (x, y)
 
   type _ has1 =
@@ -202,7 +202,7 @@ end = struct
     | At_least_1 : ('a, _ ge1) t -> 'a has1
 
   let has1 t =
-    if Deq.is_empty t
+    if Deque.is_empty t
     then Exact_0
     else At_least_1 t
 
@@ -224,13 +224,13 @@ end = struct
     | At_least_3 : ('a, _ ge3) t -> 'a has3
 
   let has3 t =
-    match Deq.pop t with
+    match Deque.pop t with
     | None -> Less_than_3 V0
     | Some (x, s) ->
-    match Deq.pop s with
+    match Deque.pop s with
     | None -> Less_than_3 (V1 x)
     | Some (y, s) ->
-    match Deq.pop s with
+    match Deque.pop s with
     | None -> Less_than_3 (V2 (x, y))
     | Some _ -> At_least_3 t
 
@@ -264,22 +264,22 @@ end = struct
 
   let has7 t =
     let a, s = pop t in
-    match Deq.pop s with
+    match Deque.pop s with
     | None -> Less_than_7 (V1 a)
     | Some (b, s) ->
-    match Deq.pop s with
+    match Deque.pop s with
     | None -> Less_than_7 (V2 (a, b))
     | Some (c, s) ->
-    match Deq.pop s with
+    match Deque.pop s with
     | None -> Less_than_7 (V3 (a, b, c))
     | Some (d, s) ->
-    match Deq.pop s with
+    match Deque.pop s with
     | None -> Less_than_7 (V4 (a, b, c, d))
     | Some (e, s) ->
-    match Deq.pop s with
+    match Deque.pop s with
     | None -> Less_than_7 (V5 (a, b, c, d, e))
     | Some (f, s) ->
-    match Deq.pop s with
+    match Deque.pop s with
     | None -> Less_than_7 (V6 (a, b, c, d, e, f))
     | Some _ -> At_least_7 t
 
@@ -294,8 +294,8 @@ end = struct
     | Exact_0 -> Exact_4 (a, b, c, d)
     | At_least_1 _ -> At_least_5 buffer
 
-  let push_vector v t = vector_fold_right Deq.push v t
-  let inject_vector t v = vector_fold_left  Deq.inject t v
+  let push_vector v t = vector_fold_right Deque.push v t
+  let inject_vector t v = vector_fold_left  Deque.inject t v
 
   type 'a has3p8 =
     | Less_than_11 : 'a eight * ('a, eq2) vector -> 'a has3p8
@@ -395,16 +395,16 @@ type 'a stored_triple =
 and ('a, 'b, 'head_nkind, 'tail_nkind) body =
   | Hole : ('a, 'a, 'nkind, 'nkind) body
   | Single_child :
-       ('a, single, 'head_nkind, nogreen * _ * _ * nored) node
+       ('a, eq1, 'head_nkind, nogreen * _ * _ * nored) node
      * ('a stored_triple, 'b, only, 'tail_nkind) body
     -> ('a, 'b, 'head_nkind, 'tail_nkind) body
   | Pair_yellow :
-       ('a, pair, 'head_nkind, yellow) node
+       ('a, eq2, 'head_nkind, yellow) node
      * ('a stored_triple, 'b, left, 'tail_nkind) body
      * ('a stored_triple, single, right, 'c, 'c) chain
     -> ('a, 'b, 'head_nkind, 'tail_nkind) body
   | Pair_orange :
-       ('a, pair, 'head_nkind, orange) node
+       ('a, eq2, 'head_nkind, orange) node
      * ('a stored_triple, single, left, green, green) chain
      * ('a stored_triple, 'b, right, 'tail_nkind) body
     -> ('a, 'b, 'head_nkind, 'tail_nkind) body
@@ -414,11 +414,11 @@ and ('a, 'b, 'head_nkind, 'tail_nkind) body =
     the place of the body's hole. Its parameter are its input and output types,
     its input kind, wether or not its last node is an ending one, and the color
     of its last node. *)
-and ('a, 'b, 'ckind, 'nkind, 'color) packet =
+and ('a, 'b, 'nbr_child, 'nkind, 'color) packet =
   | Packet :
        ('a, 'b, 'nkind, 'tail_nkind) body
-     * ('b, 'ck, 'tail_nkind, _ * noyellow * noorange * _ as 'c) node
-    -> ('a, 'b, 'ck, 'nkind, 'c) packet
+     * ('b, 'nc, 'tail_nkind, _ * noyellow * noorange * _ as 'c) node
+    -> ('a, 'b, 'nc, 'nkind, 'c) packet
 
 (** A chain represents a semi regular deque with a lot of additional
     information. The first parameter is simply the input type of the deque.
@@ -446,7 +446,7 @@ and ('a, 'b, 'ckind, 'nkind, 'color) packet =
     are the same, the color of its only path. *)
 and ('a, 'ckind, 'nkind, 'color_left, 'color_right) chain =
   | Empty : ('a, empty, only, green, green) chain
-  | Single : ('c, 'c, 'ck, 'cl, 'cr) regularity
+  | Single : ('c, _, 'ck, 'cl, 'cr) regularity
            * ('a, 'b, 'ck, 'nk, 'c) packet
            * ('b stored_triple, 'ck, only, 'cl, 'cr) chain
           -> ('a, single, 'nk, 'c, 'c) chain
