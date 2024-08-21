@@ -2,8 +2,6 @@ open Color.GYOR
 
 module Deque = Sdeque.Core
 
-type 'a pr = out_channel -> 'a -> unit
-
 (* Support for natural number types. *)
 
 type    z
@@ -372,7 +370,7 @@ type ('a, 'nbr_child, 'kind, 'color) node =
 (** Regularity represents constraints between a node color and its child chain
     parameters. The last parameter keeps track of the color of the packet
     starting at this node. *)
-type ('color_head, 'color_pkt, 'ckind, 'color_left, 'color_right) regularity =
+type ('color_top, 'color_chain, 'ckind, 'color_left, 'color_right) regularity =
   | G  : (green , green, _, _, _) regularity
   | Y  : (yellow, 'cl, _ ge1, 'cl, _) regularity
   | OS : (orange, 'c, single, 'c, 'c) regularity
@@ -446,13 +444,13 @@ and ('a, 'b, 'nbr_child, 'nkind, 'color) packet =
     are the same, the color of its only path. *)
 and ('a, 'ckind, 'nkind, 'color_left, 'color_right) chain =
   | Empty : ('a, empty, only, green, green) chain
-  | Single : ('c, _, 'ck, 'cl, 'cr) regularity
+  | Single : ('c, 'c, 'ck, 'cl, 'cr) regularity
            * ('a, 'b, 'ck, 'nk, 'c) packet
            * ('b stored_triple, 'ck, only, 'cl, 'cr) chain
           -> ('a, single, 'nk, 'c, 'c) chain
   | Pair : ('a, single, left , 'cl, 'cl) chain
          * ('a, single, right, 'cr, 'cr) chain
-        -> ('a, pair, only , 'cl, 'cr) chain
+        -> ('a, pair, only, 'cl, 'cr) chain
 
 (** A type for semi regular deques. *)
 type 'a semi_deque = S : ('a, _, only, _, _) chain -> 'a semi_deque
@@ -630,17 +628,17 @@ let inject (T c) x = match is_empty c, c with
 (** A type for the triple representation of a non-empty deque. First comes the
     regularity constraints, then the node as a node, then the child deque as
     a chain. *)
-type ('a, 'nkind, 'packet_color) triple =
+type ('a, 'nkind, 'color_chain) triple =
   | Triple :
-       ('c, 'cpkt, 'ck, 'cl, 'cr) regularity
+       ('c, 'cc, 'ck, 'cl, 'cr) regularity
      * ('a, 'ck, 'nk, 'c) node
      * ('a stored_triple, 'ck, only, 'cl, 'cr) chain
-    -> ('a, 'nk, 'cpkt) triple
+    -> ('a, 'nk, 'cc) triple
 
 let to_reg
 : type a n nk y o.
      (a, n ge1, nk, nogreen * y * o * nored as 'c) node
-  -> (nogreen * y * o * nored, _, single, _, _) regularity
+  -> ('c, _, single, _, _) regularity
 = function
   | Only  (Yc, _, _) -> Y | Only  (Oc, _, _) -> OS
   | Left  (Yc, _, _) -> Y | Left  (Oc, _, _) -> OS
@@ -842,7 +840,7 @@ let concat (T c1) (T c2) =
     of a pair or not. *)
 type ('a, 'ckind, 'nkind) partial_triple =
   | Empty : ('a, single, _) partial_triple
-  | End : 'a * 'a * 'a * 'a * 'a * 'a -> ('a, pair, _) partial_triple
+  | End : 'a six -> ('a, pair, _) partial_triple
   | Ok : ('a, 'nk, _) triple -> ('a, _, 'nk) partial_triple
 
 (** Returns the orange regularity cases required according to the following
@@ -966,7 +964,7 @@ let adapt_to_prefix
 (** Makes an only triple out of six elements and a right triple. *)
 let only_of_right
 : type a c.
-     (a * a * a * a * a * a)
+     a six
   -> (a, right, c) triple
   -> (a, only, c) triple
 = fun six (Triple (reg, Right (coloring, p, s), child)) ->
@@ -990,7 +988,7 @@ let adapt_to_suffix
 let only_of_left
 : type a c.
      (a, left, c) triple
-  -> (a * a * a * a * a * a)
+  -> a six
   -> (a, only, c) triple
 = fun (Triple (reg, Left (coloring, p, s), child)) six ->
   match reg, is_empty_color coloring, coloring with
