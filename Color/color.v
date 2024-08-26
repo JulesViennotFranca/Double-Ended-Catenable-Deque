@@ -2,17 +2,21 @@ From Equations Require Import Equations.
 Require Import Coq.Program.Equality.
 
 Module GYR.
+  (* Defining some hues. *)
   Inductive green_hue  := SomeGreen  | NoGreen.
   Inductive yellow_hue := SomeYellow | NoYellow.
   Inductive red_hue    := SomeRed    | NoRed.
 
+  (* Defining colors type. *)
   Inductive color := Mix : green_hue -> yellow_hue -> red_hue -> color.
 
+  (* Deriving the [NoConfusion] trait needed by [Equations]. *)
   Derive NoConfusion for green_hue.
   Derive NoConfusion for yellow_hue.
   Derive NoConfusion for red_hue.
   Derive NoConfusion for color.
 
+  (* Defining colors. *)
   Notation green := (Mix SomeGreen NoYellow NoRed).
   Notation yellow := (Mix NoGreen SomeYellow NoRed).
   Notation red := (Mix NoGreen NoYellow SomeRed).
@@ -20,26 +24,31 @@ Module GYR.
 End GYR.
 
 Module GYOR.
+  (* Defining some hues. *)
   Inductive green_hue  := SomeGreen  | NoGreen.
   Inductive yellow_hue := SomeYellow | NoYellow.
   Inductive orange_hue := SomeOrange | NoOrange.
   Inductive red_hue    := SomeRed    | NoRed.
 
+  (* Defining colors type. *)
   Inductive color :=
     Mix : green_hue -> yellow_hue -> orange_hue -> red_hue -> color.
 
+  (* Deriving the [NoConfusion] trait needed by [Equations]. *)
   Derive NoConfusion for green_hue.
   Derive NoConfusion for yellow_hue.
   Derive NoConfusion for orange_hue.
   Derive NoConfusion for red_hue.
   Derive NoConfusion for color.
 
+  (* Defining colors. *)
   Notation green := (Mix SomeGreen NoYellow NoOrange NoRed).
   Notation yellow := (Mix NoGreen SomeYellow NoOrange NoRed).
   Notation orange := (Mix NoGreen NoYellow SomeOrange NoRed).
   Notation red := (Mix NoGreen NoYellow NoOrange SomeRed).
   Notation uncolored := (Mix NoGreen NoYellow NoOrange NoRed).
 
+  (* An instance of [UIP] for colors is needed in Cdeque/core.v. *)
   Instance UIP_color : UIP color.
   Proof.
     intros C1 C2 p q.

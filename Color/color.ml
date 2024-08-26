@@ -1,13 +1,15 @@
 module GYR = struct
-  type somegreen = SOME_GREEN
-  type nogreen   = NO_GREEN
+  (* Defining some hues. *)
+  type somegreen  = SOME_GREEN
+  type nogreen    = NO_GREEN
 
   type someyellow = SOME_YELLOW
   type noyellow   = NO_YELLOW
 
-  type somered = SOME_RED
-  type nored   = NO_RED
+  type somered    = SOME_RED
+  type nored      = NO_RED
 
+  (* Defining colors. *)
   type green  = somegreen * noyellow   * nored
   type yellow = nogreen   * someyellow * nored
   type red    = nogreen   * noyellow   * somered
@@ -15,8 +17,9 @@ module GYR = struct
 end
 
 module GYOR = struct
-  type somegreen = SOME_GREEN
-  type nogreen   = NO_GREEN
+  (* Defining some hues. *)
+  type somegreen  = SOME_GREEN
+  type nogreen    = NO_GREEN
 
   type someyellow = SOME_YELLOW
   type noyellow   = NO_YELLOW
@@ -24,9 +27,10 @@ module GYOR = struct
   type someorange = SOME_ORANGE
   type noorange   = NO_ORANGE
 
-  type somered = SOME_RED
-  type nored   = NO_RED
+  type somered    = SOME_RED
+  type nored      = NO_RED
 
+  (* Defining colors. *)
   type green  = somegreen * noyellow   * noorange   * nored
   type yellow = nogreen   * someyellow * noorange   * nored
   type orange = nogreen   * noyellow   * someorange * nored
