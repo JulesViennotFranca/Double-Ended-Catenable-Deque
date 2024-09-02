@@ -4,7 +4,7 @@ Import ListNotations.
 From Equations Require Import Equations.
 From Hammer Require Import Tactics.
 
-From Sdeque Require Import corevf.
+From Sdeque Require Import corev3.
 
 (* Types *)
 

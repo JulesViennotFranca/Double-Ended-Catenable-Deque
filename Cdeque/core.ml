@@ -16,6 +16,7 @@ type 'a ge6 = 'a s s s s s s
 type 'a ge7 = 'a s s s s s s s
 type 'a ge8 = 'a s s s s s s s s
 
+type eq0 = z
 type eq1 = z s
 type eq2 = z ge2
 type eq6 = z ge6
@@ -333,7 +334,7 @@ type only
 type left
 type right
 
-type empty  = z
+type empty  = eq0
 type single = eq1
 type pair   = eq2
 
@@ -343,7 +344,7 @@ type ('prefix_size, 'suffix_size, 'nbr_child, 'color) coloring =
   | Yc : (_ ge2, _ ge2, _ ge1, yellow) coloring
   | Oc : (_ ge1, _ ge1, _ ge1, orange) coloring
   | Rc : (    _,     _, _ ge1, red   ) coloring
-  | Ec : (    _,     _,     z, green ) coloring
+  | Ec : (    _,     _,   eq0, green ) coloring
 
 (** A node represents a prefix - suffix pair.
 
@@ -356,7 +357,7 @@ type ('prefix_size, 'suffix_size, 'nbr_child, 'color) coloring =
     prefix (suffix) of an ending left (right) node must contain at least
     five elements. *)
 type ('a, 'nbr_child, 'kind, 'color) node =
-  | Only_end  : ('a, _ ge1) prefix -> ('a, z, only, green) node
+  | Only_end  : ('a, _ ge1) prefix -> ('a, eq0, only, green) node
   | Only  : ('psize, 'ssize, 'n ge1, 'c) coloring
           * ('a, 'psize ge5) prefix * ('a, 'ssize ge5) suffix
          -> ('a, 'n ge1, only, 'c) node

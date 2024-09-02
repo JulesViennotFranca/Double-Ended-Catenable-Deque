@@ -1,7 +1,5 @@
 module Deque = Sdeque.Core
 
-type 'a pr = out_channel -> 'a -> unit
-
 type nh = NOT_HOLE
 type hole = Hole
 type has_hole = HAS_HOLE
