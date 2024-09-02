@@ -10,16 +10,16 @@ Import GYR.
 
 (* A type for packets. *)
 Inductive packet : color -> Type :=
-  | Hole : packet uncolored
+  | Hole       : packet uncolored
   | GDigit {y} : packet (Mix NoGreen y NoRed) -> packet green
   | YDigit {y} : packet (Mix NoGreen y NoRed) -> packet yellow
   | RDigit {y} : packet (Mix NoGreen y NoRed) -> packet red.
 
 (* A type for the regularity relation. *)
 Inductive regularity : color -> color -> Type :=
-  | G {g r} : regularity green (Mix g NoYellow r)
-  | Y : regularity yellow green
-  | R : regularity red    green.
+  | G {g r} : regularity green  (Mix g NoYellow r)
+  | Y       : regularity yellow green
+  | R       : regularity red    green.
 
 (* A type for chains. *)
 Inductive chain : color -> Type :=
@@ -86,33 +86,33 @@ Non exhaustive pattern-matching: no clause found for pattern Chain G _ _
 (*
 Definition without dependent types :
 --------------------------------------
-Equations green_of_red' : chain red -> chain green :=
-green_of_red' (Chain R (RDigit Hole) Empty) :=
+Equations green_of_red : chain red -> chain green :=
+green_of_red (Chain R (RDigit Hole) Empty) :=
   Chain G (GDigit (YDigit Hole)) Empty;
-green_of_red' (Chain R (RDigit Hole) (Chain G (GDigit body) c)) :=
+green_of_red (Chain R (RDigit Hole) (Chain G (GDigit body) c)) :=
   Chain G (GDigit (YDigit body)) c;
-green_of_red' (Chain R (RDigit (YDigit body)) c) :=
+green_of_red (Chain R (RDigit (YDigit body)) c) :=
   Chain G (GDigit Hole) (Chain R (RDigit body) c).
 
 Verification of correctness :
 -----------------------------
 Require Import Coq.Program.Equality.
 Lemma green_of_red_correct (c : chain red) :
-    chain_nat (green_of_red' c) = chain_nat c.
+    chain_nat (green_of_red c) = chain_nat c.
 Proof.
   dependent destruction c.
   dependent destruction r.
   dependent destruction p.
   dependent destruction p.
   - dependent destruction c.
-    + simp green_of_red'.
+    + simp green_of_red.
       reflexivity.
     + dependent destruction r.
       dependent destruction p.
-      simp green_of_red'. simpl.
+      simp green_of_red. simpl.
       remember (packet_nat p (chain_nat c)) as numb.
       lia.
-  - simp green_of_red'.
+  - simp green_of_red.
     simpl.
     remember (packet_nat p (chain_nat c)) as numb.
     lia.
