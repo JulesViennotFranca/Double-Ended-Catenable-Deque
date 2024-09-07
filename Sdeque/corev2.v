@@ -45,12 +45,12 @@ Arguments B5 {A lvl}.
 (* A type for packets. *)
 Inductive packet (A : Type) (lvl : nat) : nat -> color -> Type :=
   | Hole : packet A lvl lvl uncolored
-  | Packet {hlvl C y} : buffer A lvl C ->
-                        packet A (S lvl) hlvl (Mix NoGreen y NoRed) ->
+  | Packet {clvl C y} : buffer A lvl C ->
+                        packet A (S lvl) clvl (Mix NoGreen y NoRed) ->
                         buffer A lvl C ->
-                        packet A lvl hlvl C.
+                        packet A lvl clvl C.
 Arguments Hole {A lvl}.
-Arguments Packet {A lvl hlvl C y}.
+Arguments Packet {A lvl clvl C y}.
 
 (* A type for the regularity relation. *)
 Inductive regularity : color -> color -> Type :=
@@ -61,11 +61,11 @@ Inductive regularity : color -> color -> Type :=
 (* A type for chains. *)
 Inductive chain (A : Type) : nat -> color -> Type :=
   | Ending {lvl} : buffer A lvl red -> chain A lvl green
-  | Chain {lvl hlvl C1 C2} :
-      regularity C1 C2 -> packet A lvl hlvl C1 -> chain A hlvl C2 ->
+  | Chain {lvl clvl C1 C2} :
+      regularity C1 C2 -> packet A lvl clvl C1 -> chain A clvl C2 ->
       chain A lvl C1.
 Arguments Ending {A lvl}.
-Arguments Chain {A lvl hlvl C1 C2}.
+Arguments Chain {A lvl clvl C1 C2}.
 
 (* A type decomposing buffers according to their number of elements.
    Buffers with 0 or 1 element are decomposed into [Underflow];
@@ -105,7 +105,7 @@ Opaque app.
 Definition singleton {A : Type} (x : A) : list A := [x].
 Opaque singleton.
 
-(* Returns the sequence associated a product. *)
+(* Returns the sequence associated to a product. *)
 Equations prodN_seq {A n} : prodN A n -> list A :=
 prodN_seq (prodZ a) := [a];
 prodN_seq (prodS p1 p2) := prodN_seq p1 ++ prodN_seq p2.
@@ -128,7 +128,7 @@ buffer_seq (B5 a b c d e) := prodN_seq a ++ prodN_seq b ++ prodN_seq c ++
 
 (* Returns the sequence associated to a packet, provided the sequence
    associated to its hole. *)
-Equations packet_seq {A lvl hlvl C} : packet A lvl hlvl C -> list A -> list A :=
+Equations packet_seq {A lvl clvl C} : packet A lvl clvl C -> list A -> list A :=
 packet_seq Hole l := l;
 packet_seq (Packet p pkt s) l :=
   buffer_seq p ++ packet_seq pkt l ++ buffer_seq s.
@@ -196,15 +196,15 @@ green_inject (B3 a b c) x := ? B4 a b c x.
 Equations green_pop {A lvl} (b : buffer A lvl green) :
   { '(x, b') : prodN A lvl * buffer A lvl yellow |
     buffer_seq b = prodN_seq x ++ buffer_seq b' } :=
-green_pop (B2 a b)   => ? (a, B1 b);
-green_pop (B3 a b c) => ? (a, B2 b c).
+green_pop (B2 a b)   := ? (a, B1 b);
+green_pop (B3 a b c) := ? (a, B2 b c).
 
 (* Ejects off a green buffer. *)
 Equations green_eject {A lvl} (b : buffer A lvl green) :
   { '(b', x) : buffer A lvl yellow * prodN A lvl |
     buffer_seq b = buffer_seq b' ++ prodN_seq x } :=
-green_eject (B2 a b)   => ? (B1 a, b);
-green_eject (B3 a b c) => ? (B2 a b, c).
+green_eject (B2 a b)   := ? (B1 a, b);
+green_eject (B3 a b c) := ? (B2 a b, c).
 
 (* Pushes on a yellow buffer. *)
 Equations yellow_push {A lvl} (x : prodN A lvl) (b : buffer A lvl yellow) :
@@ -327,10 +327,10 @@ suffix23 (prodS a b)  None    := ? B2 a b;
 suffix23 (prodS a b) (Some c) := ? B3 a b c.
 
 (* Merges an element and an option to create a yellow buffer. *)
-Equations prefix12 {A lvl} (x : prodN A lvl) (o : optionN A lvl) :
+Equations suffix12 {A lvl} (x : prodN A lvl) (o : optionN A lvl) :
   { b : buffer A lvl yellow | buffer_seq b = prodN_seq x ++ optionN_seq o } :=
-prefix12 x  None    := ? B1 x;
-prefix12 x (Some y) := ? B2 x y.
+suffix12 x  None    := ? B1 x;
+suffix12 x (Some y) := ? B2 x y.
 
 (* Returns the decomposed version of a buffer. Here, it is a prefix
    decomposition: when the buffer has 4 or 5 elements, those at the end are
@@ -415,9 +415,6 @@ Qed.
 #[export] Hint Rewrite to_yellow_seq : rlist.
 #[export] Hint Rewrite to_red_seq : rlist.
 
-(* #[local] Obligation Tactic :=
-  try first [ cbn; hauto db:rlist ]. *)
-
 (* Takes a n-buffer of any color and a green (n+1)-buffer, rearranges elements
    contained in them, and returns a green buffer and a yellow buffer of pairs.
    The order of elements is preserved. *)
@@ -431,7 +428,7 @@ green_prefix_concat b1 b2 with prefix_decompose b1 => {
   | ? Underflow opt with green_pop b2 => {
     | ? (ab, b) with prefix23 opt ab => {
       | ? prefix := ? (prefix, b) } };
-  | ? Ok b => ? (b, to_yellow b2);
+  | ? Ok b := ? (b, to_yellow b2);
   | ? Overflow b ab with green_push ab b2 => {
     | ? suffix := ? (b, suffix) } }.
 
@@ -448,7 +445,7 @@ green_suffix_concat b1 b2 with suffix_decompose b2 => {
   | ? Underflow opt with green_eject b1 => {
     | ? (b, ab) with suffix23 ab opt => {
       | ? suffix := ? (b, suffix) } };
-  | ? Ok b => ? (to_yellow b1, b);
+  | ? Ok b := ? (to_yellow b1, b);
   | ? Overflow b ab with green_inject b1 ab => {
     | ? prefix := ? (prefix, b) } }.
 
@@ -466,7 +463,7 @@ yellow_prefix_concat b1 b2 with prefix_decompose b1 => {
   | ? Underflow opt with yellow_pop b2 => {
     | ? (ab, b) with prefix23 opt ab => {
       | ? prefix := ? (prefix, b) } };
-  | ? Ok b => ? (b, to_red b2);
+  | ? Ok b := ? (b, to_red b2);
   | ? Overflow b ab with yellow_push ab b2 => {
     | ? suffix := ? (b, suffix) } }.
 
@@ -484,7 +481,7 @@ yellow_suffix_concat b1 b2 with suffix_decompose b2 => {
   | ? Underflow opt with yellow_eject b1 => {
     | ? (b, ab) with suffix23 ab opt => {
       | ? suffix := ? (b, suffix) } };
-  | ? Ok b => ? (to_red b1, b);
+  | ? Ok b := ? (to_red b1, b);
   | ? Overflow b ab with yellow_inject b1 ab => {
     | ? prefix := ? (prefix, b) } }.
 
@@ -511,7 +508,7 @@ Equations make_small {A lvl C1 C2 C3}
   (b3 : buffer A lvl C3) :
   { cd : chain A lvl green |
     chain_seq cd = buffer_seq b1 ++ buffer_seq b2 ++ buffer_seq b3 } :=
-make_small b1 b2 b3 with (prefix_decompose b1), (suffix_decompose b3) => {
+make_small b1 b2 b3 with prefix_decompose b1, suffix_decompose b3 => {
   | ? Underflow p1, ? Underflow s1 with buffer_unsandwich b2 => {
     | ? Alone opt with chain_of_opt3 p1 opt s1 => { | ? c := ? c };
     | ? Sandwich ab rest cd with prefix23 p1 ab, suffix23 cd s1 => {
@@ -540,7 +537,7 @@ make_small b1 b2 b3 with (prefix_decompose b1), (suffix_decompose b3) => {
   | ? Overflow p1 cd, ? Ok s1 with buffer_push cd b2 => {
     | ? c2 => ? Chain G (Packet p1 Hole s1) c2 };
   | ? Overflow p1 cd, ? Overflow s1 ab with buffer_halve b2 => {
-    | ? (x, rest) with prefix12 cd x => {
+    | ? (x, rest) with suffix12 cd x => {
       | ? p =>
         ? Chain G (Packet p1 (Packet p Hole (B1 ab)) s1) (Ending rest) } } }.
 Next Obligation.
@@ -618,7 +615,7 @@ make_red p1 child s1 c
 (* +------------------------------------------------------------------------+ *)
 
 (* Pushes on a deque. *)
-Equations push {A: Type} (x : A) (d : deque A) :
+Equations push {A : Type} (x : A) (d : deque A) :
   { d' : deque A | deque_seq d' = [x] ++ deque_seq d } :=
 push x (T (Ending b)) with buffer_push (prodZ x) b => { | ? b' => ? T b' };
 push x (T (Chain G (Packet p1 child s1) c))
@@ -629,7 +626,7 @@ push x (T (Chain Y (Packet p1 child s1) c))
     | ? p1' with make_red p1' child s1 c => { | ? d' => ? d' } }.
 
 (* Injects on a deque. *)
-Equations inject {A: Type} (d : deque A) (x : A) :
+Equations inject {A : Type} (d : deque A) (x : A) :
   { d' : deque A | deque_seq d' = deque_seq d ++ [x] } :=
 inject (T (Ending b)) x with buffer_inject b (prodZ x) => { | ? b' => ? T b' };
 inject (T (Chain G (Packet p1 child s1) c)) x
@@ -640,7 +637,7 @@ inject (T (Chain Y (Packet p1 child s1) c)) x
     | ? s1' with make_red p1 child s1' c => { | ? d' => ? d' } }.
 
 (* Pops off a deque. *)
-Equations pop {A: Type} (d : deque A) :
+Equations pop {A : Type} (d : deque A) :
   { o : option (A * deque A) |
     deque_seq d = match o with
                   | None => []

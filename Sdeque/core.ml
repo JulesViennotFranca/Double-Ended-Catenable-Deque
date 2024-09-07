@@ -205,7 +205,7 @@ let suffix23 (a, b) opt = match opt with
   | Some c -> B3 (a, b, c)
 
 (** Merges an element and an option to create a yellow buffer. *)
-let prefix12 x opt = match opt with
+let suffix12 x opt = match opt with
   | None   -> B1 x
   | Some y -> B2 (x, y)
 
@@ -427,7 +427,7 @@ let make_small
   (* Both the prefix and the suffix are overflowed. *)
   | Overflow (p1, cd), Overflow (s1, ab) ->
     let x, rest = buffer_halve b2 in
-    let p2 = prefix12 cd x in
+    let p2 = suffix12 cd x in
       Chain (G, Packet (p1, Packet (p2, Hole, B1 ab), s1), Ending rest)
 
 (** Makes a red chain green. *)

@@ -169,14 +169,14 @@ green_inject (B3 a b c) x := ? B4 a b c x.
 (* Pops off a green buffer. *)
 Equations green_pop {A : Type} (b : buffer A green) :
   { '(x, b') : A * buffer A yellow | buffer_seq b = [x] ++ buffer_seq b' } :=
-green_pop (B2 a b)   => ? (a, B1 b);
-green_pop (B3 a b c) => ? (a, B2 b c).
+green_pop (B2 a b)   := ? (a, B1 b);
+green_pop (B3 a b c) := ? (a, B2 b c).
 
 (* Ejects off a green buffer. *)
 Equations green_eject {A : Type} (b : buffer A green) :
   { '(b', x) : buffer A yellow * A | buffer_seq b = buffer_seq b' ++ [x] } :=
-green_eject (B2 a b)   => ? (B1 a, b);
-green_eject (B3 a b c) => ? (B2 a b, c).
+green_eject (B2 a b)   := ? (B1 a, b);
+green_eject (B3 a b c) := ? (B2 a b, c).
 
 (* Pushes on a yellow buffer. *)
 Equations yellow_push {A : Type} (x : A) (b : buffer A yellow) :
@@ -295,10 +295,10 @@ suffix23 (a, b)  None    := ? B2 a b;
 suffix23 (a, b) (Some c) := ? B3 a b c.
 
 (* Merges an element and an option to create a yellow buffer. *)
-Equations prefix12 {A} (x : A) (o : option A) :
+Equations suffix12 {A} (x : A) (o : option A) :
   { b : buffer A yellow | buffer_seq b = [x] ++ option_seq o } :=
-prefix12 x  None    := ? B1 x;
-prefix12 x (Some y) := ? B2 x y.
+suffix12 x  None    := ? B1 x;
+suffix12 x (Some y) := ? B2 x y.
 
 (* Returns the decomposed version of a buffer. Here, it is a prefix
    decomposition: when the buffer has 4 or 5 elements, those at the end are
@@ -402,7 +402,7 @@ green_prefix_concat b1 b2 with prefix_decompose b1 => {
   | ? Underflow opt with green_pop b2 => {
     | ? (ab, b) with prefix23 opt ab => {
       | ? prefix := ? (prefix, b) } };
-  | ? Ok b => ? (b, to_yellow b2);
+  | ? Ok b := ? (b, to_yellow b2);
   | ? Overflow b ab with green_push ab b2 => {
     | ? suffix := ? (b, suffix) } }.
 
@@ -419,7 +419,7 @@ green_suffix_concat b1 b2 with suffix_decompose b2 => {
   | ? Underflow opt with green_eject b1 => {
     | ? (b, ab) with suffix23 ab opt => {
       | ? suffix := ? (b, suffix) } };
-  | ? Ok b => ? (to_yellow b1, b);
+  | ? Ok b := ? (to_yellow b1, b);
   | ? Overflow b ab with green_inject b1 ab => {
     | ? prefix := ? (prefix, b) } }.
 
@@ -437,7 +437,7 @@ yellow_prefix_concat b1 b2 with prefix_decompose b1 => {
   | ? Underflow opt with yellow_pop b2 => {
     | ? (ab, b) with prefix23 opt ab => {
       | ? prefix := ? (prefix, b) } };
-  | ? Ok b => ? (b, to_red b2);
+  | ? Ok b := ? (b, to_red b2);
   | ? Overflow b ab with yellow_push ab b2 => {
     | ? suffix := ? (b, suffix) } }.
 
@@ -455,7 +455,7 @@ yellow_suffix_concat b1 b2 with suffix_decompose b2 => {
   | ? Underflow opt with yellow_eject b1 => {
     | ? (b, ab) with suffix23 ab opt => {
       | ? suffix := ? (b, suffix) } };
-  | ? Ok b => ? (to_red b1, b);
+  | ? Ok b := ? (to_red b1, b);
   | ? Overflow b ab with yellow_inject b1 ab => {
     | ? prefix := ? (prefix, b) } }.
 
@@ -490,7 +490,7 @@ Equations make_small {A C1 C2 C3}
   (b3 : buffer A C3) :
   { c : chain A green | chain_seq c =
       buffer_seq b1 ++ flattenp (buffer_seq b2) ++ buffer_seq b3 } :=
-make_small b1 b2 b3 with (prefix_decompose b1), (suffix_decompose b3) => {
+make_small b1 b2 b3 with prefix_decompose b1, suffix_decompose b3 => {
   | ? Underflow p1, ? Underflow s1 with buffer_unsandwich b2 => {
     | ? Alone opt with chain_of_opt3 p1 opt s1 => { | ? c := ? c };
     | ? Sandwich ab rest cd with prefix23 p1 ab, suffix23 cd s1 => {
@@ -519,7 +519,7 @@ make_small b1 b2 b3 with (prefix_decompose b1), (suffix_decompose b3) => {
   | ? Overflow p1 cd, ? Ok s1 with buffer_push cd b2 => {
     | ? c2 => ? Chain G (Packet p1 Hole s1) c2 };
   | ? Overflow p1 cd, ? Overflow s1 ab with buffer_halve b2 => {
-    | ? (x, rest) with prefix12 cd x => {
+    | ? (x, rest) with suffix12 cd x => {
       | ? p =>
         ? Chain G (Packet p1 (Packet p Hole (B1 ab)) s1) (Ending rest) } } }.
 Next Obligation.
@@ -601,7 +601,7 @@ make_red p1 child s1 c
 (* +------------------------------------------------------------------------+ *)
 
 (* Pushes on a deque. *)
-Equations push {A: Type} (x : A) (d : deque A) :
+Equations push {A : Type} (x : A) (d : deque A) :
   { d' : deque A | deque_seq d' = [x] ++ deque_seq d } :=
 push x (T (Ending b)) with buffer_push x b => { | ? b' => ? T b' };
 push x (T (Chain G (Packet p1 child s1) c)) with green_push x p1 => {
@@ -612,7 +612,7 @@ push x (T (Chain Y (Packet p1 child s1) c)) with yellow_push x p1 => {
     | ? d' => ? d' } }.
 
 (* Injects on a deque. *)
-Equations inject {A: Type} (d : deque A) (x : A) :
+Equations inject {A : Type} (d : deque A) (x : A) :
   { d' : deque A | deque_seq d' = deque_seq d ++ [x] } :=
 inject (T (Ending b)) x with buffer_inject b x => { | ? b' => ? T b' };
 inject (T (Chain G (Packet p1 child s1) c)) x with green_inject s1 x => {
@@ -623,7 +623,7 @@ inject (T (Chain Y (Packet p1 child s1) c)) x with yellow_inject s1 x => {
     | ? d' => ? d' } }.
 
 (* Pops off a deque. *)
-Equations pop {A: Type} (d : deque A) :
+Equations pop {A : Type} (d : deque A) :
   { o : option (A * deque A) |
     deque_seq d = match o with
                   | None => []
