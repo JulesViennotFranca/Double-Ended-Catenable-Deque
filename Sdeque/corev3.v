@@ -52,13 +52,13 @@ Arguments B5 {A lvl}.
 (* A type for sized packets. *)
 Inductive packet (A : Type) (lvl : nat) : nat -> nat -> nat -> color -> Type :=
   | Hole {size : nat} : packet A lvl lvl size size uncolored
-  | Packet {hlvl psize pktsize csize ssize C y} :
+  | Packet {clvl psize pktsize csize ssize C y} :
       buffer A lvl psize C ->
-      packet A (S lvl) hlvl pktsize csize (Mix NoGreen y NoRed) ->
+      packet A (S lvl) clvl pktsize csize (Mix NoGreen y NoRed) ->
       buffer A lvl ssize C ->
-      packet A lvl hlvl (psize + pktsize + pktsize + ssize) csize C.
+      packet A lvl clvl (psize + pktsize + pktsize + ssize) csize C.
 Arguments Hole {A lvl size}.
-Arguments Packet {A lvl hlvl psize pktsize csize ssize C y}.
+Arguments Packet {A lvl clvl psize pktsize csize ssize C y}.
 
 (* A type for the regularity relation. *)
 Inductive regularity : color -> color -> Type :=
@@ -144,13 +144,16 @@ Opaque singleton.
    The correct behavior of [concat_map_***_seq] functions is verified with [correct_concat_map_***_seq] lemmas. *)
 
 (* Sequence + map + concat for products. *)
-Equations concat_map_prodN_seq
+Definition concat_map_prodN_seq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl} : prodN (T A lvlt) lvl -> list A :=
-concat_map_prodN_seq f (prodZ ta) := f A lvlt ta;
-concat_map_prodN_seq f (prodS p1 p2) :=
-  concat_map_prodN_seq f p1 ++ concat_map_prodN_seq f p2.
+  let fix local {lvl} (p : prodN (T A lvlt) lvl) : list A :=
+    match p with
+    | prodZ ta => f A lvlt ta
+    | prodS p1 p2 => local p1 ++ local p2
+    end
+  in local.
 
 (* Returns the sequence associated to a product. *)
 Notation prodN_seq :=
@@ -161,7 +164,7 @@ Lemma correct_concat_map_prodN_seq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl} (p : prodN (T A lvlt) lvl) :
-  concat_map_prodN_seq (@f) p = concat (map (f A lvlt) (prodN_seq p)).
+  concat_map_prodN_seq f p = concat (map (f A lvlt) (prodN_seq p)).
 Proof.
   induction p; hauto db:rlist.
 Qed.
@@ -172,24 +175,22 @@ option_seq NoneN := [];
 option_seq (SomeN x) := prodN_seq x.
 
 (* Sequence + map + concat for buffers. *)
-Equations concat_map_buffer_seq
+Definition concat_map_buffer_seq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
-  {A lvlt lvl size C} : buffer (T A lvlt) lvl size C -> list A :=
-concat_map_buffer_seq f B0 := [];
-concat_map_buffer_seq f (B1 a) := concat_map_prodN_seq f a;
-concat_map_buffer_seq f (B2 a b) :=
-  concat_map_prodN_seq f a ++ concat_map_prodN_seq f b;
-concat_map_buffer_seq f (B3 a b c) :=
-  concat_map_prodN_seq f a ++ concat_map_prodN_seq f b ++
-  concat_map_prodN_seq f c;
-concat_map_buffer_seq f (B4 a b c d) :=
-  concat_map_prodN_seq f a ++ concat_map_prodN_seq f b ++
-  concat_map_prodN_seq f c ++ concat_map_prodN_seq f d;
-concat_map_buffer_seq f (B5 a b c d e) :=
-  concat_map_prodN_seq f a ++ concat_map_prodN_seq f b ++
-  concat_map_prodN_seq f c ++ concat_map_prodN_seq f d ++
-  concat_map_prodN_seq f e.
+  {A lvlt lvl size C} (b : buffer (T A lvlt) lvl size C) : list A :=
+  match b with
+  | B0 => []
+  | (B1 a) => concat_map_prodN_seq f a
+  | (B2 a b) => concat_map_prodN_seq f a ++ concat_map_prodN_seq f b
+  | (B3 a b c) => concat_map_prodN_seq f a ++ concat_map_prodN_seq f b ++
+                  concat_map_prodN_seq f c
+  | (B4 a b c d) => concat_map_prodN_seq f a ++ concat_map_prodN_seq f b ++
+                    concat_map_prodN_seq f c ++ concat_map_prodN_seq f d
+  | (B5 a b c d e) => concat_map_prodN_seq f a ++ concat_map_prodN_seq f b ++
+                      concat_map_prodN_seq f c ++ concat_map_prodN_seq f d ++
+                      concat_map_prodN_seq f e
+  end.
 
 (* Returns the sequence associated to a buffer. *)
 Notation buffer_seq :=
@@ -200,7 +201,7 @@ Lemma correct_concat_map_buffer_seq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl size C} (b : buffer (T A lvlt) lvl size C) :
-  concat_map_buffer_seq (@f) b = concat (map (f A lvlt) (buffer_seq b)).
+  concat_map_buffer_seq f b = concat (map (f A lvlt) (buffer_seq b)).
 Proof.
   destruct b as [ | ?? a | ??? a b |  ??? a b c | ?? a b c d | a b c d e ];
   simpl;
@@ -229,15 +230,20 @@ Proof.
 Qed.
 
 (* Sequence + map + concat for packets. *)
-Equations concat_map_packet_seq
+Definition concat_map_packet_seq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl clvl pktsize csize C} :
   packet (T A lvlt) lvl clvl pktsize csize C -> list A -> list A :=
-concat_map_packet_seq f Hole l := l;
-concat_map_packet_seq f (Packet p pkt s) l := concat_map_buffer_seq f p ++
-                                              concat_map_packet_seq f pkt l ++
-                                              concat_map_buffer_seq f s.
+  let fix local {lvl clvl pktsize csize C}
+    (pkt : packet (T A lvlt) lvl clvl pktsize csize C) (l : list A) : list A :=
+    match pkt with
+    | Hole => l
+    | Packet p pkt s => concat_map_buffer_seq f p ++
+                        local pkt l ++
+                        concat_map_buffer_seq f s
+    end
+  in local.
 
 (* Returns the sequence associated to a packet. *)
 Notation packet_seq :=
@@ -249,7 +255,7 @@ Lemma correct_concat_map_packet_seq
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl clvl pktsize csize C}
   (pkt : packet (T A lvlt) lvl clvl pktsize csize C) (l : list (T A lvlt)) :
-  concat_map_packet_seq (@f) pkt (concat (map (f A lvlt) l)) =
+  concat_map_packet_seq f pkt (concat (map (f A lvlt) l)) =
     concat (map (f A lvlt) (packet_seq pkt l)).
 Proof.
   induction pkt as [ | ???????? p pkt IHpkt s ]; simpl.
@@ -262,13 +268,16 @@ Proof.
 Qed.
 
 (* Sequence + map + concat for chains. *)
-Equations concat_map_chain_seq
+Definition concat_map_chain_seq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl size C} : chain (T A lvlt) lvl size C -> list A :=
-concat_map_chain_seq f (Ending b) := concat_map_buffer_seq f b;
-concat_map_chain_seq f (Chain _ pkt c) :=
-  concat_map_packet_seq f pkt (concat_map_chain_seq f c).
+  let fix local {lvl size C} (c : chain (T A lvlt) lvl size C) : list A :=
+    match c with
+    | Ending b => concat_map_buffer_seq f b
+    | Chain _ pkt c => concat_map_packet_seq f pkt (local c)
+    end
+  in local.
 
 (* Returns the sequence associated to a chain. *)
 Notation chain_seq :=
@@ -279,7 +288,7 @@ Lemma correct_concat_map_chain_seq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt lvl size C} (c : chain (T A lvlt) lvl size C) :
-  concat_map_chain_seq (@f) c = concat (map (f A lvlt) (chain_seq c)).
+  concat_map_chain_seq f c = concat (map (f A lvlt) (chain_seq c)).
 Proof.
   induction c as [ b | ?????? reg pkt c ]; simpl.
   - apply correct_concat_map_buffer_seq.
@@ -307,11 +316,13 @@ sandwich_seq (Alone opt) := option_seq opt;
 sandwich_seq (Sandwich x b y) := prodN_seq x ++ buffer_seq b ++ prodN_seq y.
 
 (* Sequence + map + concat for deques. *)
-Equations concat_map_deque_seq
+Definition concat_map_deque_seq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
-  {A lvlt size} : deque (T A lvlt) size -> list A :=
-concat_map_deque_seq f (T c) := concat_map_chain_seq f c.
+  {A lvlt size} (d : deque (T A lvlt) size) : list A :=
+  match d with
+  | T c => concat_map_chain_seq f c
+  end.
 
 (* Returns the sequence associated to a deque. *)
 Notation deque_seq :=
@@ -322,7 +333,7 @@ Lemma correct_concat_map_deque_seq
   {T : Type -> nat -> Type}
   (f : forall A lvl, T A lvl -> list A)
   {A lvlt size} (d : deque (T A lvlt) size) :
-  concat_map_deque_seq (@f) d = concat (map (f A lvlt) (deque_seq d)).
+  concat_map_deque_seq f d = concat (map (f A lvlt) (deque_seq d)).
 Proof.
   destruct d.
   apply correct_concat_map_chain_seq.
