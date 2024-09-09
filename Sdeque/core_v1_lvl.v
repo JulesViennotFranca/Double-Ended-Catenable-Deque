@@ -140,20 +140,20 @@ chain_seq (Chain _ pkt c) := packet_seq pkt (chain_seq c).
 
 (* Returns the first 4 elements of the sequence associated to a decomposed
    buffer.*)
-Equations decompose_main_seq {A lvl} (dec : decompose A lvl) : list A :=
+Equations decompose_main_seq {A lvl} : decompose A lvl -> list A :=
 decompose_main_seq (Underflow opt) := optionN_seq opt;
 decompose_main_seq (Ok b) := buffer_seq b;
 decompose_main_seq (Overflow b _) := buffer_seq b.
 
 (* Returns the sequence associated to a decomposed buffer from the 5th element
    to the end  *)
-Equations decompose_rest_seq {A lvl} (dec : decompose A lvl) : list A :=
+Equations decompose_rest_seq {A lvl} : decompose A lvl -> list A :=
 decompose_rest_seq (Underflow _) := [];
 decompose_rest_seq (Ok _) := [];
 decompose_rest_seq (Overflow _ p) := prodN_seq p.
 
 (* Returns the sequence associated to a sandwiched buffer. *)
-Equations sandwich_seq {A lvl} (sw : sandwich A lvl) : list A :=
+Equations sandwich_seq {A lvl} : sandwich A lvl -> list A :=
 sandwich_seq (Alone opt) := optionN_seq opt;
 sandwich_seq (Sandwich x b y) := prodN_seq x ++ buffer_seq b ++ prodN_seq y.
 
