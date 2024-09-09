@@ -386,8 +386,7 @@ Qed.
 
 (* Setting the default tactics for obligations to be [hauto] using the [rlist]
    hint database. *)
-#[local] Obligation Tactic :=
-  try first [ cbn; hauto db:rlist ].
+#[local] Obligation Tactic := try (cbn; hauto db:rlist).
 
 (* Takes a buffer of any color and a green buffer of pairs, rearranges elements
    contained in them, and returns a green buffer and a yellow buffer of pairs.

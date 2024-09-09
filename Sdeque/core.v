@@ -349,8 +349,7 @@ Notation "? x" := (@exist _ _ x _) (at level 100).
 
 (* Setting the default tactics for obligations to be [hauto] using the [rlist]
    hint database. *)
-#[local] Obligation Tactic :=
-  try first [ cbn; hauto db:rlist ].
+#[local] Obligation Tactic := try (cbn; hauto db:rlist).
 
 (* The empty deque. *)
 Equations empty {A} : { d : deque A 0 | deque_seq d = [] } :=
@@ -730,7 +729,8 @@ chain_of_opt3 (SomeN a) (SomeN (prodS b c)) NoneN := ? Ending (B3 a b c);
 chain_of_opt3 NoneN (SomeN (prodS a b)) (SomeN c) := ? Ending (B3 a b c);
 chain_of_opt3 (SomeN a) (SomeN (prodS b c)) (SomeN d) := ? Ending (B4 a b c d).
 
-(* Provided the equality of two natural numbers, translates a chain of size the first into a chain of size the second. *)
+(* Provided the equality of two natural numbers, translates a chain of size the
+   first into a chain of size the second. *)
 Equations translate {A lvl size1 size2 C} (c : chain A lvl size1 C) :
   size1 = size2 -> { c' : chain A lvl size2 C | chain_seq c' = chain_seq c } :=
 translate c eq_refl := ? c.

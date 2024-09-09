@@ -194,8 +194,7 @@ Notation "? x" := (@exist _ _ x _) (at level 100).
 
 (* Setting the default tactics for obligations to be [hauto] using the [rlist]
    hint database. *)
-#[local] Obligation Tactic :=
-  try first [ cbn; hauto db:rlist ].
+#[local] Obligation Tactic := try (cbn; hauto db:rlist).
 
 (* The empty deque. *)
 Equations empty {A} : { d : deque A 0 | deque_seq d = [] } :=

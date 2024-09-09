@@ -177,8 +177,7 @@ Notation "? x" := (@exist _ _ x _) (at level 100).
 
 (* Setting the default tactics for obligations to be [hauto] using the [rlist]
    hint database. *)
-#[local] Obligation Tactic :=
-  try first [ cbn; hauto db:rlist ].
+#[local] Obligation Tactic := try (cbn; hauto db:rlist).
 
 (* Pushes on a green buffer. *)
 Equations green_push {A lvl} (x : prodN A lvl) (b : buffer A lvl green) :
